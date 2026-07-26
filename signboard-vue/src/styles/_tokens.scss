@@ -1,0 +1,32 @@
+// Compatibility tokens for the shared Vue primitives.
+// Theme colors still resolve through static/styles.css at runtime; these
+// values only provide Sass-compatible fallbacks for component compilation.
+$space: 4px;
+$space-xs: 4px;
+
+$white: #ffffff;
+$dark-grey: #5f6368;
+$dark-blue: #0b5fff;
+$dark-green: #6fcf97;
+$light-grey: #f7f8fa;
+$secondary-red: #d92d20;
+
+$control-font-tiny: 11px;
+$control-font-smaller: 12px;
+$control-font-small: 14px;
+$control-font-medium: 16px;
+$control-font-big: 18px;
+
+$control-pad-y-tiny: 2px;
+$control-pad-x-tiny: 4px;
+$control-pad-y-smaller: 3px;
+$control-pad-x-smaller: 6px;
+$control-pad-y-small: 5px;
+$control-pad-x-small: 8px;
+$control-pad-y-medium: 7px;
+$control-pad-x-medium: 12px;
+$control-pad-y-big: 9px;
+$control-pad-x-big: 16px;
+
+$mobile-breakpoint: 600px;
+$z-index-dropdown: 1000;
