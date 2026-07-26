@@ -17,7 +17,9 @@ async function pathExists(targetPath) {
 }
 
 async function listEntries(directoryPath) {
-  return (await fs.readdir(directoryPath)).sort();
+  return (await fs.readdir(directoryPath))
+    .filter((name) => !name.startsWith('.'))
+    .sort();
 }
 
 async function testInsertCardFileAtTop() {

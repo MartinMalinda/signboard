@@ -385,16 +385,6 @@ function renderListActionsPopover() {
     },
   });
 
-  const addListButton = createListActionsOption('Add new list', {
-    shortcutActionId: 'addList',
-    onClick: async () => {
-      openAddListModal({
-        anchorElement: state.anchorElement,
-        afterListPath: state.listPath,
-      });
-    },
-  });
-
   const moveListLeftButton = createListActionsOption('Move list left', {
     onClick: async () => {
       await handleMoveListByOffset(state.listPath, -1);
@@ -424,7 +414,6 @@ function renderListActionsPopover() {
   });
 
   popover.appendChild(addCardButton);
-  popover.appendChild(addListButton);
   popover.appendChild(moveListLeftButton);
   popover.appendChild(moveListRightButton);
   popover.appendChild(archiveCardsButton);

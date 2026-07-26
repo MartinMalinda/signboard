@@ -153,27 +153,32 @@ html, body { margin: 0; height: 100%; }
   --task-progress-complete-color: color-mix(in oklab, #4ade80 84%, var(--text));
 }
 
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list {
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .list {
   background: color-mix(in oklab, #d8e2dc 92%, #ffffff);
   border-color: color-mix(in oklab, #f4acb7 58%, #d8e2dc);
   box-shadow: 0 8px 20px rgba(157, 129, 137, 0.12);
 }
 
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-header {
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-header,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .list-header {
   border-bottom-color: color-mix(in oklab, #f4acb7 44%, #ffe5d9);
 }
 
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-actions-button {
-  background: color-mix(in oklab, #fff7f2 82%, #d8e2dc);
-  border-color: color-mix(in oklab, #f4acb7 55%, #d8e2dc);
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-actions-button,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .list-actions-button {
+  background: transparent;
+  border-color: transparent;
 }
 
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-actions-button:hover {
-  background: color-mix(in oklab, #ffe5d9 78%, #ffffff);
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .list-actions-button:hover,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .list-actions-button:hover {
+  background: color-mix(in oklab, #ffe5d9 48%, transparent);
 }
 
 :root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .card > .card-drag-frame,
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-temporal-card-frame {
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-temporal-card-frame,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .card > .card-drag-frame {
   background: color-mix(in oklab, #ffe5d9 74%, #ffffff);
   border-color: color-mix(in oklab, #f4acb7 68%, #ffe5d9);
   box-shadow: 0 6px 16px rgba(157, 129, 137, 0.10);
@@ -181,7 +186,8 @@ html, body { margin: 0; height: 100%; }
 
 :root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .card:hover > .card-drag-frame,
 :root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-calendar-card:hover .board-temporal-card-frame,
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-this-week-card:hover .board-temporal-card-frame {
+:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-this-week-card:hover .board-temporal-card-frame,
+:root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .card:hover > .card-drag-frame {
   border-color: color-mix(in oklab, #9d8189 45%, #f4acb7);
   box-shadow: 0 10px 22px rgba(157, 129, 137, 0.14);
 }
@@ -221,10 +227,20 @@ body:not(.board-empty) > header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "tabs controls";
-  align-items: end;
-  gap: 8px 12px;
-  padding-left: var(--spacing);
-  padding-top: 8px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+/* Vue owns the active-board state. Keep the toolbar visible even while the
+   legacy body class is catching up during session restore. */
+.app-header.has-active-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "tabs controls";
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
 }
 
 .headerTopRow {
@@ -257,7 +273,8 @@ body:not(.board-empty) #boardName {
   min-width: 0;
 }
 
-body:not(.board-empty) .headerControls {
+body:not(.board-empty) .headerControls,
+.app-header.has-active-board .headerControls {
   width: auto;
 }
 
@@ -266,7 +283,17 @@ body:not(.board-empty) .headerTopRow {
   width: auto;
   justify-self: end;
   justify-content: flex-end;
-  padding-bottom: 3px;
+  align-items: stretch;
+  padding-bottom: 0;
+}
+
+.app-header.has-active-board .headerTopRow {
+  grid-area: controls;
+  width: auto;
+  justify-self: end;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding-bottom: 0;
 }
 
 /* Switch board group */
@@ -277,7 +304,8 @@ body:not(.board-empty) .headerTopRow {
   flex-wrap: wrap;
 }
 
-body:not(.board-empty) #boardPathWrapper {
+body:not(.board-empty) #boardPathWrapper,
+.app-header.has-active-board #boardPathWrapper {
   display: none;
 }
 #labelBoardPath {
@@ -439,7 +467,7 @@ body.board-empty .workspace-view-dock {
 
 .workspace-view-dock-button.is-primary {
   min-width: 146px;
-  min-height: 48px;
+  min-height: 35px;
 }
 
 .workspace-view-dock-button.is-active {
@@ -467,6 +495,25 @@ body.board-empty .workspace-view-dock {
   flex-wrap: wrap;
 }
 
+body:not(.board-empty) #boardControls,
+.app-header.has-active-board #boardControls {
+  align-items: stretch;
+  gap: 0;
+  min-height: 36px;
+  border-left: 1px solid color-mix(in oklab, var(--border) 86%, var(--text));
+}
+
+body:not(.board-empty) #boardControls > * + *,
+.app-header.has-active-board #boardControls > * + * {
+  border-left: 1px solid color-mix(in oklab, var(--border) 86%, var(--text));
+}
+
+body:not(.board-empty) #boardControls > .board-toolbar-group,
+.app-header.has-active-board #boardControls > .board-toolbar-group {
+  display: flex;
+  align-items: stretch;
+}
+
 #quickAddHeaderButton {
   display: inline-flex;
   align-items: center;
@@ -481,6 +528,16 @@ body.board-empty .workspace-view-dock {
   font-weight: 650;
 }
 
+body:not(.board-empty) #quickAddHeaderButton,
+.app-header.has-active-board #quickAddHeaderButton {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 #quickAddHeaderButton:hover,
 #quickAddHeaderButton:focus-visible {
   background: color-mix(in oklab, var(--accent) 16%, var(--bg-card));
@@ -492,33 +549,13 @@ body.board-empty .workspace-view-dock {
   height: 15px;
 }
 
-.board-filter-summary-button {
-  max-width: 180px;
-  min-height: 32px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border));
-  background: color-mix(in oklab, var(--accent) 12%, var(--bg-card));
-  color: color-mix(in oklab, var(--accent) 78%, var(--text));
-  box-shadow: none;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.board-filter-summary-button:hover,
-.board-filter-summary-button:focus-visible {
-  background: color-mix(in oklab, var(--accent) 18%, var(--bg-card));
-}
-
-body:not(.board-empty) #boardControls {
+body:not(.board-empty) #boardControls,
+.app-header.has-active-board #boardControls {
   flex-wrap: nowrap;
 }
 
-body.board-empty #boardControls,
-body.board-empty #boardMenuButton {
+body.board-empty > header:not(.has-active-board) #boardControls,
+body.board-empty > header:not(.has-active-board) #boardMenuButton {
   display: none;
 }
 
@@ -535,6 +572,22 @@ body.board-empty #boardMenuButton {
   font-size: var(--font-sm);
 }
 
+body:not(.board-empty) #boardSearchInput,
+.app-header.has-active-board #boardSearchInput {
+  height: 36px;
+  min-height: 36px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: 0;
+}
+
+body:not(.board-empty) #boardSearchInput:focus-visible,
+.app-header.has-active-board #boardSearchInput:focus-visible {
+  outline: 0;
+}
+
 #boardSearchInput:focus-visible {
   outline: 3px solid color-mix(in oklab, var(--accent) 45%, var(--bg-card));
   outline-offset: 1px;
@@ -547,7 +600,8 @@ body.board-empty #boardMenuButton {
   overflow-y: hidden;
 }
 
-body:not(.board-empty) #boardTabsWrapper {
+body:not(.board-empty) #boardTabsWrapper,
+.app-header.has-active-board #boardTabsWrapper {
   grid-area: tabs;
   width: auto;
   min-width: 0;
@@ -564,8 +618,22 @@ body:not(.board-empty) #boardTabsWrapper {
   padding: 0 2px;
 }
 
-body:not(.board-empty) #boardTabs {
+body:not(.board-empty) #boardTabs,
+.app-header.has-active-board #boardTabs {
+  align-items: stretch;
+  gap: 0;
   padding: 0;
+}
+
+body:not(.board-empty) #boardTabs > * + *,
+.app-header.has-active-board #boardTabs > * + * {
+  border-left: 1px solid color-mix(in oklab, var(--border) 86%, var(--text));
+}
+
+body:not(.board-empty) .board-tab,
+.app-header.has-active-board .board-tab {
+  height: 36px;
+  min-height: 36px;
 }
 
 .board-tab {
@@ -576,20 +644,17 @@ body:not(.board-empty) #boardTabs {
   flex: 0 0 auto;
   max-width: 180px;
   min-width: 0;
-  border: 1px solid color-mix(in oklab, var(--border) 85%, var(--bg));
-  border-bottom-color: color-mix(in oklab, var(--border) 60%, var(--bg));
-  border-radius: 10px 10px 0 0;
-  background: color-mix(in oklab, var(--bg-card) 80%, var(--border));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--muted);
-  opacity: .92;
   padding: 0 8px 0 12px;
-  transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .03);
-  transition: transform .12s ease, opacity .12s ease, background .12s ease, color .12s ease, border-color .12s ease, box-shadow .12s ease;
+  transition: background .12s ease, color .12s ease;
 }
 
 .board-tab:hover {
-  opacity: .95;
+  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
+  color: var(--text);
 }
 
 .board-tab-label {
@@ -601,7 +666,7 @@ body:not(.board-empty) #boardTabs {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 6px 0 8px;
+  padding: 0;
   cursor: pointer;
 }
 
@@ -635,32 +700,9 @@ body:not(.board-empty) #boardTabs {
 }
 
 .board-tab.is-active {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--bg-card) 92%, var(--accent) 8%) 0%,
-    var(--bg) 100%
-  );
-  border-color: color-mix(in oklab, var(--accent) 24%, var(--border));
-  border-bottom-color: var(--bg);
+  background: color-mix(in oklab, var(--accent) 15%, var(--bg-card));
   color: var(--text);
-  opacity: 1;
-  transform: translateY(0);
-  box-shadow:
-    0 8px 18px var(--shadow),
-    inset 0 1px 0 color-mix(in oklab, var(--bg-card) 78%, #ffffff);
   position: relative;
-  z-index: 2;
-}
-
-.board-tab.is-active::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 3px;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--accent) 44%, var(--bg-card));
 }
 
 .board-tab.is-active .board-tab-label {
@@ -672,7 +714,7 @@ body:not(.board-empty) #boardTabs {
 }
 
 .board-tab--chosen {
-  box-shadow: 0 6px 14px var(--shadow);
+  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
 }
 
 .board-tab--ghost {
@@ -701,7 +743,6 @@ body:not(.board-empty) #boardTabs {
   cursor: default;
   max-width: none;
   opacity: 1;
-  transform: translateY(1px);
   padding-right: 12px;
 }
 
@@ -764,6 +805,59 @@ body:not(.board-empty) #boardTabs {
 }
 
 .planner-overlay.is-closing {
+  pointer-events: none;
+}
+
+/* Vue side-build placeholder keeps the shared planner identity without the legacy overlay transition. */
+.planner-overlay-vue {
+  position: relative;
+  inset: auto;
+  min-height: 320px;
+  padding: 48px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-sizing: border-box;
+  transform: none;
+  text-align: center;
+}
+
+.planner-overlay-vue .planner-content {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.planner-overlay-vue h2 {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: var(--font-xl);
+}
+
+.planner-overlay-vue p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+
+.planner-overlay.planner-overlay-vue {
+  position: fixed;
+  z-index: 45;
+  inset: 0;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--bg);
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  text-align: left;
+}
+
+.planner-overlay.planner-overlay-vue.hidden {
+  display: block;
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -1252,6 +1346,17 @@ body[data-workspace-transition="exit-right"] main#board {
   cursor: pointer;
   box-shadow: 0 1px 0 rgba(0,0,0,.02);
   transition: background .12s ease, transform .1s ease, border-color .12s ease;
+}
+
+body:not(.board-empty) #boardMenuButton,
+.app-header.has-active-board #boardMenuButton {
+  height: 36px;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 #boardMenuButton:hover {
@@ -2389,6 +2494,7 @@ body.board-empty main#board {
   cursor: grab;
   display: flex;
   flex-direction: column;
+  align-self: flex-start;
   gap: var(--card-gap);
   min-width: var(--list-min);
   max-width: var(--list-max);
@@ -2398,6 +2504,35 @@ body.board-empty main#board {
   padding: 12px;
   box-shadow: 0 6px 18px var(--shadow);
   flex: 0 0 auto; /* don’t stretch; behave like a column */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.list-sortable--chosen,
+.list-sortable--dragging,
+.list-sortable--fallback {
+  cursor: grabbing;
+}
+
+.list-sortable--chosen {
+  box-shadow: 0 10px 24px var(--shadow);
+}
+
+.list-sortable--ghost {
+  opacity: 1;
+  background: color-mix(in oklab, var(--accent) 6%, var(--bg-card));
+  border: 1px dashed color-mix(in oklab, var(--accent) 28%, var(--border));
+  box-shadow: none;
+}
+
+.list-sortable--ghost > * {
+  visibility: hidden;
+}
+
+.list-sortable--fallback {
+  opacity: 1 !important;
+  border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
+  box-shadow: 0 12px 28px color-mix(in oklab, var(--shadow) 74%, transparent);
 }
 
 /* List header row */
@@ -2414,24 +2549,74 @@ body.board-empty main#board {
   color: var(--text);
 }
 
+.list-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 1%;
+  height: 24px;
+  margin: -1px -3px;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+  outline: none;
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.list-card-count {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--bg) 72%, var(--border));
+  color: var(--muted);
+  font-family: "JetBrains Mono Local", "JetBrains Mono", monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.feather-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.feather-icon svg {
+  display: block;
+}
+
 /* List actions button shown in list headers */
 .list-actions-button {
-  background: var(--bg-card);
+  background: transparent;
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius);
   width: 34px;
   height: 34px;
+  flex: 0 0 34px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+  box-shadow: none;
+  opacity: 0;
+  transition: opacity .16s ease, background-color .16s ease, color .16s ease;
 }
 .list-actions-button svg {
   width: 16px;
   height: 16px;
+}
+.list:hover .list-actions-button,
+.list:focus-within .list-actions-button,
+.list-actions-button:focus-visible {
+  opacity: 1;
 }
 .list-actions-button:hover {
   background: color-mix(in oklab, var(--bg-card) 94%, var(--border));
@@ -2440,10 +2625,84 @@ body.board-empty main#board {
   outline: 3px solid color-mix(in oklab, var(--accent) 45%, var(--bg-card));
 }
 
+@media (hover: none), (pointer: coarse) {
+  .list-actions-button {
+    opacity: 1;
+  }
+}
+
 .cards {
   min-height: 125px;
   padding-top: 15px;
   padding-bottom: 50px;
+}
+
+/* Add List Phantom Card */
+.add-list-phantom {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-width: var(--list-min);
+  max-width: var(--list-max);
+  min-height: 120px;
+  background: transparent;
+  border: 2px dashed color-mix(in oklab, var(--border) 60%, var(--bg));
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  flex: 0 0 auto;
+  transition: background-color .16s ease, border-color .16s ease, transform .12s ease;
+}
+
+.add-list-phantom:hover {
+  background: color-mix(in oklab, var(--bg-card) 50%, var(--bg));
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+  transform: translateY(-1px);
+}
+
+.add-list-phantom:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--accent) 45%, var(--bg-card));
+  outline-offset: 2px;
+}
+
+.add-list-phantom:active {
+  transform: translateY(0);
+}
+
+.add-list-phantom-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted, var(--text));
+  opacity: 0.7;
+}
+
+.add-list-phantom:hover .add-list-phantom-content {
+  opacity: 1;
+}
+
+.add-list-phantom-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 15%, var(--bg-card));
+}
+
+.add-list-phantom-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.add-list-phantom-label {
+  font-size: var(--font-sm, 13px);
+  font-weight: 500;
+  letter-spacing: .2px;
 }
 
 /* 5) Cards */
@@ -2858,23 +3117,26 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   background: var(--bg-card);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 16px 40px rgba(16, 24, 40, .12);
-  padding: 16px;
+  border-radius: 18px;
+  box-shadow:
+    0 24px 60px color-mix(in oklab, var(--text) 18%, transparent),
+    0 2px 8px color-mix(in oklab, var(--text) 10%, transparent);
+  padding: 0;
   max-width: 520px;
 }
 .modal h2 {
-  margin: 15px 0 10px 0;
+  margin: 0;
   font-size: var(--font-lg);
+  line-height: 1.2;
 }
 .modal textarea,
 .modal input {
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--bg-card);
+  background: color-mix(in oklab, var(--bg-card) 86%, var(--bg));
   color: var(--text);
-  padding: 10px 12px;
+  padding: 11px 13px;
   font-size: var(--font-md);
   box-sizing: border-box;
 }
@@ -2886,10 +3148,72 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 #modalAddCard,
 #modalAddList,
 #modalAddCardToList {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: min(360px, calc(100vw - 28px));
+  width: min(390px, calc(100vw - 28px));
+}
+
+#modalAddList form.modal-content,
+#modalAddCard form.modal-content,
+#modalAddCardToList form.modal-content {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+}
+
+#modalAddList form.modal-content label,
+#modalAddCard form.modal-content label,
+#modalAddCardToList form.modal-content label {
+  color: var(--muted);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+#modalAddList form.modal-content input,
+#modalAddCard form.modal-content input,
+#modalAddCardToList form.modal-content input {
+  min-height: 46px;
+  margin-top: -2px;
+  border-radius: 12px;
+}
+
+#modalAddList .modal-actions,
+#modalAddCard .modal-actions,
+#modalAddCardToList .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+#modalAddList .modal-actions button,
+#modalAddCard .modal-actions button,
+#modalAddCardToList .modal-actions button {
+  min-height: 38px;
+  margin-top: 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+#modalAddList .modal-actions button[type="submit"],
+#modalAddCard .modal-actions button[type="submit"],
+#modalAddCardToList .modal-actions button[type="submit"] {
+  background: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 72%, var(--border));
+  color: var(--accent-contrast);
+}
+
+#modalAddList .modal-actions button[type="button"],
+#modalAddCard .modal-actions button[type="button"],
+#modalAddCardToList .modal-actions button[type="button"] {
+  background: color-mix(in oklab, var(--bg-card) 76%, var(--bg));
+  color: var(--muted);
 }
 
 #modalAddCard.hidden,
@@ -3548,10 +3872,10 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   max-width: 1120px;
   height: min(84vh, calc(100vh - 28px));
   max-height: calc(100vh - 28px);
-  padding: 18px;
+  padding: 24px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 16px;
+  gap: 18px;
   overflow: hidden;
 }
 
@@ -3561,7 +3885,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
+  padding-bottom: 16px;
 }
 
 .archive-browser-header h2 {
@@ -3619,7 +3943,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) minmax(220px, 280px) auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .archive-browser-toolbar input,
@@ -3652,15 +3976,15 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   align-self: stretch;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 18px;
-  background: color-mix(in oklab, var(--bg-card) 96%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--bg-card) 78%, var(--bg));
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
 }
 
 .archive-browser-results {
-  padding: 14px 14px 64px;
+  padding: 12px 12px 48px;
   display: grid;
   align-content: start;
   gap: 10px;
@@ -3668,7 +3992,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .archive-browser-detail {
-  padding: 20px 20px 64px;
+  padding: 18px 18px 48px;
   display: grid;
   align-content: start;
   gap: 14px;
@@ -3677,9 +4001,9 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 
 .archive-browser-row {
   width: 100%;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid color-mix(in oklab, var(--border) 88%, var(--text));
-  background: color-mix(in oklab, var(--bg-card) 94%, var(--bg));
+  background: color-mix(in oklab, var(--bg-card) 92%, var(--bg));
   color: var(--text);
   box-shadow: none;
   display: grid;
@@ -3794,7 +4118,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   display: grid;
   place-items: center;
   text-align: center;
-  color: var(--muted);
+  color: color-mix(in oklab, var(--muted) 88%, var(--text));
   font-size: var(--font-sm);
   padding: 18px;
 }
@@ -3958,15 +4282,25 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   background: var(--bg-card);
   width: min(920px, calc(100vw - 28px));
   max-width: 920px;
-  height: min(82vh, calc(100vh - 28px));
+  height: min(90vh, calc(100vh - 28px));
   max-height: calc(100vh - 28px);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px rgba(16, 24, 40, .12);
-  flex-direction: column;
   overflow: hidden;
   padding: 16px 16px 12px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+#modalEditCard .modal-scale-wrap,
+#modalEditCard .modal-content,
+#modalEditCard .card-editor-modal-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 #modalEditCard.card-editor-drop-active {
@@ -4008,7 +4342,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   max-height: calc(100vh - 26px);
   overflow-y: auto;
   z-index: 50;
-  padding: 16px 16px 26px;
+  padding: 24px 24px 30px;
 }
 
 .boardSettingsHeader {
@@ -4017,11 +4351,13 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
+  padding-bottom: 16px;
 }
 
 .boardSettingsHeader h2 {
   margin: 0;
+  font-size: 24px;
+  line-height: 1.15;
 }
 
 .boardSettingsHeader a,
@@ -4030,8 +4366,11 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .boardSettingsHeader button {
-  padding: 4px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
+  border-radius: 10px;
   background: transparent;
   box-shadow: none;
   line-height: 1;
@@ -4043,16 +4382,16 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .board-settings-layout {
-  margin-top: 14px;
+  margin-top: 22px;
   display: grid;
-  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  gap: 30px;
   align-items: start;
 }
 
 .board-settings-nav {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   position: sticky;
   top: 0;
 }
@@ -4064,7 +4403,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .board-settings-nav-label {
-  margin: 0 8px 2px;
+  margin: 0 10px 5px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
@@ -4076,14 +4415,15 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 .board-settings-nav-button {
   width: 100%;
   text-align: left;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
   box-shadow: none;
   font-size: var(--font-md);
   font-weight: 620;
-  padding: 9px 11px;
+  padding: 11px 13px;
+  transition: background .14s ease, border-color .14s ease, color .14s ease;
 }
 
 .board-settings-nav-button:hover {
@@ -4092,9 +4432,9 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .board-settings-nav-button.is-active {
-  color: var(--text);
-  border-color: color-mix(in oklab, var(--border) 84%, var(--text));
-  background: color-mix(in oklab, var(--bg-card) 88%, var(--border));
+  color: color-mix(in oklab, var(--accent) 82%, var(--text));
+  border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
+  background: color-mix(in oklab, var(--accent) 13%, var(--bg-card));
 }
 
 .board-settings-panels {
@@ -4106,13 +4446,16 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .boardSettingsSection h3 {
-  margin: 0 0 2px 0;
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  line-height: 1.2;
 }
 
 .boardSettingsHint {
   margin: 0 0 12px 0;
   color: var(--muted);
   font-size: var(--font-sm);
+  line-height: 1.5;
 }
 
 .boardSettingsHintTight {
@@ -4128,7 +4471,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 .board-settings-group {
-  margin-top: 12px;
+  margin-top: 18px;
 }
 
 .boardSettingsSection > .board-settings-group + .board-settings-group {
@@ -4474,9 +4817,9 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 
 .board-settings-toggle-row {
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: color-mix(in oklab, var(--bg-card) 95%, var(--border));
-  padding: 10px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--bg-card) 82%, var(--bg));
+  padding: 14px 16px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -4798,6 +5141,17 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   transition: background .12s ease, color .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
 
+body:not(.board-empty) #labelFilterButton,
+.app-header.has-active-board #labelFilterButton {
+  height: 36px;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 #labelFilterButton:hover {
   background: color-mix(in oklab, var(--bg-card) 94%, var(--border));
 }
@@ -4806,7 +5160,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   background: color-mix(in oklab, var(--accent) 14%, var(--bg-card));
   border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
   color: color-mix(in oklab, var(--accent) 58%, var(--text));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent);
+  box-shadow: none;
 }
 
 #labelFilterButton.is-active:hover {
@@ -5196,17 +5550,69 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   align-items: center;
   gap: 6px;
   min-width: 0;
-  margin-top: -10px;
 }
 #modalEditCard .cardEditorHeaderActions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
   flex-shrink: 0;
 }
+#modalEditCard .cardEditorHeaderActions > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+#modalEditCard .cardEditorHeaderActions > a,
+#modalEditCard .cardEditorHeaderActions > button,
+#modalEditCard .cardEditorHeaderActions > .card-editor-linked-objects,
+#modalEditCard .cardEditorHeaderActions > .card-editor-open-with-wrap {
+  width: 30px;
+  height: 30px;
+}
 #modalEditCard .cardEditorHeaderActions a,
-#modalEditCard .cardEditorHeaderActions button { color: var(--muted); }
-#modalEditCard .cardEditorHeaderActions a + a,
-#modalEditCard .cardEditorHeaderActions button + button { margin-left: 20px; }
+#modalEditCard .cardEditorHeaderActions button,
+#modalEditCard .cardEditorListControl > a,
+#modalEditCard .cardEditorListControl > button { color: var(--muted); }
+#modalEditCard .cardEditorHeaderActions > a button,
+#modalEditCard .cardEditorHeaderActions > button,
+#modalEditCard .cardEditorHeaderActions > .card-editor-linked-objects button,
+#modalEditCard .cardEditorHeaderActions > .card-editor-open-with-wrap button,
+#modalEditCard .cardEditorListControl > a,
+#modalEditCard .cardEditorListControl > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1;
+}
+#modalEditCard .cardEditorHeaderActions a:hover,
+#modalEditCard .cardEditorHeaderActions button:hover,
+#modalEditCard .cardEditorListControl > a:hover,
+#modalEditCard .cardEditorListControl > button:hover {
+  background: color-mix(in oklab, var(--bg-card) 86%, var(--border));
+  color: var(--text);
+}
+#modalEditCard .cardEditorHeaderActions a:active,
+#modalEditCard .cardEditorHeaderActions button:active,
+#modalEditCard .cardEditorListControl > a:active,
+#modalEditCard .cardEditorListControl > button:active {
+  transform: none;
+}
+#modalEditCard .cardEditorHeaderActions .card-editor-smart-actions-wrap {
+  display: contents;
+}
+#modalEditCard .cardEditorHeaderActions .card-editor-smart-actions-button {
+  width: 44px;
+  height: 44px;
+}
 .card-editor-open-with-popover,
 .card-editor-linked-objects-popover,
 .card-editor-ai-tasks-popover,
@@ -5517,6 +5923,8 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  min-height: 30px;
+  padding-top: 2px;
   padding-left: var(--card-editor-body-inset);
 }
 #modalEditCard .cardEditorMetadataButtons a,
@@ -5870,7 +6278,7 @@ select:disabled {
   flex: 1 1 auto;
   width: 100%;
   min-height: 0;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 #cardEditorOverType .overtype-container {
@@ -6029,7 +6437,7 @@ select:disabled {
 
 .overtype-wrapper .overtype-preview pre {
   border-radius: none !important;
-  padding: 8px important!;
+  padding: 8px !important;
 }
 
 #cardEditorOverType .overtype-container:not(.preview-mode) .overtype-wrapper .overtype-preview strong,
@@ -6136,7 +6544,7 @@ select:disabled {
     padding: 12px 12px calc(var(--workspace-view-dock-height) + var(--workspace-view-dock-bottom) + 20px);
   }
   body:not(.board-empty) > header {
-    padding-left: var(--spacing);
+    padding: 0;
   }
   body:not(.board-empty) .headerTopRow {
     align-items: center;

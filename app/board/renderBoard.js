@@ -78,6 +78,46 @@ async function handleEmptyBoardCallToActionClick(buttonEl) {
   }
 }
 
+function createAddListPhantomCard() {
+  const phantom = document.createElement('section');
+  phantom.className = 'list add-list-phantom';
+  phantom.setAttribute('role', 'button');
+  phantom.setAttribute('aria-label', 'Add new list');
+  phantom.tabIndex = 0;
+
+  const content = document.createElement('div');
+  content.className = 'add-list-phantom-content';
+
+  const icon = document.createElement('span');
+  icon.className = 'add-list-phantom-icon';
+  icon.innerHTML = '<i data-feather="plus"></i>';
+
+  const label = document.createElement('span');
+  label.className = 'add-list-phantom-label';
+  label.textContent = 'Add list';
+
+  content.appendChild(icon);
+  content.appendChild(label);
+  phantom.appendChild(content);
+
+  phantom.addEventListener('click', () => {
+    if (typeof openAddListModal === 'function') {
+      openAddListModal();
+    }
+  });
+
+  phantom.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (typeof openAddListModal === 'function') {
+        openAddListModal();
+      }
+    }
+  });
+
+  return phantom;
+}
+
 function createEmptyBoardCallToAction() {
   const buttonEl = document.createElement('button');
   buttonEl.type = 'button';
@@ -432,6 +472,13 @@ async function renderBoard() {
     syncBoardViewLayout(boardEl, activeBoardView);
     destroyBoardSortables();
     boardEl.replaceChildren(...Array.from(stagingEl.childNodes));
+
+    // Add phantom "Add List" card at the end for kanban view
+    if (activeBoardView === 'kanban') {
+      const addListPhantom = createAddListPhantomCard();
+      boardEl.appendChild(addListPhantom);
+    }
+
     if (typeof playPendingWorkspaceBoardTransition === 'function') {
       playPendingWorkspaceBoardTransition();
     }
