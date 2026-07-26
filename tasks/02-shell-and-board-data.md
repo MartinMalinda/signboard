@@ -14,7 +14,7 @@ Signboard.
 
 ## In scope
 
-- **Pure libs** — copy framework-free modules into `app-vue/lib/` as ES
+- **Pure libs** — copy framework-free modules into `signboard-vue/lib/` as ES
   modules: `taskList.js`, `linkedObjects.js`, `cardTimestamps.js`,
   `santizeFileName.js`, `dueDateStatus.js`, `timestampListItem.js`,
   `shared/appSettingsSchema.js`. Add `THIS CAN BE REMOVED WHEN` notes at the
@@ -65,7 +65,7 @@ Signboard.
 
 1. Copy pure libs; convert to ESM exports; unit-test `taskList` parsing via
    the existing Node suite approach (or import the copy from the legacy test —
-   pick one, document in `app-vue/lib/README`).
+   pick one, document in `signboard-vue/lib/README`).
 2. Build stores with explicit actions; session restore on app boot.
 3. Build shell + Kanban components top-down; render from store getters.
 4. Wire board open + missing-board flows; verify starter-content seeding
@@ -92,3 +92,14 @@ Signboard.
   `boardName` first (legacy prefers it).
 - Keep the header controls visibly inert (disabled), not half-wired —
   half-wired is how side-builds rot.
+
+## Completion notes
+
+- Implemented the temporary ESM pure-module copies in `signboard-vue/lib/` and
+  added direct Vue unit coverage for task parsing.
+- Added Pinia board/session, board snapshot, and theme stores with explicit
+  actions and race-safe snapshot loading.
+- Added the shell, tab keyboard behavior, picker/open/seed flow, missing-board
+  locate/remove flow, and read-only Kanban metadata surface.
+- Legacy and Vue E2E execution remains environment-dependent; the legacy
+  renderer is unchanged by this slice.

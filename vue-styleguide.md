@@ -11,15 +11,19 @@ maintainability over framework idioms or abstraction-heavy design.
 ## 1. Component structure
 
 ```vue
-<script setup>
+<script setup lang="ts">
 <template>
 <style scoped>
 ```
 
-- `<script setup>` first, then template, then style. Plain JS (no `lang="ts"`)
-  until a TypeScript decision is made separately.
-- `<style scoped>` uses plain CSS. Do not introduce SCSS or any new styling
-  system.
+- `<script setup lang="ts">` first, then template, then style. TypeScript is
+  the default — the `signboard-vue/` scaffold (create-vue + vue-tsc) settled
+  the earlier "TS after cutover" question.
+- `<style scoped>` is preferred for new feature styles. Shared primitives in
+  `signboard-vue/src/lib/components/` may use SCSS because Vite now compiles
+  them with the compatibility tokens in `src/styles/_tokens.scss`; runtime
+  theme values must still use the CSS custom properties from
+  `static/styles.css`.
 
 ## 2. Data flow (the core rules)
 
@@ -50,8 +54,19 @@ maintainability over framework idioms or abstraction-heavy design.
   list, board settings) downstream whole instead of building narrow
   intermediate view-models that add little value.
 
-## 4. JavaScript rules (TS-era rules adapted)
+## 4. TypeScript rules
 
+- Trust the types. Limit `: any`, `as any`, `as unknown` — make strict typing
+  work first; reach for them only after exhausting reasonable options. Lack
+  of upstream context does not justify loosening types.
+- Do not define return types on functions; let them be inferred.
+- When types are structurally related, derive them with `Omit`, `Pick`,
+  `ReturnType` etc. instead of duplicating the shape.
+- Do not weaken types to make unit tests easier; improve the mocks instead.
+- Type-check scoped: `npm run type-check` in `signboard-vue/` (vue-tsc), not
+  repo-wide.
+- Lint/format via the scaffold scripts only: `npm run lint` (oxlint + eslint)
+  and `npm run format` (oxfmt) in `signboard-vue/`. No prettier via npx.
 - Trust the code to be wired correctly. **Do not replicate the legacy
   `typeof fn === 'function'` guard pattern.** Explicit ES imports fail loudly
   at build time; that is the desired behavior.
@@ -98,7 +113,7 @@ These survive the framework change and every component must respect them:
   stay in sync.
 - Modal focus trapping/restoration, background inert state, live status
   announcements, `data-sb-modal-layer` popovers, reduced-motion and
-  forced-colors behavior keep working — now via `AppModal`/`AppPopover`.
+  forced-colors behavior keep working — now via `Modal`/`AppPopover`.
 - After `<select>` popups on macOS, defer DOM/layout mutations with
   `waitForNativeMenuTrackingToSettle()`.
 - Drag/drop keeps the empty-drop-slot ghost styling and main-process
@@ -107,15 +122,25 @@ These survive the framework change and every component must respect them:
 - Board rendering keeps the batched `readBoardSnapshot` IPC path; do not
   reintroduce per-card IPC reads.
 - The Playwright DOM contract (IDs, classes, roles, `data-*`) is preserved
-  per migration phase; intentional markup changes update tests in the same PR.
+  surface-by-surface so the **same suite runs against both renderers**;
+  intentional markup changes update tests in the same PR.
 
-## 8. Migration-period compatibility
+## 8. Parallel-period compatibility (side-build)
 
-- When keeping a fallback or compatibility path that should eventually be
-  removed (legacy `window.__*` shims, old bundle loading), add a short comment
-  beginning with `THIS CAN BE REMOVED WHEN` plus the removal condition.
-- Legacy and Vue code must not both own the same DOM subtree. One island,
-  one owner.
+- The Vue renderer (`signboard-vue/`) is standalone. **Never import from legacy
+  `app/**`** — share logic only by copying framework-free modules into
+  `signboard-vue/lib/` as ESM. Each copy gets a header comment beginning with
+  `THIS CAN BE REMOVED WHEN` ("...cutover makes this the canonical copy;
+  until then keep in sync with `app/<original>`").
+- During the parallel period, bug fixes in duplicated pure modules must land
+  in **both** copies (legacy `app/**` and `signboard-vue/lib/`).
+- Legacy code stays untouched: no bridge hooks into the legacy renderer, no
+  legacy edits beyond the single `main.js` renderer-selection branch
+  (Task 01). The two renderers never share a DOM.
+- New legacy features shipped during the parallel period must be recorded in
+  `tasks/PARITY.md` in the same PR, so the Vue app can track them.
+- At cutover, `signboard-vue/lib/*` copies become canonical and the legacy
+  duplicates are deleted with `app/**`.
 
 ## 9. Testing, failure, performance
 
@@ -134,15 +159,16 @@ These survive the framework change and every component must respect them:
 
 | Dropped | Why |
 |---|---|
-| TypeScript rules (strict subsets, `any` limits, inferred returns) | Signboard renderer is JS; TS decision deferred until after the 1:1 migration |
-| SCSS nesting / `variables.scss` | No SCSS pipeline; Signboard tokens are CSS custom properties |
+| Global Sass variable systems | Runtime theme tokens belong to CSS custom properties; the limited Sass compatibility layer is only for shared primitive compilation |
 | `shared-components/` package rules | Single app; a modest `components/ui/` folder suffices |
 | Supabase/Doppler/Redis/migrations/commands sections | No database or hosted stack in this project |
 | `PermanentError` / retry classification | No task-runner boundary here |
 | `fetch` vs `node-fetch` | Renderer talks to main over preload IPC |
 | Multi-tenant Airtable product boundaries | Not this product |
 | `date-fns` mandate | No dependency decision yet; revisit if date math grows beyond `boardViews` helpers |
-| Lint commands (oxc) | No linter configured; adopting one is a separate decision |
+
+(TypeScript and oxc lint tooling were **adopted** after all: the
+`signboard-vue/` scaffold is TS with oxlint + eslint + oxfmt — see §1 and §4.)
 
 ## 11. Communication
 

@@ -52,6 +52,11 @@ For standard releases, Signboard intentionally promotes a smaller public downloa
 - Windows: single installer
 - Linux: separate `x64` and `ARM64` packages
 
+The Vue renderer is the default in normal desktop launches. For rollback or
+diagnostics, launch with `SIGNBOARD_RENDERER=legacy npm start`; the legacy
+renderer is retained as a compatibility boundary. Packaged builds include the
+Vue `dist` output, shared styles, and vendored renderer libraries.
+
 ## Documentation
 
 - [Documentation hub](./docs/README.md)

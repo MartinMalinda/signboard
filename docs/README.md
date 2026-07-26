@@ -16,6 +16,13 @@ If you want to automate Signboard, script it, or drive it from an agent without 
 
 If you want structured tool access from an agent, see [MCP Server](../MCP_README.md).
 
+## Renderer and rollback
+
+The packaged Vue renderer is the normal desktop entry point. `SIGNBOARD_RENDERER=vue`
+is accepted for explicit renderer selection; `SIGNBOARD_RENDERER=legacy npm start`
+loads the deprecated legacy renderer for rollback/testing. Both paths use the
+same preload/main-process APIs.
+
 ## What These Docs Cover
 
 - Creating and organizing boards, lists, and cards

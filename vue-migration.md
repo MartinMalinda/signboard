@@ -1,14 +1,22 @@
 # Vue.js Migration Plan
 
-Status: **proposal** — no decision made yet. This document captures the current-state
-assessment, the proposed component architecture, and a phased migration path for moving
-the Signboard renderer from vanilla JS DOM manipulation to Vue 3.
+Status: **complete** — the Vue side-build has reached parity and is now the
+default renderer. The legacy renderer remains available only through the
+explicit `SIGNBOARD_RENDERER=legacy` rollback/testing boundary.
 
-> Scope: this migration touches **only the renderer** (`index.html`, `app/**`,
-> `static/**`). The main process (`main.js`, `lib/**`, `preload.js`, CLI, MCP,
-> Obsidian integration) is unaffected.
+> Scope: the migration promotes `signboard-vue/` to the normal renderer while
+> retaining the legacy renderer source and bundle as a compatibility boundary.
+> Both renderers continue to use the same main/preload bridge and packaged
+> builds include both entry points.
 >
-> Coding rules for the migration live in [vue-styleguide.md](./vue-styleguide.md).
+> Coding rules: [vue-styleguide.md](./vue-styleguide.md).
+> Executable task plans: [tasks/](./tasks/) ·
+> [01 scaffold](./tasks/01-vue-scaffold.md) ·
+> [02 shell + board data](./tasks/02-shell-and-board-data.md) ·
+> [03 card editor core](./tasks/03-card-editor-core.md) ·
+> [04 Kanban interactions](./tasks/04-kanban-interactions.md) ·
+> [05 search/labels/filters](./tasks/05-search-labels-filters.md) ·
+> [delegation guide](./tasks/DELEGATION.md)
 
 ## 1. Current State Assessment
 
@@ -18,300 +26,306 @@ the Signboard renderer from vanilla JS DOM manipulation to Vue 3.
 |---|---|---|
 | Renderer source (`app/**`) | ~26,500 lines, 36 modules | Concatenated into `app/signboard.js` |
 | Static shell (`index.html`) | 752 lines | Modals, popovers, dock, Planner overlay markup |
-| Styles (`static/styles.css`) | 6,402 lines | Unaffected by migration |
+| Styles (`static/styles.css`) | 6,402 lines | Reused as-is by the Vue renderer |
 | DOM-building call sites | ~700 | `createElement` / `innerHTML` / `appendChild` / `replaceChildren` |
-| Direct DOM lookups | 403 | `getElementById` / `querySelector` against the static shell |
-| Playwright suite | 3,660 lines | Coupled to DOM IDs/classes — the migration safety net |
-| Node unit suites | several | Load renderer sources via `vm.runInContext` + mock DOM |
+| Direct DOM lookups | 403 | `getElementById` / `querySelector` |
+| Playwright suite | 3,660 lines | Becomes the **parity oracle** (runs against both renderers) |
+| Node unit suites | several | Load legacy renderer sources via `vm.runInContext` + mock DOM |
 
-### Biggest modules (migration hotspots)
+### Biggest modules (porting hotspots)
 
-1. `app/modals/toggleEditCardModal.js` — 5.4k lines, 271 DOM calls (the card editor)
-2. `app/board/boardLabels.js` — 4.1k lines (labels, filters, settings panels, imports UI)
+1. `app/modals/toggleEditCardModal.js` — 5.4k lines, 271 DOM calls
+2. `app/board/boardLabels.js` — 4.1k lines
 3. `app/board/plannerView.js` — 2.1k lines
 4. `app/board/boardViews.js` — 1.7k lines
 5. `app/board/tableView.js` — 1.5k lines
 6. `app/board/archiveBrowser.js` — 1.5k lines
 
-### Architectural patterns that shape the migration
+### Legacy architecture (what we're replacing)
 
-- **No module system.** `buildjs.sh` concatenates files in strict order; everything is
-  a global. Cross-module calls use **487 defensive `typeof fn === 'function'` guards**,
-  which hide the real dependency graph (including near-cycles, e.g. `renderBoard` ↔
-  popovers/tabs).
-- **State lives in ~12 `window.__*` singletons** (`__boardRenderState`,
-  `__plannerViewState`, `__boardLabelState`, `__boardSearchState`, `__boardViewState`,
-  `__boardTableState`, `__archiveBrowserState`, `__signboardAppSettingsState`,
-  `__sbAccessibilityState`, `__sbTooltipState`, `__listActionsPopoverState`, …) plus
-  `window.boardRoot` and `localStorage`.
-- **Full-DOM rebuild rendering.** Every change re-renders via `replaceChildren`, with
-  manual Sortable destroy/recreate, global `feather.replace()` icon scans (15 call
-  sites), and a render-request-ID race guard (`isCurrentBoardRenderRequest`).
-- **Imperative third-party libs:** SortableJS (7 init sites), OverType (markdown
-  editor), FDatepicker, Feather icons, Marked, Turndown — all vendored in
-  `static/vendor/`.
-- **Hand-rolled accessibility:** focus traps, background inert state, live status
-  region (`app/utilities/accessibility.js`), MutationObserver-based tooltips
-  (`app/ui/tooltips.js`).
+- No module system — `buildjs.sh` concatenates; everything is a global;
+  487 defensive `typeof fn === 'function'` guards hide the dependency graph.
+- State in ~12 `window.__*` singletons + `window.boardRoot` + `localStorage`.
+- Full-DOM rebuild per change with manual Sortable teardown, global
+  `feather.replace()` scans, and render-request-ID race guards.
+- Imperative vendored libs: SortableJS, OverType, FDatepicker, Feather,
+  Marked, Turndown.
 
-## 2. Compatibility Findings (Good News)
+## 2. Compatibility Findings
 
-- **CSP is compatible.** `index.html` sets `script-src 'self'` (no `unsafe-eval`),
-  which rules out Vue's runtime template compiler. Precompiled SFCs (Vue runtime-only
-  build via Vite) work fine — **no CSP relaxation needed**.
-- **Electron sandbox is compatible.** `contextIsolation: true`, `sandbox: true`,
-  `nodeIntegration: false` are unaffected. The `window.board` / `window.chooser` /
-  `window.electronAPI` preload bridge stays exactly as-is.
-- **Data layer is already separated.** All filesystem work is behind IPC; the renderer
-  already renders from plain snapshot data (`readBoardSnapshot`) — exactly the
-  prop/state shape Vue wants.
-- **Full-rebuild rendering** means few incremental-DOM subtleties to preserve; moving
-  from "rebuild everything from data" to "react to data changes" is conceptually
-  clean.
-- **Imperative libs coexist with Vue.** SortableJS, OverType, FDatepicker each get
-  wrapped once (component or composable) and keep working. Marked/Turndown are pure
-  functions, unaffected.
+- **CSP is compatible** with precompiled SFCs (runtime-only Vue build);
+  `script-src 'self'` stays, no `unsafe-eval`.
+- **Electron sandbox is compatible.** The preload bridge
+  (`window.board` / `window.chooser` / `window.electronAPI`) is exposed to
+  whatever HTML the window loads — this is what makes the side-build possible
+  with zero main-process API changes.
+- **The renderer already renders from plain snapshot data**
+  (`readBoardSnapshot`) — exactly the prop/state shape Vue wants.
+- **Vendored libs can be reused verbatim** via script tags in the Vue entry
+  (same builds, same globals) — no repackaging risk.
+- **Shared `localStorage`** across both renderers (`file://` origin): session
+  state compatibility is free if the Vue app honors the exact legacy key
+  semantics.
 
-## 3. Hard Parts / Risks
+## 3. Strategy: Parallel Side-Build
 
-1. **`toggleEditCardModal.js` is a monolith** — editor, dates popover, labels picker,
-   linked objects, Smart Actions AI previews, file drag/drop, task-line date controls
-   positioned from *measured textarea coordinates*. Estimated 30–40% of total effort.
-2. **Untangling the implicit call graph.** Concatenation order currently resolves
-   dependencies; ES modules will surface circular imports that must be broken via
-   stores or events.
-3. **The `vm`-based Node test harness** (`test-board-views`, `test-board-card-metadata`)
-   evaluates raw source against mock globals. Vue SFCs can't be consumed that way —
-   those suites must be re-targeted at extracted pure composables or the built bundle.
-4. **A11y machinery must be re-hooked** into Vue lifecycles
-   (`onMounted`/`onBeforeUnmount`/watchers) instead of post-render calls. Behavior
-   (focus restoration, inert backgrounds, live announcements) must stay identical.
-5. **Full-rebuild assumptions** — popover closing, Sortable teardown, request-ID
-   guards — each needs a keep/delete/replace-with-reactivity decision.
-6. **DOM contract preservation.** The Playwright suite asserts on IDs/classes/roles.
-   Components must reproduce the same selectors (e.g. `#board`, `.list`, `.card`,
-   `#modalEditCard`, `data-path`) or tests must be updated in lockstep.
+Build a complete, standalone Vue renderer in `signboard-vue/` until it reaches
+feature parity, then cut over. **No islands injected into the legacy app, no
+bridge hooks, no double ownership of DOM.** Chosen over strangler-fig because
+islands would need re-integration work later and would entangle the two
+architectures for the whole migration.
 
-## 4. Proposed Component Architecture
+### How it worked during the parallel period
 
-Vue 3 + SFCs + Pinia, built with Vite. Component tree below; the right column shows the
-current module(s) each component replaces.
+- `signboard-vue/` is a self-contained Vite + Vue 3 + Pinia app with its own
+  `index.html`, composing the **real** application from day one — no
+  throwaway integration code.
+- `main.js` selected the Vue entry only for `SIGNBOARD_RENDERER=vue` while the
+  default remained legacy.
+- Both renderers talk to main **only** through the existing preload bridge.
+- The legacy app keeps evolving normally (bug fixes land there); the Vue app
+  tracks parity via the checklist in §9. New legacy features during the
+  parallel period must be noted in `tasks/PARITY.md` as they ship.
+- The 3,660-line Playwright suite runs against **either** renderer
+  (`test:playwright` legacy, `test:playwright:vue` Vue) — it is the
+  objective parity oracle.
 
-### 4.1 App shell
+### Cutover (completed in Task 13)
+
+1. Vue is the default for normal launches; `SIGNBOARD_RENDERER=vue` remains an
+   accepted explicit value.
+2. `SIGNBOARD_RENDERER=legacy` selects the old `index.html` renderer for
+   rollback and diagnostics.
+3. Packaging includes `signboard-vue/dist/**`, shared `static/**` assets and
+   vendored libraries, plus the legacy files required by rollback. The
+   `test:vue-packaging` check verifies this contract.
+4. Meaningful pure behavior from the former VM suites is covered by the
+   `signboard-vue/lib` and Vue unit suites. The VM suites remain as legacy
+   compatibility regressions while the rollback boundary is supported; they
+   are not silently removed.
+5. Agent and release-facing documentation describes the default and rollback
+   paths. See `tasks/13-cutover.md` for the final verification record.
+
+### Trade-offs accepted
+
+- No incremental user-facing value until cutover (all-or-nothing ship).
+- Feature drift risk during the parallel period — mitigated by the parity
+  checklist + dual-renderer Playwright runs.
+- Pure-logic modules are duplicated during the parallel period
+  (`signboard-vue/lib/*` copies); fixes must land in both until cutover.
+
+## 4. Hard Parts / Risks
+
+1. **`toggleEditCardModal.js` port** — editor, OverType integration, debounced
+   serialized saves, clean-state/external-edit reconciliation, measured
+   textarea-coordinate task controls. ~30–40% of total effort (Task 03 +
+   a later "editor extras" task for linked objects/Smart Actions).
+2. **Hidden behavior in the implicit call graph** — the 487 `typeof` guards
+   and concatenation order hide ordering dependencies; porting requires
+   reading legacy flows carefully. The Vue app replaces this with explicit
+   imports/stores — a strict improvement, but discovery takes time.
+3. **A11y parity** — focus traps, inert backgrounds, live regions, keyboard
+   navigation models must be re-created faithfully (`Modal`/`AppPopover`),
+   not approximated.
+4. **`vm`-based Node suites** die with the legacy bundle at cutover — their
+   encoded expectations must be mined into new unit/component tests first.
+5. **DOM contract discipline** — the Playwright oracle only works if the Vue
+   renderer preserves legacy IDs/classes/roles per surface; intentional
+   markup changes must update specs in the same PR.
+6. **Feature drift during parallel period** — see §3; the checklist is the
+   control.
+
+## 5. Proposed Component Architecture
+
+Vue 3 + SFCs + Pinia, built with Vite. Components compose the standalone app
+in `signboard-vue/src/`; the right column shows the legacy module each replaces.
+
+### 5.1 App shell
 
 | Component | Replaces / source |
 |---|---|
-| `App.vue` | Root; mounts header, board, dock, overlays, modal layer |
+| `App.vue` | Root; header, board, dock, overlays, modal layer |
 | `AppHeader.vue` | `<header>` in `index.html`; parts of `app/init.js` |
 | `BoardName.vue` | `#boardName` updates in `renderBoard.js` |
 | `BoardSearchInput.vue` | `app/board/boardSearch.js` |
-| `BoardMenu.vue` | `#boardMenuPopover` markup + wiring in `app/init.js`, `app/ui/theme.js` |
+| `BoardMenu.vue` | `#boardMenuPopover` + wiring in `app/init.js`, `app/ui/theme.js` |
 | `BoardTabs.vue` + `BoardTab.vue` | `app/board/boardTabs.js` (incl. `N more` overflow) |
-| `WorkspaceViewDock.vue` | `#workspaceViewDock` + dock state in `app/board/boardViews.js` |
+| `WorkspaceViewDock.vue` | `#workspaceViewDock` + dock state in `boardViews.js` |
 | `SponsorPill.vue` | `#sponsorSignboardPill` markup + wiring |
 | `QuickAddButton.vue` | `#quickAddHeaderButton` |
 
-### 4.2 Board views
+### 5.2 Board views
 
 | Component | Replaces / source |
 |---|---|
-| `BoardView.vue` | `app/board/renderBoard.js` (view dispatch, missing-board handling) |
-| `KanbanBoard.vue` | Kanban branch of `renderBoard.js`, list-level Sortable |
-| `ListColumn.vue` | `app/lists/createListElement.js` |
-| `ListColumnHeader.vue` | List title/rename/count parts of `createListElement.js` |
-| `CardItem.vue` | `app/cards/createCardElement.js` (shared by Kanban/Table rows/Planner) |
-| `CardBadges.vue` | Task progress + linked-object badges (`app/utilities/taskList.js`, `app/utilities/linkedObjects.js`) |
+| `BoardView.vue` | `app/board/renderBoard.js` (dispatch, missing-board) |
+| `KanbanBoard.vue` | Kanban branch of `renderBoard.js` |
+| `ListColumn.vue` / `ListColumnHeader.vue` | `app/lists/createListElement.js` |
+| `CardItem.vue` | `app/cards/createCardElement.js` (shared Kanban/Table/Planner) |
+| `CardBadges.vue` | `app/utilities/taskList.js` + `linkedObjects.js` badges |
 | `CardDatesControl.vue` | Compact start/due control in `createCardElement.js` |
-| `LabelChips.vue` | Label chip rendering in `createCardElement.js` |
-| `AddListPhantom.vue` | `createAddListPhantomCard` in `renderBoard.js` |
-| `EmptyBoardCta.vue` | `createEmptyBoardCallToAction` in `renderBoard.js` |
-| `MissingBoardAlert.vue` | `renderMissingBoardAlert` in `renderBoard.js` |
-| `TableView.vue` | `app/board/tableView.js` |
-| `TableRow.vue` | Row rendering in `tableView.js` |
-| `TableBulkActions.vue` | Bulk selection/action bar in `tableView.js` |
-| `TableSortControls.vue` | Sort/list-filter controls in `tableView.js` |
+| `LabelChips.vue` | Label chip rendering |
+| `AddListPhantom.vue` / `EmptyBoardCta.vue` / `MissingBoardAlert.vue` | `renderBoard.js` |
+| `TableView.vue` / `TableRow.vue` / `TableBulkActions.vue` / `TableSortControls.vue` | `app/board/tableView.js` |
 
-### 4.3 Planner
+### 5.3 Planner
 
 | Component | Replaces / source |
 |---|---|
-| `PlannerOverlay.vue` | `#plannerOverlay` + `app/board/plannerView.js` |
-| `PlannerHeader.vue` | View tabs, scope toggle, search, filter button |
-| `PlannerCalendar.vue` | Calendar view in `plannerView.js` + `boardViews.js` helpers |
-| `PlannerWeek.vue` | This Week view |
-| `PlannerDay.vue` | Day view |
-| `PlannerAgenda.vue` | Agenda view |
+| `PlannerOverlay.vue` / `PlannerHeader.vue` | `#plannerOverlay` + `app/board/plannerView.js` |
+| `PlannerCalendar.vue` / `PlannerWeek.vue` / `PlannerDay.vue` / `PlannerAgenda.vue` | `plannerView.js` + `boardViews.js` helpers |
 | `PlannerFilterPopover.vue` | `#plannerFilterPopover` |
-| `TemporalCard.vue` | Temporal card rendering in `boardViews.js` (source pills, badges) |
+| `TemporalCard.vue` | Temporal cards in `boardViews.js` |
 
-### 4.4 Card editor (decomposition of `toggleEditCardModal.js`)
+### 5.4 Card editor (decomposition of `toggleEditCardModal.js`)
 
-| Component | Responsibility |
-|---|---|
-| `EditCardModal.vue` | Shell, open/close lifecycle, save orchestration (debounced + serialized), clean-state tracking |
-| `CardTitleField.vue` | Title input + native context-menu behavior |
-| `CardNotesEditor.vue` | OverType wrapper component (theme sync, URL marking, Cmd/Ctrl-click open) |
-| `CardDatesPopover.vue` | Shared two-field start/due calendar popover |
-| `TaskLineDateControls.vue` | Per-task calendar controls from measured textarea coordinates |
-| `CardLabelsPicker.vue` | Label assignment popover + inline label creation |
-| `LinkedObjectsPanel.vue` | Paperclip menu, chips, add/relink/recreate/remove, file drop |
-| `LinkedObjectChip.vue` | Single chip (note/file/folder/URL/app/Signboard link) |
-| `SmartActionsButton.vue` + `SmartActionsPopover.vue` | Anchored popover across menu/result/back states |
-| `SmartActionPreview.vue` | Preview/apply UI for generated title/summary/tasks/labels/dates/attachments/answers |
-| `CardMoveControls.vue` | List dropdown + directional move actions |
-| `OpenWithMenu.vue` | Default-app/reveal/copy-link/Obsidian actions |
-| `CardTimestamps.vue` | Quiet Created/Updated display |
-| `CardEditorActions.vue` | Duplicate, archive, delete footer actions |
+`EditCardModal.vue` (lifecycle, save orchestration) · `CardTitleField.vue` ·
+`CardNotesEditor.vue` (OverType wrapper) · `CardDatesPopover.vue` ·
+`TaskLineDateControls.vue` (measured coordinates) · `CardLabelsPicker.vue` ·
+`LinkedObjectsPanel.vue` + `LinkedObjectChip.vue` ·
+`SmartActionsButton.vue` + `SmartActionsPopover.vue` + `SmartActionPreview.vue` ·
+`CardMoveControls.vue` · `OpenWithMenu.vue` · `CardTimestamps.vue` ·
+`CardEditorActions.vue`.
 
-### 4.5 Other modals
+### 5.5 Other modals
 
-| Component | Replaces / source |
-|---|---|
-| `AppModal.vue` | Base modal: focus trap, inert background, Esc, restore-focus (wraps `app/utilities/accessibility.js`) |
-| `QuickAddCardModal.vue` | `app/modals/toggleAddCardModal.js` + Quick Add wiring in `app/listeners/window.js` |
-| `AddListModal.vue` | `app/modals/toggleAddListModal.js` |
-| `AddCardToListModal.vue` | `app/modals/toggleAddCardToListModal.js` |
-| `SettingsModal.vue` | Settings shell + section nav (`app/board/boardLabels.js`, `app/appSettings.js`) |
-| `SettingsAppGeneral.vue` | App-wide General panel |
-| `SettingsNotifications.vue` | Notifications panel |
-| `SettingsSmartActions.vue` | AI/Ollama + drag-reorderable accordion action rows |
-| `SettingsBoardGeneral.vue` | Board rename/move/duplicate |
-| `SettingsBoardLabels.vue` | Label definitions editor |
-| `SettingsBoardAppearance.vue` | Color scheme panel |
-| `SettingsBoardWorkflow.vue` | Completed-list rules |
-| `SettingsBoardObsidian.vue` | Obsidian/Base controls |
-| `SettingsBoardImport.vue` | Trello/Obsidian/Tasks.md import panel + summaries |
-| `KeyboardShortcutsModal.vue` | `#modalKeyboardShortcuts` |
-| `AboutModal.vue` / `SponsorModal.vue` | About/sponsorship markup in `index.html` |
-| `ObsidianVaultRequiredModal.vue` | `#modalObsidianVaultRequired` |
-| `ArchiveBrowserModal.vue` | `app/board/archiveBrowser.js` |
-| `ArchiveResultList.vue` + `ArchiveDetailPane.vue` | Search-first results + lazy detail pane |
-| `BoardSwitcherModal.vue` | `app/board/boardSwitcher.js` (`Cmd/Ctrl + K`) |
+`Modal.vue` (base: positioning, focus trap, inert, Esc — wraps
+`app/utilities/accessibility.js`) · `QuickAddCardModal.vue` ·
+`AddListModal.vue` · `AddCardToListModal.vue` · `SettingsModal.vue` +
+`SettingsAppGeneral.vue` / `SettingsNotifications.vue` /
+`SettingsSmartActions.vue` / `SettingsBoardGeneral.vue` /
+`SettingsBoardLabels.vue` / `SettingsBoardAppearance.vue` /
+`SettingsBoardWorkflow.vue` / `SettingsBoardObsidian.vue` /
+`SettingsBoardImport.vue` · `KeyboardShortcutsModal.vue` ·
+`AboutModal.vue` / `SponsorModal.vue` · `ObsidianVaultRequiredModal.vue` ·
+`ArchiveBrowserModal.vue` + `ArchiveResultList.vue` + `ArchiveDetailPane.vue` ·
+`BoardSwitcherModal.vue`.
 
-### 4.6 Popovers & primitives
+### 5.6 Popovers & primitives
 
-| Component | Replaces / source |
-|---|---|
-| `AppPopover.vue` | Base anchored popover (open/close, Esc, arrow-key nav, opener-focus restore) |
-| `LabelFilterPopover.vue` | Header date/label filter (`app/board/boardLabels.js`) |
-| `ListActionsPopover.vue` | `app/lists/listActionsPopover.js` |
-| `DateField.vue` | FDatepicker wrapper |
-| `FeatherIcon.vue` | All `feather.replace()` call sites |
-| `AppTooltip.vue` (or `v-tooltip` directive) | `app/ui/tooltips.js` engine, re-triggered from Vue lifecycle |
+`AppPopover.vue` (anchored; Esc/arrows/`Home`/`End`; opener-focus restore) ·
+`LabelFilterPopover.vue` · `ListActionsPopover.vue` · `DateField.vue`
+(FDatepicker wrapper) · `FeatherIcon.vue` (all `feather.replace()` sites) ·
+tooltip: keep the legacy delegation engine initially (works for Vue DOM);
+revisit as a directive later.
 
-### 4.7 Stores & composables (replacing `window.__*` state)
+### 5.7 Stores & composables
 
 | Store / composable | Absorbs |
 |---|---|
-| `useBoardsStore` | Open board tabs, active board, `window.boardRoot`, localStorage persistence, `open-boards.json` sync |
-| `useBoardDataStore` | Snapshot loading, lists/cards, render race conditions, external-change refresh |
-| `useLabelsStore` | `__boardLabelState`, filter state, workflow/completed-list settings |
+| `useBoardsStore` | Open/active boards, `window.boardRoot`, localStorage session, `open-boards.json` sync |
+| `useBoardDataStore` | Snapshot loading, render races, external-change refresh |
+| `useLabelsStore` | `__boardLabelState`, filter state, workflow settings |
 | `useSearchStore` | `__boardSearchState` |
-| `useViewStore` | `__boardViewState`, Kanban/Table/Planner dock state |
-| `usePlannerStore` | `__plannerViewState` (view, scope, filters) |
-| `useTableStore` | `__boardTableState` (selection, sort, bulk actions) |
+| `useViewStore` | `__boardViewState`, dock state |
+| `usePlannerStore` | `__plannerViewState` |
+| `useTableStore` | `__boardTableState` |
 | `useAppSettingsStore` | `__signboardAppSettingsState` |
 | `useEditorStore` | Open-card editor state, dirty/clean tracking |
 | `useArchiveStore` | `__archiveBrowserState` |
-| `useUiStore` | Modal stack, active popover, live status announcements |
-| `useSortable()` | SortableJS init/teardown (Kanban lists/cards, tabs, Planner, settings accordion) |
-| `useDatepicker()` | FDatepicker lifecycle |
-| `useNativeMenuSettle()` | `waitForNativeMenuTrackingToSettle()` wrapper |
-| `useShortcut()` | Shortcut registration; keep the single source in sync with `#modalKeyboardShortcuts` |
+| `useUiStore` | Theme, modal stack, active popover, live announcements |
+| `useSortable()` / `useDatepicker()` / `useNativeMenuSettle()` / `useShortcuts()` | SortableJS, FDatepicker, macOS settle defer, shortcut registry |
 
-Pure logic (`app/utilities/taskList.js`, `dueNotifications.js`, `cardTimestamps.js`,
-`linkedObjects.js`, `santizeFileName.js`, `shared/appSettingsSchema.js`) stays as plain
-ES modules — directly unit-testable, no Vue dependency.
+Pure logic (`taskList`, `dueNotifications`, `cardTimestamps`,
+`linkedObjects`, `santizeFileName`, `appSettingsSchema`) → ESM copies under
+`signboard-vue/lib/`, framework-free and unit-testable; they become canonical at
+cutover.
 
-## 5. Phased Plan
+## 6. Phased Plan (side-build)
 
-Detailed per-task plans live in [tasks/](./tasks/):
-[01 build tooling](./tasks/01-build-tooling.md) ·
-[02 Vue primitives](./tasks/02-vue-primitives.md) ·
-[03 board switcher](./tasks/03-board-switcher.md) ·
-[04 archive browser](./tasks/04-archive-browser.md) ·
-[05 leaf modals](./tasks/05-leaf-modals.md)
+Executed tasks: **[tasks/01–05](./tasks/)** cover the spine:
 
-**Phase 0 — Tooling** (small, low risk)
-- Add Vite + Vue 3 + Pinia; `index.html` becomes the Vite entry.
-- Mount a single Vue root alongside the legacy bundle, or convert `app/**` to ES
-  modules first as an intermediate step (keeps `vm` tests alive longest).
-- Keep `buildjs.sh` producing the legacy bundle until the last island is migrated.
-- Renderer loaded from built output in `main.js` (dev: Vite dev server or watch build).
+1. **01** — Scaffold: standalone Vue renderer behind `SIGNBOARD_RENDERER=vue`,
+   Playwright dual-renderer harness, `tasks/PARITY.md` created.
+2. **02** — App shell + session restore + board open + **read-only Kanban**.
+3. **03** — **Card editor core** (Modal, OverType wrapper, save queue,
+   dates, moves, archive/duplicate, Open With, task-line date controls).
+4. **04** — Kanban interactions: card/list CRUD, drag/drop via transactional
+   IPC, list actions popover, Quick Add across open boards.
+5. **05** — Board search, labels, header date/label filters.
 
-**Phase 1 — Leaf islands** (quick wins, low coupling)
-- `BoardSwitcherModal`, `ArchiveBrowserModal`, `ListActionsPopover`,
-  `SponsorPill`, `AboutModal`/`SponsorModal`, `KeyboardShortcutsModal`,
-  `ObsidianVaultRequiredModal`, theme toggle.
-- Establish `AppModal`/`AppPopover`/`FeatherIcon` primitives here.
+Follow-on tasks (files to be created when 01–05 land):
 
-**Phase 2 — Board rendering**
-- `useBoardsStore` + `useBoardDataStore` + `useLabelsStore` + `useSearchStore`.
-- `KanbanBoard` → `ListColumn` → `CardItem`; `TableView`; board tabs; header.
-- Retire `renderBoard()`'s manual lifecycle (request IDs, Sortable teardown,
-  `feather.replace()`).
+6. Table view (+ bulk actions) and board view switching.
+7. Planner overlay: Calendar/This Week/Day/Agenda, scopes, Planner filters.
+8. Settings: app panels (General/Notifications/Smart Actions) + board panels
+   (General/Labels/Appearance/Workflow/Obsidian/Import).
+9. Archive browser + board switcher + About/Sponsor/shortcuts/vault modals.
+10. Editor extras: linked objects (incl. file-drop), Smart Card Actions (AI),
+    raw-URL marking; Obsidian surfaces.
+11. App-level extras: due notifications, external-change sync loop, global
+    Quick Add shortcut handling, sponsorship pill.
+12. **Cutover** per §3.
 
-**Phase 3 — Planner**
-- `PlannerOverlay` + four date views + filter popover, fed by the same stores.
+## 7. Feature Parity Checklist
 
-**Phase 4 — Card editor**
-- Decompose `toggleEditCardModal.js` last, reusing popover primitives and stores
-  already built. Sub-component order: notes editor wrapper → dates → labels →
-  linked objects → Smart Actions → task-line controls.
+Tracked live in [tasks/PARITY.md](./tasks/PARITY.md) (created by Task 01).
+Summary groups:
 
-**Phase 5 — Cleanup**
-- Delete `buildjs.sh` and the legacy bundle; remove global fallbacks.
-- Re-target `vm`-based Node suites at extracted composables/pure modules.
-- Update `CODEX.md`, `AGENTS.md`, `docs/codex/*` architecture docs.
+- [ ] Shell: tabs restore/switch/close, board open/missing, theme toggle
+- [ ] Kanban read: columns, cards, badges, dates, label chips, empty states
+- [ ] Editor core: title/notes/dates save parity, timestamps, moves, archive,
+  duplicate, Open With, task-line date controls
+- [ ] Kanban interactions: card/list CRUD, DnD persistence, list popover,
+  Quick Add
+- [ ] Search/labels/filters parity (visible-card matrix)
+- [ ] Table view + bulk actions
+- [ ] Planner (4 views, scopes, filters, card opening)
+- [ ] Settings (all 9 panels) + imports UI
+- [ ] Archive browser, board switcher, static modals
+- [ ] Editor extras: linked objects, Smart Actions, URL marking
+- [ ] App extras: notifications, sync loop, global shortcut, sponsor pill
+- [ ] A11y: focus traps, live regions, keyboard nav, reduced motion,
+  forced colors
+- [ ] Shortcuts: full parity with `#modalKeyboardShortcuts` + docs
 
-Each phase ships with the Playwright suite green; DOM selectors are preserved
-phase-by-phase so the suite keeps passing without big-bang test rewrites.
+## 8. Test Strategy
 
-## 6. Test Strategy
+- **Playwright dual-renderer** (primary oracle): `test:playwright` (legacy)
+  must stay green throughout; `test:playwright:vue` grows green per task and
+  is fully green before cutover. Preserve the DOM contract surface-by-surface.
+- **Unit tests** for pure modules (`signboard-vue/lib/*`): task parsing, card
+  filters, save queue, date math — write before porting the consumers
+  (styleguide §9).
+- **Component tests** (Vitest + `@vue/test-utils`) only where logic justifies
+  (stores, composables); E2E covers the rest.
+- **Untouched**: all main-process Node suites (`test:cli`, `test:mcp`,
+  `test:archive`, importers, …) — they test `lib/**` and must pass unmodified
+  throughout.
+- **`vm`-based renderer suites** (`test-board-views`,
+  `test-board-card-metadata`): retain them as explicit legacy-boundary
+  regressions. Their pure behavior cases are also represented in Vue/lib unit
+  tests; `test-board-views` currently has the documented pre-existing line 638
+  assertion failure.
 
-- **Playwright (3,660 lines):** primary regression net. Preserve the DOM contract
-  (IDs/classes/roles/`data-*`) in each component; update selectors only when a phase
-  intentionally changes markup.
-- **Node unit suites:** suites that test pure logic (`taskList`, `dueNotifications`,
-  frontmatter, timestamps, …) are untouched. The two `vm`-based renderer suites
-  (`test-board-views`, `test-board-card-metadata`) get rewritten against extracted
-  composables (Phase 2) or replaced with component tests (Vitest + `@vue/test-utils`).
-- **New:** component tests for stores/composables introduced in each phase.
+## 9. Effort Estimate
 
-## 7. Effort Estimate
+- **Total:** ~4–8 weeks single-developer equivalent to full parity + cutover.
+- **Distribution:** scaffold ~5%, shell/board data ~10%, editor core ~20%,
+  Kanban interactions ~10%, search/labels/filters ~10%, Table/Planner ~15%,
+  Settings ~8%, editor extras ~10%, remaining surfaces + cutover ~12%.
+- **Biggest risks:** editor fidelity (Task 03 + extras) and behavior hidden
+  in legacy implicit wiring.
 
-- **Total:** ~4–8 weeks for one developer for a faithful 1:1 migration with the
-  Playwright suite green throughout.
-- **Distribution:** Phase 0 ~5%, Phase 1 ~15%, Phase 2 ~25%, Phase 3 ~15%,
-  Phase 4 ~30%, Phase 5 ~10%.
-- **Biggest risks:** the card editor decomposition (Phase 4) and the `vm` test-harness
-  rework (Phase 5).
+## 10. Trade-offs vs Strangler-Fig (for the record)
 
-## 8. Trade-offs
+| | Side-build (chosen) | Island injection (rejected) |
+|---|---|---|
+| Integration work | None — real app composition from day one | Islands need re-integration at the end |
+| Legacy coupling | Zero (preload bridge only) | Bridge hooks + double DOM ownership throughout |
+| Ship value incrementally | No | Yes |
+| Regression surface | One cutover, oracle-verified | Continuous, both systems live in one DOM |
+| Drift risk | Legacy features need dual tracking | None (same app) |
 
-**For migrating**
-- Removes the concatenated-globals model and the 487 defensive `typeof` guards.
-- Reactivity eliminates a whole class of manual-lifecycle bugs (stale Sortables,
-  missed `feather.replace()`, render races).
-- Component isolation makes the editor and settings UI tractable to extend.
+## 11. Open Questions
 
-**Against migrating**
-- The app works today and has strong DOM-level test coverage.
-- All "interesting" logic (filesystem, Obsidian, MCP, CLI, importers) is already
-  outside the renderer and gains nothing from this migration.
-- Multi-week effort with user-visible benefit only indirect (maintainability).
-
-## 9. Open Questions
-
-1. Keep SortableJS (via `useSortable`) or switch Kanban DnD to `vuedraggable`?
-   (Recommendation: keep SortableJS — its fallback/ghost styling is heavily customized
-   in `static/styles.css` + `cardDragTilt.js`.)
-2. Keep the custom tooltip engine as a directive, or replace with a Vue tooltip
-   library? (Recommendation: keep — it's small, styled to the design system, and
-   attribute-driven.)
-3. Dev workflow: Vite dev server with Electron pointing at `localhost`, or
-   `vite build --watch` + `loadFile`? (Recommendation: build-watch first — simpler
-   CSP/protocol story; evaluate HMR later.)
-4. Should `index.html`'s static modals move into components incrementally (teleported
-   to a modal layer) or all at once? (Recommendation: incrementally via `<Teleport>`.)
-5. TypeScript? (Recommendation: out of scope for the 1:1 migration; revisit after.)
+1. Keep SortableJS via `useSortable` or adopt `vuedraggable`?
+   (Recommendation: keep SortableJS — ghost/tilt styling is heavily
+   customized in `static/styles.css` + `cardDragTilt.js`.)
+2. `signboard-vue/` remains the canonical renderer directory after cutover;
+   renaming it would add risk without changing runtime behavior.
+3. ~~TypeScript?~~ Resolved: yes — the `signboard-vue/` scaffold is
+   TypeScript (vue-tsc enforced via `npm run build`); styleguide §4 applies.
+4. Tooltip engine: the Vue renderer keeps the existing delegated behavior and
+   shared runtime styling; the legacy implementation remains inside the
+   rollback bundle.

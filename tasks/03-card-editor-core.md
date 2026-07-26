@@ -18,10 +18,10 @@ later task).
 
 ## In scope
 
-- `AppModal.vue` (first modal — build the primitive here, not ahead of need):
+- `Modal.vue` (shared modal primitive — build on the existing primitive):
   port focus trap, focus restoration, background inert, `Esc`,
   `aria-hidden` from `app/utilities/accessibility.js`. Copy the helper into
-  `app-vue/lib/accessibility.js` as ESM (`THIS CAN BE REMOVED WHEN` header).
+  `signboard-vue/lib/accessibility.js` as ESM (`THIS CAN BE REMOVED WHEN` header).
 - `EditCardModal.vue` — open/save/close lifecycle via `useEditorStore`.
 - `CardTitleField.vue` — native context-menu behavior is main-process owned
   (`context-menu` event) and works unchanged; verify.
@@ -34,7 +34,7 @@ later task).
 - `CardDatesControl.vue` + shared two-field calendar popover — FDatepicker
   wrapper (`useDatepicker()`), writes `start`/`due` frontmatter.
 - `CardTimestamps.vue` — quiet Created/Updated from the normalized read
-  metadata (`app-vue/lib/cardTimestamps.js`).
+  metadata (`signboard-vue/lib/cardTimestamps.js`).
 - `CardMoveControls.vue` — list dropdown + prev/next moves via
   `moveCardToTop` IPC; defer DOM updates with
   `waitForNativeMenuTrackingToSettle()` after the `<select>` popup.
@@ -60,7 +60,7 @@ later task).
 1. Read `toggleEditCardModal.js` save/queue/clean-state sections first;
    write the save-queue as a pure module with unit tests **before** the UI
    (stale-overwrite races are the worst regression class here).
-2. `AppModal` + a11y port; test focus trap/restore keyboard-only manually.
+2. `Modal` + a11y port; test focus trap/restore keyboard-only manually.
 3. Notes editor wrapper; verify OverType theme follows `useUiStore` theme.
 4. Title/dates/timestamps; round-trip a card with every frontmatter combo
    (no dates, start only, due only, both) and diff the files vs legacy writes.
@@ -87,4 +87,30 @@ later task).
 - Save debounce must survive modal close (flush or discard exactly as legacy).
 - The `<select>` move control needs the macOS settle defer before any
   re-render — port `waitForNativeMenuTrackingToSettle` into
-  `app-vue/composables/useNativeMenuSettle.js`.
+  `signboard-vue/composables/useNativeMenuSettle.js`.
+
+## Verification — 2026-07-25
+
+Implemented in the Vue side-build. The editor keeps the legacy IDs/classes,
+uses the existing preload bridge for card reads/writes and card actions, and
+does not modify generated `app/signboard.js` or unrelated legacy renderer code.
+
+Passing:
+
+- `npm run build:vue` (Vue type-check and production build)
+- `npm --prefix signboard-vue run test:unit -- --run` (4 files, 8 tests)
+- `npm run test:frontmatter`
+- `npm run test:task-list`
+- `npm run test:board-snapshot`
+- `npm run test:board-card-metadata`
+- `npm run test:card-timestamps`
+- targeted ESLint for the new editor/store/composable files
+
+The pure save queue has unit coverage for rapid typing debounce, writes added
+while a previous write is in flight, and cancelled stale generations. The Vue
+Playwright suite was attempted but is not currently green in this checkout,
+so editor E2E parity is not claimed here. The focused legacy board-view suite
+still has the known baseline failure at `scripts/test-board-views.js:638`
+(`expected add-list shortcut hint in list actions popover`) from the existing
+`app/lists/listActionsPopover.js` change; it was not broadened or fixed as part
+of Task 03.

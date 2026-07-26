@@ -18,7 +18,7 @@ If you are an agent or tool that looks for `AGENTS.md`, use `CODEX.md` as the ca
 - Keep right-click text editing context menu behavior in `main.js` in sync with editable renderer fields.
 - Keep native app menu actions and the Playwright native-menu regression aligned when changing menu behavior.
 - Defer DOM/layout mutations after macOS native menu or `<select>` popup interactions with `waitForNativeMenuTrackingToSettle()` before replacing, disabling, rerendering, or moving controls.
-- Keep card drag/drop clone and placeholder behavior in sync with `app/utilities/cardDragTilt.js` and `static/styles.css`.
+- Keep card drag/drop clone and placeholder behavior in sync with `app/utilities/cardDragTilt.js` and `static/styles.css`; the canonical Vue `useSortable` card setup also keeps a small pointer-movement tolerance so clicks do not become accidental drags.
 - Keep card/list drag/drop filesystem ordering on the main-process transactional helpers in `lib/cardOrdering.js`; do not move reorder loops back into renderer code.
 - MCP allowed roots include both explicit MCP roots and desktop trusted board roots; keep root loading, `get_config`, `signboard_list_boards`, and board-name resolution tests aligned.
 - CLI and MCP board discovery/creation should stay aligned: `signboard boards list` and `signboard_list_boards` report the same known-board metadata shape where applicable, while `signboard boards create` and `signboard_create_board` scaffold the same default lists and starter card.
@@ -41,5 +41,7 @@ If you are an agent or tool that looks for `AGENTS.md`, use `CODEX.md` as the ca
 - Completed task-list item date markers should not keep cards in Planner/date-filter views; only incomplete task start/due markers should place cards there.
 - Keep agent-facing docs up to date: [CODEX.md](./CODEX.md), [AGENTS.md](./AGENTS.md), [docs/codex/PROJECT_CONTEXT.md](./docs/codex/PROJECT_CONTEXT.md), and [docs/codex/FILE_STRUCTURE.md](./docs/codex/FILE_STRUCTURE.md).
 - Keep release-facing docs up to date when user behavior or CLI behavior changes: [docs/README.md](./docs/README.md), [docs/using-signboard.md](./docs/using-signboard.md), [docs/signboard-cli.md](./docs/signboard-cli.md), [readme.md](./readme.md), and [MCP_README.md](./MCP_README.md) when relevant.
+- The canonical Vue renderer lives in `signboard-vue/` and is the default app entry. `SIGNBOARD_RENDERER=vue` remains compatible, while `SIGNBOARD_RENDERER=legacy` is the explicit deprecated rollback/testing path using `index.html` and `app/signboard.js`; preserve that boundary until it is intentionally retired.
+- Vue shared primitives live in `signboard-vue/src/lib/components/`; Floating Vue and Muuri are installed there, while Vite compiles their Sass styles through `src/styles/_tokens.scss`. Runtime theme values remain owned by `static/styles.css`.
 
 When in doubt, follow [CODEX.md](./CODEX.md).

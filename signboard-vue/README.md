@@ -1,6 +1,20 @@
 # signboard-vue
 
-This template should help get you started developing with Vue 3 in Vite.
+This is Signboard’s canonical desktop renderer. Vite builds it to
+`signboard-vue/dist/`, which is packaged with the Electron application along
+with the shared styles and vendored libraries in `static/vendor/`.
+
+From the repository root:
+
+```sh
+npm run build:vue
+npm run start
+```
+
+Normal launches use Vue. `SIGNBOARD_RENDERER=vue npm start` is an explicit
+equivalent; `SIGNBOARD_RENDERER=legacy npm start` selects the deprecated legacy
+renderer for rollback/testing. `npm run start:dev` watches the Vue renderer,
+while `npm run start:dev:legacy` watches the compatibility renderer.
 
 ## Recommended IDE Setup
 

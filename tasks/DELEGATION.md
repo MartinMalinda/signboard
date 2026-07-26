@@ -21,14 +21,14 @@ General rules for smaller-model runs:
 ## Per-task assignment
 
 ### Task 01 — Vue scaffold → **smaller model** (with large-model review)
-- Mechanical: deps, Vite config, scripts, `.gitignore`, `app-vue/index.html`.
+- Mechanical: deps, Vite config, scripts, `.gitignore`, `signboard-vue/index.html`.
 - Review points (large): the `main.js` loader branch (only legacy-side edit),
   CSP meta copied verbatim, runtime-only Vue alias, Playwright env passthrough.
 - Escalate if `file://` asset loading or preload availability misbehaves —
   that's debugging, not assembly.
 
 ### Task 02 — Shell + read-only Kanban → **split**
-- Smaller model: pure-lib ESM copies (`app-vue/lib/*`), `FeatherIcon`,
+- Smaller model: pure-lib ESM copies (`signboard-vue/lib/*`), `FeatherIcon`,
   `EmptyBoardCta`, `AddListPhantom`, `AppHeader` static layout,
   `WorkspaceViewDock` static.
 - Large model: `useBoardsStore`/`useBoardDataStore` (session semantics are
@@ -39,7 +39,7 @@ General rules for smaller-model runs:
 
 ### Task 03 — Card editor core → **large model**
 - Hardest task in the migration: OverType wrapper lifecycle, debounced +
-  serialized saves, clean-state/external-edit reconciliation, `AppModal`
+  serialized saves, clean-state/external-edit reconciliation, `Modal`
   focus-trap port, task-line date controls from measured textarea coordinates.
 - Smaller model may take: `CardTimestamps`, `OpenWithMenu`, footer action
   buttons — self-contained leaf pieces once the shell exists.

@@ -19,7 +19,8 @@ Signboard is a local-first board app built with Electron and plain JavaScript. B
 ### Main Process
 File: `main.js`
 
-- Creates a single `BrowserWindow` and loads `index.html`.
+- Creates a single `BrowserWindow` and loads the canonical Vue entry by
+  default; `SIGNBOARD_RENDERER=legacy` selects `index.html` for rollback.
 - Supports a headless MCP server mode when launched with `--mcp-server` (no window created).
 - Supports `--mcp-config` mode to print MCP client config JSON and exit.
 - MCP board-scoped tools use the union of `SIGNBOARD_MCP_ALLOWED_ROOTS` and the desktop app's trusted board roots from `trusted-board-roots.json`; with neither source configured, only non-board config/listing tools are usable. `signboard_list_boards` is the preferred agent entrypoint for discovering usable board roots because it reports desktop-open/active state, desktop-trusted roots, and bounded allowed-root scan matches.
@@ -72,7 +73,9 @@ File: `preload.js`
 - Still exposes board watch helpers (`startBoardWatch`, `stopBoardWatch`, `getBoardWatchToken`), but the watcher implementation now lives in `main.js`.
 
 ### Renderer
-Files: `index.html`, `app/signboard.js` (generated), source modules in `app/**`, shared renderer schema in `shared/appSettingsSchema.js`
+Files: canonical `signboard-vue/` (built to `signboard-vue/dist/`); deprecated
+rollback renderer `index.html`, generated `app/signboard.js`, source modules in
+`app/**`, and shared renderer schema in `shared/appSettingsSchema.js`
 
 - UI is vanilla HTML/CSS/JS.
 - `index.html` loads vendored libraries and `app/signboard.js` with `defer`.
@@ -135,6 +138,28 @@ Files: `index.html`, `app/signboard.js` (generated), source modules in `app/**`,
   - `completed/total` where `total` includes completed and incomplete checklist items.
 
 ## Core User Flows (Where the behavior lives)
+
+### Vue renderer and legacy rollback boundary
+
+- Normal launches load `signboard-vue/dist/index.html`. `SIGNBOARD_RENDERER=vue`
+  remains compatible; `SIGNBOARD_RENDERER=legacy` explicitly loads the
+  deprecated `index.html` renderer for rollback/testing.
+- `signboard-vue/src/stores/useBoardsStore.ts` owns byte-compatible
+  `openBoardPaths` / `activeBoardPath` / legacy `boardPath` persistence, trusted
+  re-authorization, picker opens, starter seeding, and missing-board replacement.
+- `useBoardDataStore` reads the batched `readBoardSnapshot` bridge with a
+  request token so stale board loads cannot replace a newer active board.
+- The first Vue surface is read-only Kanban. `AppHeader`, `BoardTabs`, and the
+  board components preserve legacy IDs/classes while search, card creation,
+  filters, and mutation controls remain visibly inert. `useUiStore` owns the
+  persisted `theme` value and `data-theme` application.
+- Pure ESM modules used by Vue live in `signboard-vue/lib/` and are covered by
+  Vue unit tests. Legacy `app/**`, `buildjs.sh`, and `app/signboard.js` remain
+  only to support the explicit rollback boundary.
+- Shared Vue primitives live in `signboard-vue/src/lib/components/`, with
+  Floating Vue tooltips and Muuri grid support registered in `src/main.ts`.
+  Vite compiles component Sass using `src/styles/_tokens.scss`; runtime theme
+  values continue to come from `static/styles.css`.
 
 ### App init and board open
 - `app/init.js`:
@@ -200,6 +225,7 @@ Files: `index.html`, `app/signboard.js` (generated), source modules in `app/**`,
   - Builds list UI, add-card button, list rename behavior, and labelled section/list semantics for assistive technology.
   - Enables card drag-and-drop reorder and cross-list move.
   - Uses shared Sortable card drag options from `app/utilities/cardDragTilt.js`; the visible ghost placeholder is an empty drop slot rather than a readable duplicate card.
+  - The canonical Vue `useSortable` card setup uses a small Sortable fallback tolerance so normal pointer wobble does not turn card clicks into drags.
   - Sanitizes list names before filesystem rename.
   - Builds card DOM for a list concurrently to reduce list render time.
   - Delegates card drag/drop filesystem ordering to main-process transactional reorder helpers, which record `moved-list` lifecycle events only for real cross-list card moves, not same-list reindexing.
@@ -437,9 +463,10 @@ Files: `lib/importers/*`
 ### Print MCP config locally
 - `npm run mcp:config`
 
-### Rebuild renderer bundle after module edits
-- `./buildjs.sh`
-- Concatenates module files into `app/signboard.js` in strict order.
+### Rebuild renderer bundles after source edits
+- `npm run build:renderers`
+- Builds the canonical Vue dist and the deprecated legacy bundle. Use
+  `./buildjs.sh` alone when testing only the legacy rollback renderer.
 
 ### CLI internals
 - `lib/boardDiscovery.js` owns shared known-board discovery for CLI and MCP, including desktop trusted/open state reads, board-looking folder detection, and bounded allowed-root scans.

@@ -430,6 +430,14 @@ Imports copy data into Signboard and leave the original source files where they 
 
 Signboard keeps common board work available from the keyboard. Card titles are native buttons, list titles are editable textboxes, list actions are native buttons, and modals move focus into the active dialog and restore focus when closed.
 
+### Renderer updates and rollback
+
+Signboard normally starts with the packaged Vue renderer. If a release needs
+diagnosis or rollback, quit the app and run `SIGNBOARD_RENDERER=legacy npm start`
+from a source checkout. This compatibility path uses the older renderer and
+the same board files and main-process bridge; it can be removed in a future
+release after the rollback window closes.
+
 Status changes such as creating, moving, archiving, restoring, and switching views are announced through a polite status region for screen readers. The app also respects reduced-motion and forced-colors preferences.
 
 Focus styling is keyboard-only where possible, including the card editor title and list names, so mouse users do not get a persistent editor outline while keyboard users still get a visible focus target.

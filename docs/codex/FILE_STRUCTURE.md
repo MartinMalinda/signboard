@@ -5,18 +5,19 @@ This map focuses on source and operational files. Large generated/vendor folders
 ## Top level
 
 - `main.js` - Electron main process window + IPC handlers + trusted board-root/path validation + last-known open-board state persistence for MCP/CLI discovery + filesystem watchers + opt-in localhost External Published Calendar server + native menu/accelerators (including board switcher/settings/theme shortcuts plus required-action validation/rebuild on focus) + optional Quick Add global shortcut registration + Smart Card Action/Ollama model-list IPC + renderer right-click text editing context menu with deferred native popup handling + archive browse/restore + top-of-list card move IPC + board duplication IPC + linked-object add/open/drop/status/recreate/relink IPC with URL favicon caching + Obsidian outbound/deep-link IPC and `signboard://` protocol dispatch for card and validated board opening. Board activation ensures a managed Obsidian Base when applicable without sweeping card Markdown; full metadata reconciliation remains on write/import/move/explicit Base flows. Also owns GitHub-release auto-update flow (`electron-updater`), including release-note formatting that strips a `## Downloads` section from in-app update dialogs.
+- `lib/rendererSelection.js` - Pure default/legacy renderer selection used by `main.js` and its startup regression test.
 - `CODEX.md` - Canonical Codex-specific repo instructions and maintenance rules.
 - `AGENTS.md` - Cross-tool compatibility entrypoint that points agents to `CODEX.md`.
 - `DESIGN.md` - Design.md-compatible default theme tokens and visual rationale for Signboard's UI.
 - `MCP_README.md` - Dedicated setup guide for Signboard MCP server mode (`--mcp-server`).
 - `preload.js` - Thin renderer bridge (`window.board`, `window.chooser`, `window.electronAPI`) that forwards allowed operations to main-process IPC and main-process-triggered renderer events, including board switcher/view/settings/Quick Add/signboard-card-link/signboard-board-link events, clipboard text copy, Smart Card Actions, Ollama model inspection, archive browse/read/restore, board snapshot reads, board duplication, Obsidian actions, dropped-file path extraction for linked objects, and transactional card/list reorder plus top-of-list card move calls.
-- `index.html` - App shell, header board tab strip/search/filter/Card controls, bottom Planner/Kanban/Table workspace dock, Planner overlay markup, fixed dismissible Sponsor pill, board-menu archive/switcher modal markup (including `#workspaceViewDock`, `#modalKeyboardShortcuts`, `#modalBoardSwitcher`, `#modalArchiveBrowser`, and `#modalObsidianVaultRequired`), and deferred script/style includes.
+- `index.html` - Deprecated legacy app shell retained for `SIGNBOARD_RENDERER=legacy`; the canonical shell is built from `signboard-vue/`.
 - `readme.md` - Human-facing project README.
 - `docs/release-template.md` - Curated GitHub release-body template for public download links.
 - `package.json` - Runtime/build scripts and dependencies.
 - `package-lock.json` - NPM lockfile.
 - `.gitignore` - Ignores `node_modules`, `dist`, `.env`, etc.
-- `buildjs.sh` - Concatenate shared renderer schema and renderer modules into `app/signboard.js`.
+- `buildjs.sh` - Deprecated legacy-only build that concatenates shared renderer schema and renderer modules into `app/signboard.js` for `SIGNBOARD_RENDERER=legacy`.
 - `electron-builder.json` - Build targets/artifact settings.
 - `LICENSE` - MIT license.
 - `obsidian-plugin/` - Optional desktop-only Obsidian companion plugin source (`manifest.json`, self-contained `main.js`, helper/tested conversion/link/delete-cleanup utilities, styles, and plugin README) for opening/copying Signboard links, attaching active notes, asking before removing links to deleted notes, creating Signboard boards from folders, and handling `obsidian://signboard?...`.
@@ -25,7 +26,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 
 ## Renderer source (`app/`)
 
-- `app/signboard.js` - Generated concatenated renderer file loaded by `index.html`.
+- `app/signboard.js` - Generated legacy renderer file loaded only by the explicit `SIGNBOARD_RENDERER=legacy` rollback path.
 - `app/utilities/santizeFileName.js` - Filename sanitization + random suffix helper.
 - `app/utilities/taskList.js` - Task checklist parser, start/due marker helpers, all/open task date sets, task-summary counters, and task progress badge creation.
 - `app/utilities/dueNotifications.js` - Due-notification collection + message formatting for card due dates and incomplete task due markers, skipping completed workflow lists.
@@ -59,6 +60,20 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `app/init.js` - App bootstrap, folder picker handling, top-level event wiring, Obsidian-vault-required info modal controls, sponsorship modal triggers, and external board-change auto-refresh sync loop, including clean open-editor refreshes.
 - `app/ui/theme.js` - Theme toggle + OverType theme integration, including the theme shortcut hint/state in the board menu.
 - `app/ui/tooltips.js` - Lightweight custom tooltip engine (event delegation + mutation observer) using existing element label attributes.
+
+## Canonical Vue renderer (`signboard-vue/`)
+
+- `signboard-vue/src/App.vue` - Vue shell bootstrap, session restore, empty/missing board states, and Kanban composition.
+- `signboard-vue/src/stores/useBoardsStore.ts` - Open-board tabs, localStorage compatibility, trusted-root authorization, picker/seed flow, and missing-board replacement.
+- `signboard-vue/src/stores/useBoardDataStore.ts` - Race-safe batched board snapshot loading and list/card getters.
+- `signboard-vue/src/stores/useUiStore.ts` - Persisted light/dark theme and minimal board-menu state.
+- `signboard-vue/src/components/` - Header, tabs, workspace dock, minimal board menu, and read-only Kanban columns/cards.
+- `signboard-vue/src/composables/useSortable.ts` - Vue SortableJS setup for lists, cards, Planner drops, and settings reordering, including the click-friendly card drag activation tolerance.
+- `signboard-vue/src/lib/components/` - Shared Button, Tooltip, Dropdown, Modal, Close, and Muuri grid primitives; component smoke tests live beside them.
+- `signboard-vue/src/styles/_tokens.scss` - Sass compatibility tokens for shared primitives; active theme values remain CSS custom properties in `static/styles.css`.
+- `signboard-vue/vite.config.ts` - Vue/Vite aliases, relative Electron build base, and Sass preprocessing.
+- `signboard-vue/lib/` - Framework-free ESM pure modules used by the canonical Vue renderer and covered by unit tests.
+- `signboard-vue/dist/` - Vite production output packaged into the Electron app; generated and ignored by source control.
 
 ## Shared/library code
 
@@ -112,6 +127,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `scripts/verify-release-assets.js` - Release checklist validator for updater metadata/assets across macOS/Windows/Linux plus curated public-download guidance.
 - `scripts/test-mcp-server.js` - MCP protocol smoke test across header + ndjson stdio transports, including board discovery, trusted-root config/resolution coverage, archive tool coverage, card task metadata assertions, and import-tool coverage.
 - `scripts/test-cli.js` - Node CLI smoke test covering board discovery, list/card/archive flows, duplicate/template card commands, section/note edits, dry-run previews, plus Trello/Obsidian imports.
+- `scripts/test-renderer-selection.js` / `scripts/test-vue-packaging.js` - Cutover checks for default/legacy startup resolution and Electron Builder Vue/static/vendor file coverage.
 - `scripts/test-desktop-cli.js` - Packaged-shim-style Electron Node-mode CLI smoke test, including board creation and import command routing.
 
 ## Playwright tests (`tests/playwright/`)

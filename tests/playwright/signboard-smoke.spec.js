@@ -21,6 +21,10 @@ function normalizeBoardRoot(boardRoot) {
   return normalized.endsWith('/') ? normalized : `${normalized}/`;
 }
 
+function boardLists(page) {
+  return page.locator('.list:not(.add-list-phantom)');
+}
+
 function getShortcut(shortcut) {
   const modifier = usesMetaModifier ? 'Meta' : 'Control';
   return `${modifier}+${shortcut}`;
@@ -230,6 +234,17 @@ async function seedBoardState(page, boardRoot) {
   await seedOpenBoardState(page, [boardRoot], boardRoot);
 }
 
+async function getBoardRenderState(page) {
+  return await page.evaluate(() => ({
+    activeBoardPath: localStorage.getItem('activeBoardPath') || '',
+    openBoardPaths: localStorage.getItem('openBoardPaths') || '',
+    boardText: document.querySelector('#board')?.textContent?.trim().slice(0, 240) || '',
+    listCount: document.querySelectorAll('#board .list:not(.add-list-phantom)').length,
+    hasMissingBoardAlert: Boolean(document.querySelector('.board-missing-alert')),
+    hasTableView: Boolean(document.querySelector('.board-table-view')),
+  }));
+}
+
 async function seedOpenBoardState(page, boardRoots, activeBoardRoot) {
   const normalizedBoardRoots = boardRoots.map(normalizeBoardRoot);
   const normalizedActiveBoardRoot = normalizeBoardRoot(activeBoardRoot || boardRoots[0]);
@@ -243,8 +258,13 @@ async function seedOpenBoardState(page, boardRoots, activeBoardRoot) {
   }, { openBoards: normalizedBoardRoots, activeBoard: normalizedActiveBoardRoot });
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.locator('#boardName')).toHaveText(path.basename(normalizedActiveBoardRoot.replace(/\/+$/, '')));
-  await expect(page.locator('.list')).toHaveCount(3);
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText(path.basename(normalizedActiveBoardRoot.replace(/\/+$/, '')));
+  try {
+    await expect(boardLists(page)).toHaveCount(3);
+  } catch (error) {
+    const renderState = await getBoardRenderState(page);
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nBoard render state: ${JSON.stringify(renderState)}`);
+  }
 }
 
 async function prepareOpenBoardsPage(electronApp, boardRoot, boardNames = ['Roadmap Board']) {
@@ -368,7 +388,7 @@ async function openFirstCardInEditor(page) {
 }
 
 async function openCardInEditor(page, listIndex, cardIndex = 0) {
-  await page.locator('.list').nth(listIndex).locator('.card').nth(cardIndex).click();
+  await boardLists(page).nth(listIndex).locator('.card').nth(cardIndex).click();
   await expect(page.locator('#modalEditCard')).toBeVisible();
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeVisible();
 }
@@ -529,6 +549,14 @@ const test = base.extend({
     if (shouldBringPlaywrightAppToFront) {
       await page.bringToFront();
     }
+    page.on('pageerror', (error) => {
+      console.error(`[Signboard renderer pageerror] ${error.stack || error.message}`);
+    });
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        console.error(`[Signboard renderer console.error] ${message.text()}`);
+      }
+    });
     await seedBoardState(page, boardRoot);
     await use(page);
   },
@@ -542,7 +570,7 @@ test('keeps add modals hidden on startup', async ({ page }) => {
 });
 
 test('responds to sampled card surface clicks immediately after startup', async ({ page }) => {
-  const card = page.locator('.list').first().locator('.card').first();
+  const card = boardLists(page).first().locator('.card').first();
   await expect(card).toBeVisible();
 
   const box = await card.boundingBox();
@@ -586,7 +614,7 @@ test('responds to sampled card surface clicks immediately after startup', async 
 });
 
 test('opens a card when a startup board refresh lands between pointer down and up', async ({ page }) => {
-  const card = page.locator('.list').first().locator('.card').first();
+  const card = boardLists(page).first().locator('.card').first();
   await expect(card).toBeVisible();
 
   const box = await card.boundingBox();
@@ -731,7 +759,7 @@ test('opens Obsidian-created boards through the Signboard board protocol', async
     await window.electronAPI.openExternal(openBoardUri);
   }, `signboard://open-board?path=${encodeURIComponent(protocolBoardRoot)}`);
 
-  await expect(page.locator('#boardName')).toHaveText('Protocol Created Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Protocol Created Board');
   await expect(page.locator('.card').filter({ hasText: 'From Obsidian' })).toBeVisible();
 });
 
@@ -1016,7 +1044,7 @@ test('exposes Obsidian actions and generates a board Base', async ({ page, board
   await page.locator('#cardEditorClose').click();
   await expect(page.locator('#modalEditCard')).toBeHidden();
 
-  const planCard = page.locator('.list').first().locator('.card').filter({ hasText: 'Plan release notes' });
+  const planCard = boardLists(page).first().locator('.card').filter({ hasText: 'Plan release notes' });
   await expect(planCard.locator('.linked-objects-badge-inline')).toHaveText('2');
   await page.keyboard.press(getCurrentBoardPlannerShortcut('1'));
   await expect(page.locator('main#board')).toHaveClass(/board-view-table/);
@@ -1098,7 +1126,7 @@ test('refreshes board card previews after external markdown edits', async ({ pag
     body: 'Clean MCP notes.',
   });
 
-  await expect(page.locator('.list').first().locator('.card').first().locator('.card-body p')).toHaveText('Clean MCP notes.');
+  await expect(boardLists(page).first().locator('.card').first().locator('.card-body p')).toHaveText('Clean MCP notes.');
 });
 
 test('refreshes an unchanged open card editor after external markdown edits', async ({ page, boardRoot }) => {
@@ -1144,7 +1172,7 @@ test('renders card start and due dates as a compact date range', async ({ page, 
     await renderBoard();
   });
 
-  const firstCard = page.locator('.list').first().locator('.card').first();
+  const firstCard = boardLists(page).first().locator('.card').first();
   const dateButton = firstCard.locator('.card-date-action');
   await expect(dateButton).toContainText('Jun 17-26');
   await expect(dateButton).toHaveAttribute('aria-label', 'Dates Jun 17 through Jun 26. Change dates.');
@@ -1157,7 +1185,7 @@ test('renders card start and due dates as a compact date range', async ({ page, 
 });
 
 test('keeps the card date popover open during a pending board refresh', async ({ page }) => {
-  const firstCard = page.locator('.list').first().locator('.card').first();
+  const firstCard = boardLists(page).first().locator('.card').first();
   await firstCard.hover();
 
   await firstCard.locator('.card-date-action').click();
@@ -1185,7 +1213,7 @@ test('keeps the card date popover open during a pending board refresh', async ({
 });
 
 test('keeps the card label picker open during a pending board refresh', async ({ page }) => {
-  const firstCard = page.locator('.list').first().locator('.card').first();
+  const firstCard = boardLists(page).first().locator('.card').first();
   await firstCard.hover();
 
   await firstCard.locator('.card-label-button').click();
@@ -1213,7 +1241,7 @@ test('keeps the card label picker open during a pending board refresh', async ({
 });
 
 test('keeps the list actions popover open during a pending board refresh', async ({ page }) => {
-  const firstList = page.locator('.list').first();
+  const firstList = boardLists(page).first();
   await expect(firstList).toBeVisible();
 
   await firstList.locator('.list-actions-button').click();
@@ -1241,7 +1269,7 @@ test('keeps the list actions popover open during a pending board refresh', async
 });
 
 test('opens board label settings from the card label picker shortcut', async ({ page }) => {
-  const firstCard = page.locator('.list').first().locator('.card').first();
+  const firstCard = boardLists(page).first().locator('.card').first();
   await firstCard.hover();
 
   await firstCard.locator('.card-label-button').click();
@@ -1258,7 +1286,7 @@ test('opens board label settings from the card label picker shortcut', async ({ 
 });
 
 test('closes the card date picker before opening the label picker', async ({ page }) => {
-  const firstCard = page.locator('.list').first().locator('.card').first();
+  const firstCard = boardLists(page).first().locator('.card').first();
   await firstCard.hover();
 
   await firstCard.locator('.card-date-action').click();
@@ -1355,7 +1383,7 @@ test('navigates board popovers and settings sections from the keyboard', async (
 });
 
 test('renders card drag ghost as an empty drop slot', async ({ page }) => {
-  const card = page.locator('.list').first().locator('.card').first();
+  const card = boardLists(page).first().locator('.card').first();
   const frame = card.locator('.card-drag-frame');
 
   await expect(card.locator('h3')).toHaveText('Plan release notes');
@@ -1371,9 +1399,9 @@ test('renders card drag ghost as an empty drop slot', async ({ page }) => {
 });
 
 test('does not leave duplicate card nodes after rapid cross-list dragging', async ({ page }) => {
-  const card = page.locator('.list').first().locator('.card').first();
-  const firstList = page.locator('.list').first();
-  const secondList = page.locator('.list').nth(1);
+  const card = boardLists(page).first().locator('.card').first();
+  const firstList = boardLists(page).first();
+  const secondList = boardLists(page).nth(1);
 
   const cardBox = await card.boundingBox();
   const firstListBox = await firstList.boundingBox();
@@ -1485,9 +1513,9 @@ test('keeps slow cross-list dragging healthy over blank board areas', async ({ p
   ]);
   await seedBoardState(page, boardRoot);
 
-  const firstList = page.locator('.list').first();
-  const doingList = page.locator('.list').nth(1);
-  const doneList = page.locator('.list').nth(2);
+  const firstList = boardLists(page).first();
+  const doingList = boardLists(page).nth(1);
+  const doneList = boardLists(page).nth(2);
   const draggedCard = firstList.locator('.card').filter({ hasText: 'Add a way to test all weather variations' });
 
   await expect(firstList.locator('.card')).toHaveCount(2);
@@ -1652,8 +1680,8 @@ test('drops cards into the lower area of an empty list column', async ({ page, b
   );
   await seedBoardState(page, boardRoot);
 
-  const firstList = page.locator('.list').first();
-  const emptyList = page.locator('.list').nth(1);
+  const firstList = boardLists(page).first();
+  const emptyList = boardLists(page).nth(1);
   const card = firstList.locator('.card').first();
 
   await expect(card.locator('h3')).toHaveText('Plan release notes');
@@ -1696,7 +1724,7 @@ test('drops cards into the lower area of an empty list column', async ({ page, b
   const tallestListHeightDuringDrag = await page.evaluate(() => {
     return Math.max(
       0,
-      ...Array.from(document.querySelectorAll('.list')).map((element) => (
+      ...Array.from(document.querySelectorAll('.list:not(.add-list-phantom)')).map((element) => (
         element instanceof HTMLElement ? element.getBoundingClientRect().height : 0
       ))
     );
@@ -1723,8 +1751,8 @@ test('drops cards into the lower area of an empty list column', async ({ page, b
 });
 
 test('drops cards into the lower area of a short non-empty list column', async ({ page }) => {
-  const firstList = page.locator('.list').first();
-  const doneList = page.locator('.list').nth(2);
+  const firstList = boardLists(page).first();
+  const doneList = boardLists(page).nth(2);
   const card = firstList.locator('.card').first();
 
   await expect(card.locator('h3')).toHaveText('Plan release notes');
@@ -1812,7 +1840,7 @@ test('creates and opens a list-specific new card with Shift+Enter', async ({ pag
   await expect(page.locator('#modalEditCard')).toBeVisible();
   await expect(page.locator('#cardEditorTitle')).toHaveText('Draft launch checklist');
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeFocused();
-  await expect(page.locator('.list').first().locator('.card').filter({ hasText: 'Draft launch checklist' })).toBeVisible();
+  await expect(boardLists(page).first().locator('.card').filter({ hasText: 'Draft launch checklist' })).toBeVisible();
 });
 
 test('switches to table view and moves a card through the list column', async ({ page, boardRoot }) => {
@@ -1823,7 +1851,7 @@ test('switches to table view and moves a card through the list column', async ({
 
   await page.keyboard.press(getShortcut('1'));
   await expect(page.locator('main#board')).not.toHaveClass(/board-view-table/);
-  await expect(page.locator('.list')).toHaveCount(3);
+  await expect(boardLists(page)).toHaveCount(3);
 
   await page.locator('#workspaceViewTable').click();
 
@@ -2052,8 +2080,8 @@ test('adds a new list to the right of the invoking list from the list actions po
   await page.locator('#userInputListName').fill('Review');
   await page.locator('#btnAddList').click();
 
-  await expect(page.locator('.list')).toHaveCount(4);
-  await expect(page.locator('.list .list-header span[contenteditable="true"]').nth(1)).toHaveText('Review');
+  await expect(boardLists(page)).toHaveCount(4);
+  await expect(page.locator('.list:not(.add-list-phantom) .list-header input.list-name').nth(1)).toHaveValue('Review');
 
   await expect.poll(async () => {
     const entries = await fs.readdir(boardRoot);
@@ -2093,7 +2121,7 @@ test('archives all cards in a list from the list actions popover', async ({ page
   }).toContain('Archive all cards in "To-do"?');
 
   await expect(page.locator('#listActionsPopover')).toBeHidden();
-  await expect(page.locator('.list').first().locator('.card')).toHaveCount(0);
+  await expect(boardLists(page).first().locator('.card')).toHaveCount(0);
 
   await expect.poll(async () => {
     const entries = await fs.readdir(path.join(boardRoot, '000-To-do-stock'));
@@ -2110,8 +2138,8 @@ test('archives a whole list from the list actions popover', async ({ page, board
   await page.locator('#listActionsPopover').getByRole('button', { name: 'Archive this list' }).click();
 
   await expect(page.locator('#listActionsPopover')).toBeHidden();
-  await expect(page.locator('.list')).toHaveCount(2);
-  await expect(page.locator('.list').filter({ hasText: 'Doing' })).toHaveCount(0);
+  await expect(boardLists(page)).toHaveCount(2);
+  await expect(boardLists(page).filter({ hasText: 'Doing' })).toHaveCount(0);
 
   await expect.poll(async () => {
     return await pathExists(path.join(boardRoot, '001-Doing-stock'));
@@ -2130,6 +2158,13 @@ test('opens the add-card-to-list modal from the keyboard shortcut with a styled 
   await page.keyboard.press(getShortcut('N'));
 
   await expect(page.locator('#modalAddCardToList')).toBeVisible();
+  const modalBox = await page.locator('#modalAddCardToList').boundingBox();
+  const viewport = page.viewportSize();
+  expect(modalBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(Math.abs((modalBox.x + modalBox.width / 2) - viewport.width / 2)).toBeLessThanOrEqual(2);
+  expect(modalBox.y).toBeGreaterThan(0);
+  expect(modalBox.y + modalBox.height).toBeLessThan(viewport.height);
   await expect(page.locator('#userInputBoardPath')).toBeVisible();
   await expect(page.locator('#userInputListPath')).toBeVisible();
   await expect(page.locator('#userInputBoardPath option')).toHaveText(['Playwright Board']);
@@ -2168,7 +2203,7 @@ test('quick add can target another open board', async ({ electronApp, boardRoot 
   await page.locator('#btnAddCardToList').click();
 
   await expect(page.locator('#modalAddCardToList')).toBeHidden();
-  await expect(page.locator('#boardName')).toHaveText('Playwright Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Playwright Board');
   await expect.poll(async () => {
     const entries = await fs.readdir(path.join(boardRoots[1], '000-To-do-stock'));
     return entries.some((entry) => entry.includes('capture-roadmap-note'));
@@ -2182,7 +2217,7 @@ test('quick add can target another open board', async ({ electronApp, boardRoot 
   await page.keyboard.press('Shift+Enter');
 
   await expect(page.locator('#modalAddCardToList')).toBeHidden();
-  await expect(page.locator('#boardName')).toHaveText('Roadmap Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Roadmap Board');
   await expect(page.locator('#modalEditCard')).toBeVisible();
   await expect(page.locator('#cardEditorTitle')).toHaveText('Open roadmap note');
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeFocused();
@@ -2197,7 +2232,7 @@ test('creates and opens a new card from the keyboard modal with Shift+Enter', as
   await expect(page.locator('#modalEditCard')).toBeVisible();
   await expect(page.locator('#cardEditorTitle')).toHaveText('Write beta announcement');
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeFocused();
-  await expect(page.locator('.list').first().locator('.card').filter({ hasText: 'Write beta announcement' })).toBeVisible();
+  await expect(boardLists(page).first().locator('.card').filter({ hasText: 'Write beta announcement' })).toBeVisible();
 });
 
 test('opens the add-list modal from the keyboard shortcut', async ({ page }) => {
@@ -2317,7 +2352,7 @@ test('navigates and closes board tabs from the keyboard', async ({ electronApp, 
   await page.keyboard.press('ArrowRight');
   await expect(roadmapTab).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#boardName')).toHaveText('Roadmap Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Roadmap Board');
   await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Roadmap Board');
 
   await page.keyboard.press('ArrowRight');
@@ -2514,7 +2549,7 @@ test('switches to the highlighted board from the switcher with arrows and Enter'
   await page.keyboard.press('Enter');
 
   await expect(page.locator('#modalBoardSwitcher')).toBeHidden();
-  await expect(page.locator('#boardName')).toHaveText('Ideas Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Ideas Board');
   await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Ideas Board');
 });
 
@@ -2526,7 +2561,7 @@ test('closes the board switcher with Escape without changing boards', async ({ e
   await page.keyboard.press('Escape');
 
   await expect(page.locator('#modalBoardSwitcher')).toBeHidden();
-  await expect(page.locator('#boardName')).toHaveText('Playwright Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Playwright Board');
 });
 
 test('switching boards from an open editor flushes the pending edit and closes the editor', async ({ electronApp, boardRoot }) => {
@@ -2543,7 +2578,7 @@ test('switching boards from an open editor flushes the pending edit and closes t
 
   await expect(page.locator('#modalBoardSwitcher')).toBeHidden();
   await expect(page.locator('#modalEditCard')).toBeHidden();
-  await expect(page.locator('#boardName')).toHaveText('Roadmap Board');
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Roadmap Board');
   await expect.poll(async () => {
     return await fs.readFile(cardPath, 'utf8');
   }).toContain('Pending switch save.');
@@ -2640,7 +2675,7 @@ test('moves the active card to the top of the next list from the editor arrow', 
     '000-plan-release-stock.md',
     '001-polish-copy-stock.md',
   ]);
-  await expect(page.locator('.list').nth(1).locator('.card').first()).toContainText('Plan release notes');
+  await expect(boardLists(page).nth(1).locator('.card').first()).toContainText('Plan release notes');
 });
 
 test('moves the active card to the top of the previous list from the keyboard shortcut', async ({ page, boardRoot }) => {
@@ -2656,7 +2691,7 @@ test('moves the active card to the top of the previous list from the keyboard sh
     '000-polish-copy-stock.md',
     '001-plan-release-stock.md',
   ]);
-  await expect(page.locator('.list').first().locator('.card').first()).toContainText('Polish homepage copy');
+  await expect(boardLists(page).first().locator('.card').first()).toContainText('Polish homepage copy');
 });
 
 test('moves the active card to the top of the selected list from the editor dropdown', async ({ page, boardRoot }) => {
@@ -2672,7 +2707,7 @@ test('moves the active card to the top of the selected list from the editor drop
     '000-plan-release-stock.md',
     '001-polish-copy-stock.md',
   ]);
-  await expect(page.locator('.list').nth(1).locator('.card').first()).toContainText('Plan release notes');
+  await expect(boardLists(page).nth(1).locator('.card').first()).toContainText('Plan release notes');
 });
 
 test('rejects top-of-list card moves outside the active board', async ({ page, boardRoot }) => {
