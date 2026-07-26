@@ -1,5 +1,6 @@
 #!/bin/bash
-# build.sh — Concatenate JS files into app/signboard.js
+# Deprecated legacy renderer build. Retained for SIGNBOARD_RENDERER=legacy rollback/testing.
+# Concatenate JS files into app/signboard.js.
 
 # Concatenate in the required order
 cat \

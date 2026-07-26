@@ -12,9 +12,11 @@ const fsPromises = fs.promises;
 const http = require('http');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { resolveRendererFile } = require('./lib/rendererSelection');
 const cardFrontmatter = require('./lib/cardFrontmatter');
 const { readCardWithTimestamps } = require('./lib/cardTimestamps');
 const { insertCardFileAtTop, reorderCardFilesInList, reorderListDirectories } = require('./lib/cardOrdering');
+const { listOrderedEntries, writeOrderManifest } = require('./lib/orderManifest');
 const { readBoardSnapshot } = require('./lib/boardSnapshot');
 const { prepareNewCardFrontmatter } = require('./lib/cardLifecycle');
 const {
@@ -57,6 +59,7 @@ const MCP_CONFIG_ARG = '--mcp-config';
 const RUNTIME_APP_ICON_PATH = path.join(__dirname, 'build', 'icon-macos.png');
 const SIGNBOARD_USER_DATA_DIR = String(process.env.SIGNBOARD_USER_DATA_DIR || '').trim();
 const APP_ENTRY_URL = pathToFileURL(path.join(__dirname, 'index.html'));
+const VUE_ENTRY_URL = pathToFileURL(path.join(__dirname, 'signboard-vue', 'dist', 'index.html'));
 const TRUSTED_BOARD_ROOTS_FILE = 'trusted-board-roots.json';
 const LINKED_OBJECT_ICON_DIRECTORY = 'linked-object-icons';
 const LINKED_OBJECT_ICON_MAX_BYTES = 256 * 1024;
@@ -1715,23 +1718,13 @@ async function adoptLegacyBoardRootsForSender(sender, boardRoots) {
 
 async function listBoardDirectories(boardRoot, options = {}) {
   const includeArchive = options.includeArchive === true;
-  const entries = await fsPromises.readdir(boardRoot, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
+  const directoryNames = await listOrderedEntries(boardRoot, (entry) => entry.isDirectory());
+  return directoryNames
     .filter((entryName) => includeArchive || entryName !== 'XXX-Archive');
 }
 
 async function listMarkdownCardFileNames(listPath) {
-  const entries = await fsPromises.readdir(listPath, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
-    .map((entry) => entry.name)
-    .sort((left, right) => left.localeCompare(right, undefined, {
-      numeric: true,
-      sensitivity: 'base',
-      ignorePunctuation: true,
-    }));
+  return listOrderedEntries(listPath, (entry) => entry.isFile() && entry.name.endsWith('.md'));
 }
 
 function sanitizeImportedName(value) {
@@ -2440,7 +2433,7 @@ function createWindow() {
     try {
       const parsed = new URL(url);
       return parsed.protocol === APP_ENTRY_URL.protocol
-        && parsed.pathname === APP_ENTRY_URL.pathname;
+        && [APP_ENTRY_URL.pathname, VUE_ENTRY_URL.pathname].includes(parsed.pathname);
     } catch {
       return false;
     }
@@ -2577,7 +2570,9 @@ function createWindow() {
     });
   });
 
-  win.loadFile('index.html');
+  // Vue is the default renderer. SIGNBOARD_RENDERER=legacy is the supported
+  // rollback/testing boundary; SIGNBOARD_RENDERER=vue remains compatible.
+  win.loadFile(resolveRendererFile(process.env.SIGNBOARD_RENDERER, __dirname));
   return win;
 }
 
@@ -4313,6 +4308,14 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
         frontmatter,
         body,
       });
+      const listPath = path.dirname(filePath);
+      const orderedCards = await listOrderedEntries(
+        listPath,
+        (entry) => entry.isFile() && entry.name.endsWith('.md'),
+      );
+      if (!orderedCards.includes(path.basename(filePath))) {
+        await writeOrderManifest(listPath, [...orderedCards, path.basename(filePath)]);
+      }
       await autoSyncManagedObsidianBaseForCardPath(event.sender, filePath);
 
       return { ok: true };
@@ -4554,6 +4557,11 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     case 'createList': {
       const listPath = requireWritablePath(event.sender, args[0]);
       await fsPromises.mkdir(listPath);
+      const boardRoot = path.dirname(listPath);
+      const orderedLists = await listOrderedEntries(boardRoot, (entry) => entry.isDirectory());
+      if (!orderedLists.includes(path.basename(listPath))) {
+        await writeOrderManifest(boardRoot, [...orderedLists, path.basename(listPath)]);
+      }
       return { ok: true };
     }
 
@@ -4939,6 +4947,20 @@ if (isCliMode) {
     createWindow();
     buildApplicationMenu();
     setupAutoUpdater();
+
+    if (process.env.SIGNBOARD_DEV_WATCH) {
+      const builtFile = path.join(__dirname, 'app', 'signboard.js');
+      let reloadTimer = null;
+      fs.watch(builtFile, () => {
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => {
+          const win = getMainWindow();
+          if (win && !win.isDestroyed()) {
+            win.webContents.reloadIgnoringCache();
+          }
+        }, 150);
+      });
+    }
   });
 }
 
