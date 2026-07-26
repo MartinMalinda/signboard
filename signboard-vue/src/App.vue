@@ -1,11 +1,197 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import AppHeader from './components/AppHeader.vue'
+import BoardTabs from './components/BoardTabs.vue'
+import WorkspaceViewDock from './components/WorkspaceViewDock.vue'
+import KanbanBoard from './components/board/KanbanBoard.vue'
+import TableView from './components/board/TableView.vue'
+import PlannerOverlay from './components/planner/PlannerOverlay.vue'
+import EmptyBoardCta from './components/board/EmptyBoardCta.vue'
+import MissingBoardAlert from './components/board/MissingBoardAlert.vue'
+import EditCardModal from './components/editor/EditCardModal.vue'
+import AddCardModal from './components/modals/AddCardModal.vue'
+import QuickAddCardModal from './components/modals/QuickAddCardModal.vue'
+import AddListModal from './components/modals/AddListModal.vue'
+import ArchiveBrowserModal from './components/modals/ArchiveBrowserModal.vue'
+import BoardSwitcherModal from './components/modals/BoardSwitcherModal.vue'
+import StaticModals from './components/modals/StaticModals.vue'
+import { useShortcuts } from './composables/useShortcuts'
+import { useBoardsStore } from './stores/useBoardsStore'
+import { useBoardDataStore } from './stores/useBoardDataStore'
+import { useUiStore } from './stores/useUiStore'
+import { useViewStore, type WorkspaceView } from './stores/useViewStore'
+import { usePlannerStore, type PlannerView } from './stores/usePlannerStore'
+import SettingsModal from './components/settings/SettingsModal.vue'
+import { useSettingsStore } from './stores/useSettingsStore'
+import { useArchiveStore } from './stores/useArchiveStore'
+import { useBoardSwitcherStore } from './stores/useBoardSwitcherStore'
+import { useStaticModalStore } from './stores/useStaticModalStore'
+import type { DirectorySelection } from './types'
+import { useDueNotificationsStore } from './stores/useDueNotificationsStore'
+import { useExternalBoardSync } from './composables/useExternalBoardSync'
+import { useAccessibility } from './composables/useAccessibility'
+import { applyBoardThemeToElement, clearBoardThemeFromElement } from '../lib/boardTheme.js'
+
+const boards = useBoardsStore()
+const data = useBoardDataStore()
+const ui = useUiStore()
+const view = useViewStore()
+const planner = usePlannerStore()
+const settings = useSettingsStore()
+const archive = useArchiveStore()
+const switcher = useBoardSwitcherStore()
+const staticModals = useStaticModalStore()
+const dueNotifications = useDueNotificationsStore()
+const externalSync = useExternalBoardSync()
+const editorModal = ref<InstanceType<typeof EditCardModal> | null>(null)
+const quickAddOpen = ref(false); const addListOpen = ref(false); const addCardOpen = ref(false); const addCardListPath = ref(''); const addListAfterPath = ref<string | undefined>()
+let quickAddDisposer: (() => void) | undefined
+let settingsDisposer: (() => void) | undefined
+let switcherDisposer: (() => void) | undefined
+let aboutDisposer: (() => void) | undefined
+let keyboardDisposer: (() => void) | undefined
+let nativeViewDisposer: (() => void) | undefined
+let themeDisposer: (() => void) | undefined
+
+useAccessibility()
+
+function syncBodyState() {
+  document.body.classList.toggle('board-empty', !boards.activeBoardPath)
+}
+
+function syncBoardTheme() {
+  const boardElement = document.getElementById('board')
+  if (!boards.activeBoardPath || !data.snapshot?.boardSettings) {
+    clearBoardThemeFromElement(boardElement)
+    return
+  }
+  applyBoardThemeToElement(boardElement, data.snapshot.boardSettings, ui.themeMode)
+}
+
+watch(() => ({ boardPath: boards.activeBoardPath, settings: data.snapshot?.boardSettings, theme: ui.themeMode }), syncBoardTheme, { deep: true, immediate: true })
+
+async function openBoard() {
+  await boards.pickAndOpenBoard()
+  syncBodyState()
+}
+
+async function locateBoard(selection: string | DirectorySelection) {
+  const authorizedPath = await boards.authorizeSelection(selection)
+  if (!authorizedPath) return false
+  const selectedPath = authorizedPath
+  const directories = await window.board.listDirectories(selectedPath)
+  const looksLikeBoard = directories.some((name) => name === 'XXX-Archive' || /^\d{3}-.+/.test(name))
+  if (!looksLikeBoard && typeof window.confirm === 'function' && !window.confirm("This doesn't look like a board directory.\n\nUse anyway?")) return false
+  const replaced = await boards.replaceBoardPath(boards.activeBoardPath, authorizedPath)
+  syncBodyState()
+  return replaced
+}
+
+async function removeBoard() {
+  await boards.closeBoard(boards.activeBoardPath)
+  syncBodyState()
+}
+
+async function openCard(cardPath: string) {
+  await editorModal.value?.openCard(cardPath)
+}
+
+function openQuickAdd() { quickAddOpen.value = true }
+function openAddList(afterPath?: string) { addListAfterPath.value = afterPath; addListOpen.value = true }
+function openAddCard(listPath: string) { addCardListPath.value = listPath; addCardOpen.value = true }
+function closeCreationModals() { quickAddOpen.value = false; addCardOpen.value = false; addListOpen.value = false }
+async function createdCard(path: string, options: { openAfterCreate?: boolean } = {}) {
+  closeCreationModals(); await data.reconcileAfterMutation(boards.activeBoardPath)
+  if (options.openAfterCreate) await editorModal.value?.openCard(path, { focusNotes: true })
+}
+async function archiveCard(path: string) {
+  if (!window.board.archiveCard) return
+  if (typeof window.confirm === 'function' && !window.confirm('Archive this card?')) return
+  await window.board.archiveCard(path); await data.reconcileAfterMutation(boards.activeBoardPath); ui.announceStatus('Archived card.')
+}
+
+function openArchive() { void archive.open() }
+function openBoardSwitcher() { switcher.open() }
+async function switchBoard(path: string) {
+  if (editorModal.value) await editorModal.value.closeCard()
+  return boards.activateBoard(path)
+}
+
+async function switchView(nextView: WorkspaceView) {
+  if (editorModal.value) await editorModal.value.closeCard()
+  if (nextView === 'planner') {
+    planner.setView('calendar')
+    planner.setScope('all')
+    await planner.load()
+  }
+  view.setView(nextView)
+}
+
+async function moveEditorAdjacent(direction: -1 | 1) {
+  await editorModal.value?.moveAdjacent(direction)
+}
+
+async function archiveEditorCard() {
+  await editorModal.value?.archiveActive()
+}
+
+async function cycleColorScheme() {
+  if (!boards.activeBoardPath) return
+  await settings.cycleColorScheme()
+}
+
+async function handlePlannerShortcut(nextView: PlannerView | 'toggle', scope: 'all' | 'current') {
+  if (!boards.activeBoardPath) return
+  if (nextView === 'toggle' && view.activeView === 'planner') { await switchView('kanban'); return }
+  if (editorModal.value) await editorModal.value.closeCard()
+  planner.setView(nextView === 'toggle' ? 'calendar' : nextView)
+  planner.setScope(scope)
+  await planner.load()
+  view.setView('planner')
+}
+
+useShortcuts({ onQuickAdd: openQuickAdd, onAddList: () => openAddList(), onFocusSearch: () => document.getElementById('boardSearchInput')?.focus(), onSettings: () => settings.open(), onBoardSwitcher: openBoardSwitcher, onKeyboardShortcuts: () => staticModals.openKeyboardShortcuts(), onArchive: openArchive, onView: switchView, onPlanner: handlePlannerShortcut, onToggleTheme: () => ui.toggleTheme(), onCycleColorScheme: cycleColorScheme, onMoveCardLeft: () => moveEditorAdjacent(-1), onMoveCardRight: () => moveEditorAdjacent(1), onArchiveCard: archiveEditorCard })
+
+onMounted(async () => {
+  ui.restoreTheme()
+  syncBodyState()
+  syncBoardTheme()
+  themeDisposer = window.electronAPI.onToggleThemeMode?.(() => ui.toggleTheme())
+  nativeViewDisposer = window.electronAPI.onSwitchBoardView?.((nextView) => { void switchView(nextView === 'table' ? 'table' : 'kanban') })
+  if (window.electronAPI.onOpenQuickAddCard) quickAddDisposer = window.electronAPI.onOpenQuickAddCard(openQuickAdd)
+  settingsDisposer = window.electronAPI.onOpenBoardSettings?.(() => { void settings.open() })
+  switcherDisposer = window.electronAPI.onOpenBoardSwitcher?.(openBoardSwitcher)
+  aboutDisposer = window.electronAPI.onOpenAboutSignboard?.(() => staticModals.openAbout())
+  keyboardDisposer = window.electronAPI.onOpenKeyboardShortcuts?.(() => staticModals.openKeyboardShortcuts())
+  await boards.restoreSession()
+  syncBodyState()
+  dueNotifications.start()
+  externalSync.start({
+    refreshEditor: async () => { await editorModal.value?.refreshFromExternalChange() },
+    isBlocked: () => Boolean(document.querySelector('[role="dialog"]:not([hidden]):not([aria-hidden="true"]), .app-popover:not(.hidden)')),
+  })
+})
+onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisposer?.(); aboutDisposer?.(); keyboardDisposer?.(); nativeViewDisposer?.(); themeDisposer?.(); dueNotifications.stop(); externalSync.stop(); clearBoardThemeFromElement(document.getElementById('board')) })
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <AppHeader :on-quick-add="openQuickAdd" :on-open-settings="() => settings.open()" :on-open-archive="openArchive" :on-open-sponsor="() => staticModals.openSponsor()"><BoardTabs :on-open="openBoard" :on-open-switcher="openBoardSwitcher" /></AppHeader>
+  <main id="board" :class="{ 'board-view-kanban': Boolean(boards.activeBoardPath) && view.activeView === 'kanban', 'board-view-table': Boolean(boards.activeBoardPath) && view.activeView === 'table' }">
+    <template v-if="!boards.activeBoardPath"><EmptyBoardCta :on-open="openBoard" /></template>
+    <MissingBoardAlert v-else-if="data.error" :board-path="boards.activeBoardPath" :on-locate="locateBoard" :on-remove="removeBoard" />
+    <KanbanBoard v-else-if="view.activeView === 'kanban'" :on-open="openCard" :on-add-card="openAddCard" :on-add-list="openAddList" :on-archive-card="archiveCard" :on-labels-changed="() => data.reconcileAfterMutation(boards.activeBoardPath)" />
+    <TableView v-else-if="view.activeView === 'table'" :on-open="openCard" />
+    <div v-else aria-hidden="true"></div>
+  </main>
+  <WorkspaceViewDock :active-view="view.activeView" :on-change="switchView" />
+  <PlannerOverlay :is-open="view.activeView === 'planner'" :on-close="() => switchView('kanban')" :on-open-card="openCard" />
+  <EditCardModal ref="editorModal" />
+  <AddCardModal :is-open="addCardOpen" :list-path="addCardListPath" :labels="data.snapshot?.boardSettings?.labels || []" :on-close="closeCreationModals" :on-created="createdCard" />
+  <QuickAddCardModal :is-open="quickAddOpen" :on-close="closeCreationModals" :on-created="createdCard" />
+  <AddListModal :is-open="addListOpen" :after-path="addListAfterPath" :on-close="closeCreationModals" :on-created="() => { addListOpen = false }" />
+  <SettingsModal />
+  <ArchiveBrowserModal />
+  <BoardSwitcherModal :on-switch="switchBoard" />
+  <StaticModals />
+  <div id="signboardStatusRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ ui.statusMessage }}</div>
 </template>
-
-<style scoped></style>
