@@ -16,7 +16,7 @@ const { resolveRendererFile } = require('./lib/rendererSelection');
 const cardFrontmatter = require('./lib/cardFrontmatter');
 const { readCardWithTimestamps } = require('./lib/cardTimestamps');
 const { insertCardFileAtTop, reorderCardFilesInList, reorderListDirectories } = require('./lib/cardOrdering');
-const { listOrderedEntries, writeOrderManifest } = require('./lib/orderManifest');
+const { listOrderedEntries, moveOrderManifestEntry, writeOrderManifest } = require('./lib/orderManifest');
 const { readBoardSnapshot } = require('./lib/boardSnapshot');
 const { prepareNewCardFrontmatter } = require('./lib/cardLifecycle');
 const {
@@ -34,6 +34,7 @@ const { listOllamaModels, runSmartCardActionWithOllama, suggestCardTasksWithOlla
 const { buildExternalPublishedCalendarFeed } = require('./lib/externalPublishedCalendar');
 const { importTrello, importObsidian, importTasksMd } = require('./lib/importers');
 const { duplicateBoard } = require('./lib/boardDuplication');
+const { duplicateCard } = require('./lib/cliBoard');
 const obsidianIntegration = require('./lib/obsidianIntegration');
 const { startSignboardMcpServer } = require('./lib/mcpServer');
 const { isCliInvocation, runCli } = require('./lib/cliApp');
@@ -142,9 +143,28 @@ function getUserArgsFromProcessArgv(argv = process.argv) {
 }
 
 const signboardArgs = getUserArgsFromProcessArgv();
+function getInitialBoardPath(args = signboardArgs) {
+  const firstArg = Array.isArray(args) ? String(args[0] || '').trim() : '';
+  if (!firstArg || firstArg.startsWith('-')) {
+    return '';
+  }
+
+  const boardRoot = normalizeBoardRootPath(firstArg);
+  try {
+    if (boardRoot && fs.statSync(boardRoot).isDirectory()) {
+      return boardRoot;
+    }
+  } catch {
+    // Ignore non-directory arguments; they may belong to another launch mode.
+  }
+
+  return '';
+}
+
+const initialBoardPath = getInitialBoardPath();
 const isMcpServerMode = signboardArgs.includes(MCP_SERVER_ARG);
 const isMcpConfigMode = signboardArgs.includes(MCP_CONFIG_ARG);
-const isCliMode = isCliInvocation(signboardArgs);
+const isCliMode = !initialBoardPath && isCliInvocation(signboardArgs);
 let mainWindow = null;
 let isAppQuitting = false;
 let mcpPowerSaveBlockerId = null;
@@ -1718,13 +1738,21 @@ async function adoptLegacyBoardRootsForSender(sender, boardRoots) {
 
 async function listBoardDirectories(boardRoot, options = {}) {
   const includeArchive = options.includeArchive === true;
-  const directoryNames = await listOrderedEntries(boardRoot, (entry) => entry.isDirectory());
+  const directoryNames = await listOrderedEntries(
+    boardRoot,
+    (entry) => entry.isDirectory(),
+    { writeManifest: true },
+  );
   return directoryNames
     .filter((entryName) => includeArchive || entryName !== 'XXX-Archive');
 }
 
 async function listMarkdownCardFileNames(listPath) {
-  return listOrderedEntries(listPath, (entry) => entry.isFile() && entry.name.endsWith('.md'));
+  return listOrderedEntries(
+    listPath,
+    (entry) => entry.isFile() && entry.name.endsWith('.md'),
+    { writeManifest: true },
+  );
 }
 
 function sanitizeImportedName(value) {
@@ -4381,6 +4409,16 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
       };
     }
 
+    case 'duplicateCard': {
+      const filePath = requireWritablePath(event.sender, args[0]);
+      const senderState = getSenderBoardAccessState(event.sender);
+      const listPath = path.dirname(filePath);
+      return duplicateCard(senderState.activeBoardRoot, {
+        cardRef: path.basename(filePath),
+        fromListRef: path.basename(listPath),
+      });
+    }
+
     case 'archiveCard': {
       const filePath = requireWritablePath(event.sender, args[0]);
       const senderState = getSenderBoardAccessState(event.sender);
@@ -4542,7 +4580,30 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
         throw new Error('UNAUTHORIZED_PATH');
       }
 
+      const sourceStats = await fsPromises.stat(sourcePath);
       await fsPromises.rename(sourcePath, destinationPath);
+
+      if (!movingBoardRoot) {
+        const sourceDirectoryPath = path.dirname(sourcePath);
+        const destinationDirectoryPath = path.dirname(destinationPath);
+        if (sourceStats.isDirectory() && sourceDirectoryPath === activeBoardRoot) {
+          await moveOrderManifestEntry(
+            sourceDirectoryPath,
+            path.basename(sourcePath),
+            destinationDirectoryPath,
+            path.basename(destinationPath),
+            (entry) => entry.isDirectory() && entry.name !== 'XXX-Archive',
+          );
+        } else if (sourceStats.isFile() && path.extname(sourcePath).toLowerCase() === '.md') {
+          await moveOrderManifestEntry(
+            sourceDirectoryPath,
+            path.basename(sourcePath),
+            destinationDirectoryPath,
+            path.basename(destinationPath),
+            (entry) => entry.isFile() && entry.name.endsWith('.md'),
+          );
+        }
+      }
 
       if (movingBoardRoot) {
         replaceTrustedBoardRoot(sourcePath, destinationPath);
@@ -4627,6 +4688,17 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     default:
       throw new Error(`UNKNOWN_BOARD_OPERATION:${operation}`);
   }
+});
+
+ipcMain.handle('get-initial-board-path', () => {
+  if (!initialBoardPath) {
+    return '';
+  }
+
+  // A path supplied explicitly on the command line is an intentional board
+  // selection, equivalent to choosing that folder in the directory picker.
+  addTrustedBoardRoot(initialBoardPath);
+  return initialBoardPath;
 });
 
 ipcMain.handle('choose-directory', async (event, { defaultPath } = {}) => {
@@ -4949,9 +5021,15 @@ if (isCliMode) {
     setupAutoUpdater();
 
     if (process.env.SIGNBOARD_DEV_WATCH) {
-      const builtFile = path.join(__dirname, 'app', 'signboard.js');
+      const watchedRendererFile = resolveRendererFile(process.env.SIGNBOARD_RENDERER, __dirname);
+      const watchedRendererDirectory = path.dirname(watchedRendererFile);
+      const watchedRendererBasename = path.basename(watchedRendererFile);
       let reloadTimer = null;
-      fs.watch(builtFile, () => {
+      fs.watch(watchedRendererDirectory, (eventType, filename) => {
+        if (filename && String(filename) !== watchedRendererBasename) {
+          return;
+        }
+
         clearTimeout(reloadTimer);
         reloadTimer = setTimeout(() => {
           const win = getMainWindow();

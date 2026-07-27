@@ -46,8 +46,8 @@ File: `main.js`
 - Owns explicit board import operations for Trello, Obsidian, and Tasks.md; renderer code passes tokenized selections and the main process performs all external file reads and board writes.
 - Owns outbound Obsidian operations through `lib/obsidianIntegration.js`: containing-vault detection, Obsidian URI construction, default-app opening, managed generated Bases files, linked note creation, inbox note appends, and Signboard deep-link copying/resolution.
 - Owns archive browse/read/restore operations through `lib/archive.js`; renderer code never scans or restores archive contents directly.
-- Owns adjacent-card top-of-list moves through `moveCardToTop`, backed by `lib/cardOrdering.js`.
-- Owns transactional card/list drag reorder through `reorderCardsInList` and `reorderLists`, backed by `lib/cardOrdering.js` staging/rollback helpers instead of renderer-side multi-rename loops.
+- Owns adjacent-card top-of-list moves through `moveCardToTop`, backed by `lib/cardOrdering.js`, which preserves the card filename and updates `.board.json`.
+- Owns transactional card/list drag reorder through `reorderCardsInList` and `reorderLists`, backed by `lib/cardOrdering.js` helpers that persist per-directory `.board.json` order without renaming card files or list directories.
 - Owns board duplication through `lib/boardDuplication.js`; renderer code supplies a tokenized destination folder selection and the main process copies the board, refreshes copied card IDs/metadata, resets copied managed Base state, and trusts the new board root.
 - In MCP mode, starts `lib/mcpServer.js`, passes desktop trusted board roots plus the last synced desktop open-board state into it, and communicates over stdio using MCP JSON-RPC framing.
 - MCP stdio transport supports both `Content-Length` framing and newline-delimited JSON-RPC for client compatibility.
@@ -68,7 +68,7 @@ File: `preload.js`
 - Proxies board operations to `main.js` over `ipcRenderer.invoke(...)`.
 - Does not use Node filesystem APIs directly.
 - Archive browsing uses preload bridge methods (`listArchiveEntries`, `readArchiveEntry`, `restoreArchivedCard`, `restoreArchivedList`) backed by the same trusted-board gate as normal board operations.
-- Adjacent-card moves from renderer shortcuts use preload method `moveCardToTop`, which validates source/target paths in `main.js` and inserts the card at the top of the target list through `lib/cardOrdering.js`.
+  - Adjacent-card moves from renderer shortcuts use preload method `moveCardToTop`, which validates source/target paths in `main.js`, moves the card basename unchanged when crossing lists, and inserts it at the top of the destination `.board.json` order through `lib/cardOrdering.js`.
 - `window.chooser.pickImportSources(...)` returns tokenized external file/directory selections for import flows, and `window.board.importTrello(...)` / `window.board.importObsidian(...)` / `window.board.importTasksMd(...)` invoke the main-process importers. Board duplication also uses tokenized directory selections through `window.board.duplicateBoard(...)`. `window.chooser.linkDroppedObjects(...)` extracts OS drag/drop file paths in preload using Electron `webUtils.getPathForFile` and forwards them to main-process linked-object validation.
 - Still exposes board watch helpers (`startBoardWatch`, `stopBoardWatch`, `getBoardWatchToken`), but the watcher implementation now lives in `main.js`.
 
@@ -144,6 +144,11 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
 - Normal launches load `signboard-vue/dist/index.html`. `SIGNBOARD_RENDERER=vue`
   remains compatible; `SIGNBOARD_RENDERER=legacy` explicitly loads the
   deprecated `index.html` renderer for rollback/testing.
+- `npm run dev:vue` completes one Vue build before starting Electron. The
+  `watch:vue:changes` source watcher rebuilds only on changes, and the dev
+  reload watches the generated Vue `dist/index.html` after each build. A
+  directory argument is forwarded to Electron and opened as the initial board
+  (`npm run dev:vue -- /path/to/board`).
 - `signboard-vue/src/stores/useBoardsStore.ts` owns byte-compatible
   `openBoardPaths` / `activeBoardPath` / legacy `boardPath` persistence, trusted
   re-authorization, picker opens, starter seeding, and missing-board replacement.
@@ -195,7 +200,7 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
   - Renders active-board cards in board/list order as a dense table.
   - Shows `Start`, `Due`, `Updated`, `Created`, and linked-object count columns plus compact list-filter and sort controls.
   - Supports visible-row checkbox selection, shift-range selection after a row checkbox is selected, and bulk actions for archive, move-to-list, add/remove labels, set/clear start dates, and set/clear due dates.
-  - Reuses board search, label filters, Today/Overdue/next-range date filters, task progress badges, linked-object counts, and completed-list workflow handling.
+  - Reuses board search and label filters, task progress badges, linked-object counts, and completed-list workflow handling; date-based filtering is handled by Planner.
   - Moves a card to another list through the row list dropdown by calling the same top-of-list move IPC path as the card editor.
   - Defers row list dropdown DOM updates until macOS native menu tracking has settled.
 - `app/board/archiveBrowser.js`:
@@ -228,7 +233,7 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
   - The canonical Vue `useSortable` card setup uses a small Sortable fallback tolerance so normal pointer wobble does not turn card clicks into drags.
   - Sanitizes list names before filesystem rename.
   - Builds card DOM for a list concurrently to reduce list render time.
-  - Delegates card drag/drop filesystem ordering to main-process transactional reorder helpers, which record `moved-list` lifecycle events only for real cross-list card moves, not same-list reindexing.
+  - Delegates card drag/drop ordering to main-process transactional helpers, which update `.board.json`, preserve filenames during same-list reindexing, and record `moved-list` lifecycle events only for real cross-list card moves.
 - `app/lists/listActionsPopover.js`:
   - Renders native button actions for adding cards/lists, moving lists left/right, and archiving cards/lists.
   - Keeps the popover labelled, focuses the first enabled action on open, supports arrow-key / `Home` / `End` / `Esc` option navigation, and announces completed list actions through the shared live status helper.
@@ -243,7 +248,7 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
   - Renders each card as a list item with a native button title so cards can be opened by keyboard and announced with stable labels.
 - `app/board/boardLabels.js`:
   - Owns board label state in the renderer.
-  - Renders the header filter dropdown with mutually exclusive `Today` / `Overdue` / next-range date filters plus multi-select OR label filters.
+  - Renders the header filter dropdown with multi-select OR label filters; date-based filtering is handled by Planner.
   - Keeps the header filter popover, card label popover, and Settings section nav keyboard-operable with arrow keys, `Home`, `End`, and opener focus restoration on popover `Esc`.
   - Provides a card-label popover gear shortcut that opens the board's Labels settings panel.
   - Evaluates date filters from card start/due dates and incomplete task start/due markers, ignoring completed task date markers.
@@ -260,22 +265,22 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
 
 ### Add/edit card and list
 - `app/cards/processAddNewCard.js` and `app/cards/processAddNewList.js`:
-  - Generate numbered filenames/directories and create on disk.
+  - Generate readable filenames/directories and create on disk; ordering is maintained separately in `.board.json`.
   - Quick Add card submissions can target any currently open/trusted board, request opening the created card immediately with the notes field focused, and switch to the target board first when `Shift + Enter` creates a card outside the active board.
+  - Kanban list headers expose a compact plus shortcut that opens the list-specific Add Card modal.
 - `app/modals/toggleEditCardModal.js`:
-  - Loads card into OverType editor.
+  - Loads cards into the legacy OverType editor; the canonical Vue editor uses the controlled Tiptap notes surface in `CardNotesEditor.vue`.
   - Displays and edits card-level start/due dates from frontmatter with one compact calendar-based Dates control and shared two-field popover.
   - Displays quiet `Created` and `Updated` card timestamps from the normalized desktop read metadata.
   - Saves title/body/frontmatter through `window.board.writeCard`.
   - Debounces editor body writes and serializes save order to prevent stale overwrite races.
   - Tracks the clean on-disk editor state so external/MCP updates can reload an open card editor when the user has no local edits in progress.
   - Relies on the main-process renderer context menu for native right-click cut/copy/paste/select-all in editable title/body fields.
-  - Detects raw `http(s)`/`www` URLs in the body without rewriting Markdown, visually marks them in the OverType preview, and opens them through `window.electronAPI.openExternal` from the inline open button or Cmd/Ctrl-click.
+  - Detects raw `http(s)`/`www` URLs in the body without rewriting Markdown, visually marks them in the Tiptap editor (or OverType fallback), and opens them through `window.electronAPI.openExternal` from the inline open button or Cmd/Ctrl-click.
   - Moves active cards to selected/adjacent lists from the list dropdown, arrow action, and keyboard shortcuts by calling the main-process `moveCardToTop` IPC path, which inserts at the top of the destination list.
   - Defers list-dropdown moves until macOS native menu tracking has settled before disabling controls or refreshing editor state.
-  - Renders one task-line calendar control at the start of each parsed checklist line for editing that task's start/due dates.
-  - Uses measured textarea line-start coordinates for control placement so wrapped lines do not drift button positions.
-  - Handles date pickers, labels picker, linked-object paperclip menu, local-file drag/drop linking, Smart Card Action previews for titles/summaries/task lists/auto-label/smart-paste/due-date/attachment/custom/Quick output, read-only Question the Card answers, the Smart Actions settings shortcut, the anchored Smart Actions popover, duplicate, archive, and Open With actions.
+  - Preserves task-level start/due markers in the notes body for parsing and temporal views without rendering a date control beside each checklist item.
+  - Handles date pickers, labels picker, linked-object paperclip menu, local-file drag/drop linking, Smart Actions settings, duplicate, archive, and Open With actions. The card editor no longer renders the former floating Smart Card Actions trigger.
   - The Open With menu covers default-app file actions and copied Signboard links for every board; Obsidian open/URI actions are shown only when the card is inside a detected vault.
   - Card duplication now resets archive/lifecycle fields and seeds a fresh `created` event.
 - `app/utilities/taskList.js`:
@@ -331,7 +336,7 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
 - `app/ui/theme.js`:
   - Toggles `document.documentElement.dataset.theme`.
   - Persists theme to localStorage.
-  - Updates OverType theme to match app theme.
+  - Updates the legacy OverType theme to match app theme; the Vue Tiptap editor follows the shared runtime theme tokens.
   - Renders the board-menu theme action label, shortcut hint, and accessible shortcut metadata.
 - `DESIGN.md` documents the default Signboard theme as Design.md-compatible tokens plus rationale; consult it before changing default palette, typography, spacing, shape, elevation, or core component styling.
 - `app/ui/tooltips.js`:
@@ -579,7 +584,7 @@ CLI overdue behavior:
 - Rebuild with `./buildjs.sh` whenever `app/**` or renderer-included `shared/**` module files change.
 - Always update agent docs (`CODEX.md`, `AGENTS.md`, `docs/codex/PROJECT_CONTEXT.md`, `docs/codex/FILE_STRUCTURE.md`) when behavior/architecture/tooling changes.
 - Always update release-facing docs (`readme.md`, `docs/README.md`, `docs/using-signboard.md`, `docs/signboard-cli.md`, and `MCP_README.md` when relevant) when user behavior, CLI behavior, or setup flows change.
-- Keep list/card filename conventions intact; drag/drop logic depends on numeric prefixes.
+- Keep existing list/card filename conventions readable and stable; drag/drop ordering must use `.board.json` and must not depend on numeric prefixes.
 - Avoid refactoring path concatenation casually; many flows assume trailing `/`.
 - For content/parsing changes, update both `lib/cardFrontmatter.js` and `scripts/test-frontmatter.js`.
 - For board label settings behavior, update both `lib/boardLabels.js` and `scripts/test-board-labels.js`.

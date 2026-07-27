@@ -26,13 +26,14 @@ same preload/main-process APIs.
 ## What These Docs Cover
 
 - Creating and organizing boards, lists, and cards
+- Stable file-first ordering through per-directory `.board.json` manifests without reorder renames
 - Drag-and-drop movement, including the empty insertion slot shown while dragging cards
-- Calendar-based start/due date ranges on Kanban cards and in the card editor, task lists, labels, linked-object counts, completed-list workflow settings, Kanban/Table board views, card age sorting and bulk actions in Table, Planner date views, and External Published Calendar
+- Calendar-based start/due date ranges on Kanban cards and in the card editor, task-level date markers, labels, linked-object counts, completed-list workflow settings, Kanban/Table board views, card age sorting and bulk actions in Table, Planner date views, and External Published Calendar
 - Archiving and restoring cards and lists
 - Settings, including app-wide General/Notifications/Smart Actions panels, drag-reorderable local Ollama Smart Card Actions for generated titles/summaries/task lists/auto-labeling/smart paste/due dates/linked-object suggestions, one-off Quick Smart Actions, read-only card questions, and board-specific General, Labels, Appearance, Workflow, Obsidian, and Import panels, plus board rename/move/duplicate actions
 - Obsidian integration, including boards stored inside vaults, Open With actions, generated Bases files, linked notes, missing-note handling, linked objects, dropped local-file linking, URL favicons, `signboard://` card/board links, and the optional Obsidian companion plugin
 - Raw web URLs in card bodies, opened from the editor through the inline open-link control or Cmd/Ctrl-click
-- Native text editing context menus in editable fields
+- Native text editing context menus in editable fields, plus a Kanban card right-click action menu
 - Accessibility support for keyboard-operable cards/list actions, modal focus handling, live status announcements, reduced motion, and forced-colors mode
 - Keyboard result/menu navigation for board search, Planner search, Archive search, board tabs, list actions, label/filter popovers, and Settings sections
 - Keyboard shortcuts for Quick Add card creation across open boards, creating lists, switching and closing open boards, opening Planner views across all open boards or the current board, cycling colors, moving open cards, archiving, and opening Archive

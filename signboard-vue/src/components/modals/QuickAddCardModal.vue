@@ -34,14 +34,35 @@ onMounted(() => { if (props.isOpen) { wasOpen = true; void openState() } })
 onUpdated(() => { if (props.isOpen && !wasOpen) { wasOpen = true; void openState() } else if (!props.isOpen) wasOpen = false })
 </script>
 <template>
-  <Modal id="modalAddCardToList" :is-open="isOpen" :on-close="onClose" positioning="fixed" :show-chrome="false" labelled-by="quickAddHeading" initial-focus="#userInputCardName">
-    <form class="modal-content" @submit.prevent="submit()">
+  <Modal id="modalAddCardToList" modal-class="quick-add-card-modal" :is-open="isOpen" :on-close="onClose" positioning="fixed" :show-chrome="false" labelled-by="quickAddHeading" initial-focus="#userInputCardName">
+    <form class="modal-content quick-add-card-form" @submit.prevent="submit()">
       <h2 id="quickAddHeading">Quick add card</h2>
-      <label for="userInputBoardPath">Board</label><select id="userInputBoardPath" v-model="boardPath" @change="chooseBoard"><option v-for="root in boards.openBoardPaths" :key="root" :value="root">{{ root.replace(/\/$/, '').split('/').slice(-1)[0] }}</option></select>
-      <label for="userInputListPath">List</label><select id="userInputListPath" v-model="listPath"><option v-for="list in lists.filter((item) => item !== 'XXX-Archive')" :key="list" :value="list">{{ list.replace(/^\d{3}-/, '').replace(/-(?:stock|[^-]{5})$/, '') }}</option></select>
-      <label for="userInputCardName">Card name</label><input id="userInputCardName" v-model="name" type="text" autocomplete="off" @keydown="keydown">
-      <fieldset v-if="labels.length"><legend>Labels</legend><label v-for="label in labels" :key="label.id"><input v-model="selectedLabels" type="checkbox" :value="label.id"> {{ label.name }}</label></fieldset>
-      <p class="modal-hint">Shift + Enter creates and opens the card.</p>
+      <div class="quick-add-field">
+        <label for="userInputBoardPath">Board</label>
+        <select id="userInputBoardPath" v-model="boardPath" @change="chooseBoard">
+          <option v-for="root in boards.openBoardPaths" :key="root" :value="root">{{ root.replace(/\/$/, '').split('/').slice(-1)[0] }}</option>
+        </select>
+      </div>
+      <div class="quick-add-field">
+        <label for="userInputListPath">List</label>
+        <select id="userInputListPath" v-model="listPath">
+          <option v-for="list in lists.filter((item) => item !== 'XXX-Archive')" :key="list" :value="list">{{ list.replace(/^\d{3}-/, '').replace(/-(?:stock|[^-]{5})$/, '') }}</option>
+        </select>
+      </div>
+      <div class="quick-add-field">
+        <label for="userInputCardName">Card name</label>
+        <input id="userInputCardName" v-model="name" type="text" autocomplete="off" @keydown="keydown">
+      </div>
+      <fieldset v-if="labels.length" class="quick-add-labels">
+        <legend>Labels <span>Optional</span></legend>
+        <div class="quick-add-label-options">
+          <label v-for="label in labels" :key="label.id" class="quick-add-label-option" :class="{ 'is-selected': selectedLabels.includes(label.id) }">
+            <input v-model="selectedLabels" type="checkbox" :value="label.id">
+            <span>{{ label.name }}</span>
+          </label>
+        </div>
+      </fieldset>
+      <p class="modal-hint new-card-modal-helper"><kbd>Shift</kbd><span aria-hidden="true">+</span><kbd>Enter</kbd> creates and opens the card.</p>
       <div class="modal-actions"><button id="btnAddCardToList" type="submit" :disabled="saving || !name.trim() || !listPath">{{ saving ? 'Creating…' : 'Add card' }}</button><button type="button" @click="onClose">Cancel</button></div>
     </form>
   </Modal>

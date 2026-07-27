@@ -295,13 +295,7 @@ async function handleMoveListByOffset(listPath, offset) {
   }
 
   const listNames = (await window.board.listLists(normalizedBoardRoot))
-    .filter(Boolean)
-    .sort((left, right) => {
-      if (typeof compareListDirectoryNames === 'function') {
-        return compareListDirectoryNames(left, right);
-      }
-      return String(left || '').localeCompare(String(right || ''), undefined, { numeric: true });
-    });
+    .filter(Boolean);
   const currentIndex = listNames.indexOf(directoryName);
   const targetIndex = currentIndex + (direction === 'left' ? -1 : 1);
 

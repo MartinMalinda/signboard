@@ -16,9 +16,28 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
+    "@tiptap/extension-blockquote": "3.29.0",
+    "@tiptap/extension-bold": "3.29.0",
+    "@tiptap/extension-bullet-list": "3.29.0",
+    "@tiptap/extension-code": "3.29.0",
+    "@tiptap/extension-code-block": "3.29.0",
+    "@tiptap/extension-document": "3.29.0",
+    "@tiptap/extension-hard-break": "3.29.0",
+    "@tiptap/extension-heading": "3.29.0",
+    "@tiptap/extension-history": "3.29.0",
+    "@tiptap/extension-italic": "3.29.0",
+    "@tiptap/extension-link": "3.29.0",
+    "@tiptap/extension-list-item": "3.29.0",
+    "@tiptap/extension-ordered-list": "3.29.0",
+    "@tiptap/extension-paragraph": "3.29.0",
+    "@tiptap/extension-task-item": "3.29.0",
+    "@tiptap/extension-task-list": "3.29.0",
+    "@tiptap/extension-text": "3.29.0",
+    "@tiptap/vue-3": "3.29.0",
     "floating-vue": "^5.2.2",
     "muuri": "^0.9.5",
     "pinia": "^4.0.2",
+    "tiptap-markdown": "0.9.0",
     "vue": "^3.5.40"
   },
   "devDependencies": {

@@ -13,9 +13,9 @@ const helpers = (() => {
   const LIST_NAME_PATTERN = /^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/;
   const ARCHIVE_DIRECTORY_NAME = 'XXX-Archive';
   const DEFAULT_BOARD_LIST_NAMES = Object.freeze([
-    '000-To-do-stock',
-    '001-Doing-stock',
-    '002-Done-stock',
+    'To-do',
+    'Doing',
+    'Done',
     ARCHIVE_DIRECTORY_NAME,
   ]);
   const DEFAULT_LABELS = Object.freeze([
@@ -1039,14 +1039,14 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
     } else {
       await this.ensureFolder(`${folder.path}/${helpers.ARCHIVE_DIRECTORY_NAME}`);
       if (rootMarkdownCount > 0) {
-        await this.ensureFolder(`${folder.path}/000-To-do-stock`);
+        await this.ensureFolder(`${folder.path}/To-do`);
       }
     }
 
     await this.ensureBoardSettings(folder);
 
     if (rootMarkdownCount > 0) {
-      const toDoFolderPath = helpers.slashPath(`${folder.path}/000-To-do-stock`);
+      const toDoFolderPath = helpers.slashPath(`${folder.path}/To-do`);
       for (let index = 0; index < rootMarkdownFiles.length; index += 1) {
         const rootFile = rootMarkdownFiles[index];
         const nextFileName = helpers.buildCardFileName(index, rootFile.basename, existingIds);

@@ -57,11 +57,21 @@ async function drop(event: DragEvent) {
     </div>
     <AppPopover id="cardEditorLinkedObjectsPopover" :is-open="open" :opener="trigger" :on-close="close" aria-label="Linked objects">
       <div class="card-editor-linked-objects-menu">
-        <button type="button" @click="void pick('file')"><FeatherIcon name="file" />Link File</button>
-        <button type="button" @click="void pick('folder')"><FeatherIcon name="folder" />Link Folder</button>
-        <button type="button" @click="void createNote()"><FeatherIcon name="file-plus" />Create Obsidian Note</button>
-        <label for="cardEditorLinkedObjectUrlInput">Link URL</label><input id="cardEditorLinkedObjectUrlInput" :value="url" type="url" placeholder="https://example.com" @input="url = ($event.target as HTMLInputElement).value" @keydown.enter.prevent="void addUrl('url')"><button type="button" @click="void addUrl('url')">Add URL</button>
-        <label for="cardEditorLinkedObjectAppUrlInput">Link App or Signboard URL</label><input id="cardEditorLinkedObjectAppUrlInput" :value="appUrl" type="text" placeholder="obsidian:// or signboard://" @input="appUrl = ($event.target as HTMLInputElement).value" @keydown.enter.prevent="void addUrl('app-link')"><button type="button" @click="void addUrl('app-link')">Add App Link</button>
+        <div class="card-editor-linked-objects-actions">
+          <button type="button" @click="void pick('file')"><FeatherIcon name="file" />Link File</button>
+          <button type="button" @click="void pick('folder')"><FeatherIcon name="folder" />Link Folder</button>
+          <button type="button" @click="void createNote()"><FeatherIcon name="file-plus" />Create Obsidian Note</button>
+        </div>
+        <div class="card-editor-linked-object-entry">
+          <label for="cardEditorLinkedObjectUrlInput">Link URL</label>
+          <input id="cardEditorLinkedObjectUrlInput" :value="url" type="url" placeholder="https://example.com" @input="url = ($event.target as HTMLInputElement).value" @keydown.enter.prevent="void addUrl('url')">
+          <button type="button" @click="void addUrl('url')">Add URL</button>
+        </div>
+        <div class="card-editor-linked-object-entry">
+          <label for="cardEditorLinkedObjectAppUrlInput">Link App or Signboard URL</label>
+          <input id="cardEditorLinkedObjectAppUrlInput" :value="appUrl" type="text" placeholder="obsidian:// or signboard://" @input="appUrl = ($event.target as HTMLInputElement).value" @keydown.enter.prevent="void addUrl('app-link')">
+          <button type="button" @click="void addUrl('app-link')">Add App Link</button>
+        </div>
         <p v-if="status" role="status">{{ status }}</p>
       </div>
     </AppPopover>

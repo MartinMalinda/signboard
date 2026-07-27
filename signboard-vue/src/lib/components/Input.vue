@@ -140,7 +140,7 @@ export default defineComponent({
     const onDrop = (event: DragEvent) => {
       event.preventDefault();
       // const files = event.dataTransfer?.files;
-      event.dataTransfer?.items[0].getAsString((src) => {
+      event.dataTransfer?.items[0]?.getAsString((src) => {
         // this is called when you drag an image from HTML document
         props.onChange(src, event as any);
       });

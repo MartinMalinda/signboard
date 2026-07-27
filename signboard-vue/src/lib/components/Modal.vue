@@ -117,7 +117,9 @@ function deactivate() {
   if (!dialog) return;
   dialog.setAttribute("aria-hidden", "true");
   dialog.setAttribute("hidden", "");
-  setBackgroundInert(null);
+  const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'))
+    .filter((candidate) => candidate !== dialog && !candidate.hidden && candidate.getAttribute("aria-hidden") !== "true");
+  setBackgroundInert(openDialogs[openDialogs.length - 1] || null);
   const previousOpener = opener;
   opener = null;
   if (previousOpener?.isConnected) {

@@ -193,6 +193,7 @@ export interface BoardBridge {
   importTasksMd?(root: string, selectionTokens: string[]): Promise<Record<string, unknown>>
   createList(listPath: string): Promise<unknown>
   createCard(filePath: string, content: string, options?: { frontmatter?: Record<string, unknown> }): Promise<unknown>
+  duplicateCard?(filePath: string): Promise<unknown>
   moveList(source: string, destination: string): Promise<unknown>
   moveCard(source: string, destination: string): Promise<unknown>
   getBoardName(filePath: string): string
@@ -238,6 +239,7 @@ export interface ChooserBridge {
 }
 
 export interface ElectronApiBridge {
+  getInitialBoardPath?(): Promise<string>
   onToggleThemeMode?(callback: () => void): () => void
   copyTextToClipboard?(text: string): Promise<unknown>
   onOpenQuickAddCard?(callback: () => void): () => void

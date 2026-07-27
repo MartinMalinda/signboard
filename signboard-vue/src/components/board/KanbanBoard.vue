@@ -15,14 +15,13 @@ const boards = useBoardsStore()
 const ui = useUiStore()
 const labelsStore = useLabelsStore()
 const search = useSearchStore()
-const props = defineProps<{ onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onAddList?: (afterPath?: string) => void; onArchiveCard?: (path: string) => void; onLabelsChanged?: () => void }>()
-const labels = computed(() => data.snapshot?.boardSettings?.labels || [])
+const props = defineProps<{ onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onAddList?: (afterPath?: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void }>()
 const visibleCardPaths = computed(() => new Map(data.lists.map((list) => [list.listPath, new Set(list.cards.filter((card) => cardMatchesFilters(card, { query: search.query, selectedLabelIds: labelsStore.filterIds, dateFilter: labelsStore.dateFilter, isCompletedList: labelsStore.isCompletedList(list.listName) })).map((card) => card.cardPath))])))
 
 useSortable(() => document.getElementById('board'), {
   kind: 'lists',
   draggable: '.list:not(.add-list-phantom)',
-  filter: '.add-list-phantom, .list-actions-button, .list-name',
+  filter: '.add-list-phantom, .list-add-card-button, .list-actions-button, .list-name',
   async onEnd(event) {
     const finalOrder = [...event.to.querySelectorAll<HTMLElement>('.list:not(.add-list-phantom)')]
       .map((list) => list.dataset.path || '').filter(Boolean)
@@ -41,7 +40,7 @@ useSortable(() => document.getElementById('board'), {
 
 <template>
   <template v-if="data.snapshot">
-    <ListColumn v-for="list in data.lists" :key="list.listPath" :list="list" :labels="labels" :visible-card-paths="visibleCardPaths.get(list.listPath)" :on-open="props.onOpen" :on-add-card="props.onAddCard" :on-archive-card="props.onArchiveCard" :on-labels-changed="props.onLabelsChanged" />
+    <ListColumn v-for="list in data.lists" :key="list.listPath" :list="list" :visible-card-paths="visibleCardPaths.get(list.listPath)" :on-open="props.onOpen" :on-add-card="props.onAddCard" :on-archive-card="props.onArchiveCard" :on-duplicate-card="props.onDuplicateCard" />
     <AddListPhantom :on-add="props.onAddList" />
   </template>
 </template>

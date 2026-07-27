@@ -12,6 +12,10 @@ const {
 
 const CLI_PATH = path.resolve(__dirname, '..', 'bin', 'signboard.js');
 
+async function listVisibleNames(directoryPath) {
+  return (await fs.readdir(directoryPath)).filter((name) => !name.startsWith('.')).sort();
+}
+
 function runCli(args, env, options = {}) {
   const result = spawnSync(process.execPath, [CLI_PATH, ...args], {
     cwd: path.resolve(__dirname, '..'),
@@ -284,12 +288,12 @@ async function main() {
   assert.strictEqual(createdBoard.seededWelcomeCard, true);
   assert.strictEqual(createdBoard.currentBoardUpdated, true);
   assert.deepStrictEqual(
-    (await fs.readdir(createdBoardRoot)).sort(),
-    ['000-To-do-stock', '001-Doing-stock', '002-Done-stock', 'XXX-Archive'].sort(),
+    await listVisibleNames(createdBoardRoot),
+    ['To-do', 'Doing', 'Done', 'XXX-Archive'].sort(),
   );
 
   const starterCard = await cardFrontmatter.readCard(
-    path.join(createdBoardRoot, '000-To-do-stock', '000-hello-stock.md')
+    path.join(createdBoardRoot, 'To-do', '000-hello-stock.md')
   );
   assert.strictEqual(starterCard.frontmatter.title, '👋 Start Here');
   assert.ok(starterCard.body.includes('Quick Add'));
@@ -302,7 +306,7 @@ async function main() {
   assert.strictEqual(createdEmptyBoard.cardFile, '');
   assert.strictEqual(createdEmptyBoard.seededWelcomeCard, false);
   assert.deepStrictEqual(
-    (await fs.readdir(path.join(createdEmptyBoard.boardRoot, '000-To-do-stock'))).sort(),
+    await listVisibleNames(path.join(createdEmptyBoard.boardRoot, 'To-do')),
     [],
   );
 
@@ -718,7 +722,7 @@ async function main() {
     ], env).stdout
   );
   assert.strictEqual(editedCard.listDisplayName, 'Doing');
-  assert.ok(editedCard.fileName.startsWith('000-'));
+  assert.strictEqual(editedCard.fileName, createdCard.fileName);
   assert.strictEqual(editedCard.start, null);
   assert.strictEqual(editedCard.due, null);
   assert.deepStrictEqual(editedCard.labels.sort(), ['client', 'urgent']);

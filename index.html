@@ -713,6 +713,7 @@
 
   <div id="modalEditCard" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cardEditorTitle" aria-hidden="true">
     <div class="cardEditorHeader">
+      <h2 id="cardEditorTitle" contenteditable="true" role="textbox" aria-label="Card title" aria-multiline="false" spellcheck="true"></h2>
       <div class="cardEditorListControl">
         <select id="cardEditorListSelect" title="Move card to list" aria-label="Move card to list"></select>
         <span id="cardEditorListMoveFeedback" aria-hidden="true">✓</span>
@@ -720,24 +721,16 @@
       <div class="cardEditorHeaderActions">
         <button type="button" id="cardEditorArchiveLink" title="Archive" aria-label="Archive card"><i data-feather="archive"></i></button>
         <button type="button" id="cardEditorShareLink" title="Share" aria-label="Share card"><i data-feather="share-2"></i></button>
-        <button type="button" id="cardEditorOpenWithLink" title="Open with" aria-label="Open with" aria-expanded="false"><i data-feather="external-link"></i></button>
         <button type="button" id="cardEditorDupeLink" title="Duplicate" aria-label="Duplicate card"><i data-feather="copy"></i></button>
-        <button type="button" id="cardEditorMoveListLink" title="Move to next list" aria-label="Move card to next list"><i data-feather="arrow-right"></i></button>
         <button type="button" id="cardEditorClose" title="Close" aria-label="Close card editor"><i data-feather="x"></i></button>
       </div>
     </div>
-    <div id="cardEditorOpenWithPopover" class="label-popover card-editor-open-with-popover hidden" aria-hidden="true" data-sb-modal-layer></div>
-    <div id="cardEditorLinkedObjectsPopover" class="label-popover card-editor-linked-objects-popover hidden" aria-hidden="true" data-sb-modal-layer></div>
-    <button type="button" id="cardEditorSmartActionsButton" class="card-editor-smart-actions-button" title="Smart Card Actions" aria-label="Smart Card Actions" aria-expanded="false" hidden><i data-feather="zap"></i></button>
-    <div id="cardEditorSmartActionsPopover" class="label-popover card-editor-smart-actions-popover hidden" aria-hidden="true" data-sb-modal-layer></div>
     <button type="button" id="cardEditorCardID" title="Open this card's file" aria-label="Open this card's file"></button>
     
     <div>
-      <h2 id="cardEditorTitle" contenteditable="true" role="textbox" aria-label="Card title" aria-multiline="false" spellcheck="true"></h2>
       <div class="cardEditorMetadataButtons">
         <button type="button" id="cardEditorSetDatesLink" title="Edit Dates" aria-label="Edit dates"><i data-feather="calendar"></i> <span id="cardEditorCardDatesDisplay" title="This card's dates"></span></button>
         <button type="button" id="cardEditorSetLabelsLink" title="Edit Labels" aria-label="Edit labels"><i data-feather="tag"></i> <span id="cardEditorCardLabels" title="This card's labels"></span></button>
-        <button type="button" id="cardEditorLinkedObjectsLink" title="Linked objects" aria-label="Linked objects" aria-expanded="false"><i data-feather="paperclip"></i> <span id="cardEditorLinkedObjectsCount" class="card-editor-linked-objects-count" hidden></span></button>
       </div>
       <div id="cardEditorRelatedNotes" class="card-editor-related-notes" aria-label="Linked objects" hidden></div>
     </div>

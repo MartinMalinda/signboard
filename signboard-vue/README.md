@@ -14,7 +14,12 @@ npm run start
 Normal launches use Vue. `SIGNBOARD_RENDERER=vue npm start` is an explicit
 equivalent; `SIGNBOARD_RENDERER=legacy npm start` selects the deprecated legacy
 renderer for rollback/testing. `npm run start:dev` watches the Vue renderer,
-while `npm run start:dev:legacy` watches the compatibility renderer.
+while `npm run start:dev:legacy` watches the compatibility renderer. Pass a
+board directory to the Vue dev command to open it on launch:
+
+```sh
+npm run dev:vue -- /path/to/board
+```
 
 ## Recommended IDE Setup
 

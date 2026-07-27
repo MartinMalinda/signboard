@@ -1212,32 +1212,11 @@ test('keeps the card date popover open during a pending board refresh', async ({
   await expect(datePopover).toBeVisible();
 });
 
-test('keeps the card label picker open during a pending board refresh', async ({ page }) => {
+test('does not expose archive or label controls on cards', async ({ page }) => {
   const firstCard = boardLists(page).first().locator('.card').first();
-  await firstCard.hover();
-
-  await firstCard.locator('.card-label-button').click();
-  const labelPopover = page.locator('.card-label-popover');
-  await expect(labelPopover).toBeVisible();
-
-  const popoverBox = await labelPopover.boundingBox();
-  expect(popoverBox).toBeTruthy();
-
-  await page.mouse.move(
-    popoverBox.x + (popoverBox.width / 2),
-    popoverBox.y + (popoverBox.height / 2),
-  );
-
-  await page.evaluate(async () => {
-    await runExternalBoardRefresh();
-  });
-
-  await page.mouse.move(
-    popoverBox.x + popoverBox.width + 24,
-    popoverBox.y + (popoverBox.height / 2),
-  );
-
-  await expect(labelPopover).toBeVisible();
+  await expect(firstCard.locator('.card-archive-button')).toHaveCount(0);
+  await expect(firstCard.locator('.card-label-button')).toHaveCount(0);
+  await expect(firstCard.locator('.card-label-chip')).toHaveCount(0);
 });
 
 test('keeps the list actions popover open during a pending board refresh', async ({ page }) => {
@@ -1266,39 +1245,6 @@ test('keeps the list actions popover open during a pending board refresh', async
   );
 
   await expect(listActionsPopover).toBeVisible();
-});
-
-test('opens board label settings from the card label picker shortcut', async ({ page }) => {
-  const firstCard = boardLists(page).first().locator('.card').first();
-  await firstCard.hover();
-
-  await firstCard.locator('.card-label-button').click();
-  const labelPopover = page.locator('.card-label-popover');
-  await expect(labelPopover).toBeVisible();
-
-  await labelPopover.getByRole('button', { name: 'Open label settings' }).click();
-
-  await expect(labelPopover).toBeHidden();
-  await expect(page.locator('#modalBoardSettings')).toBeVisible();
-  await expect(page.locator('#boardSettingsNavLabels')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#boardSettingsPanelLabels')).toHaveAttribute('aria-hidden', 'false');
-  await expect(page.locator('#boardSettingsLabels .board-settings-label-name').first()).toBeFocused();
-});
-
-test('closes the card date picker before opening the label picker', async ({ page }) => {
-  const firstCard = boardLists(page).first().locator('.card').first();
-  await firstCard.hover();
-
-  await firstCard.locator('.card-date-action').click();
-  const datePopover = page.locator('.card-date-popover');
-  await expect(datePopover).toBeVisible();
-  await datePopover.getByRole('button', { name: 'Set due date' }).click();
-  await expect(page.locator('.sb-themed-fdatepicker')).toBeVisible();
-
-  await firstCard.locator('.card-label-button').click();
-  await expect(page.locator('.sb-themed-fdatepicker')).toBeHidden();
-  await expect(datePopover).toBeHidden();
-  await expect(page.locator('.card-label-popover')).toBeVisible();
 });
 
 test('navigates board search results from the keyboard', async ({ page }) => {
@@ -1353,15 +1299,6 @@ test('navigates board popovers and settings sections from the keyboard', async (
   await page.keyboard.press('Escape');
   await expect(page.locator('#labelFilterPopover')).toBeHidden();
   await expect(filterButton).toBeFocused();
-
-  const cardLabelButton = page.locator('.card-label-button').first();
-  await cardLabelButton.click();
-  await expect(page.locator('.card-label-popover input').first()).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.locator('.card-label-popover input').nth(1)).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.card-label-popover')).toHaveCount(0);
-  await expect(cardLabelButton).toBeFocused();
 
   await page.keyboard.press(getShortcut(','));
   await expect(page.locator('#modalBoardSettings')).toBeVisible();
@@ -2094,14 +2031,14 @@ test('adds a new list to the right of the invoking list from the list actions po
       }));
   }).toEqual(expect.arrayContaining([
     '000-To-do-stock',
-    '002-Doing-stock',
-    '003-Done-stock',
+    '001-Doing-stock',
+    '002-Done-stock',
   ]));
 
   await expect.poll(async () => {
     const entries = await fs.readdir(boardRoot);
-    return entries.find((entry) => /^001-Review-[A-Za-z0-9]{5}$/.test(entry)) || '';
-  }).toMatch(/^001-Review-[A-Za-z0-9]{5}$/);
+    return entries.find((entry) => /^003-Review-[A-Za-z0-9]{5}$/.test(entry)) || '';
+  }).toMatch(/^003-Review-[A-Za-z0-9]{5}$/);
 });
 
 test('archives all cards in a list from the list actions popover', async ({ page, boardRoot }) => {
@@ -2662,10 +2599,11 @@ test('cycles board color schemes without closing an active editor', async ({ pag
   }).toBe('lavender');
 });
 
-test('moves the active card to the top of the next list from the editor arrow', async ({ page, boardRoot }) => {
+test('removes the editor move arrow while keeping adjacent-list movement available by shortcut', async ({ page, boardRoot }) => {
   await openFirstCardInEditor(page);
 
-  await page.locator('#cardEditorMoveListLink').click();
+  await expect(page.locator('#cardEditorMoveListLink')).toHaveCount(0);
+  await page.keyboard.press(getShortcut('Shift+]'));
 
   await expect(page.locator('#modalEditCard')).toBeVisible();
   await expect.poll(async () => {
@@ -2673,7 +2611,7 @@ test('moves the active card to the top of the next list from the editor arrow', 
     return entries.filter((entry) => entry.endsWith('.md')).sort();
   }).toEqual([
     '000-plan-release-stock.md',
-    '001-polish-copy-stock.md',
+    '000-polish-copy-stock.md',
   ]);
   await expect(boardLists(page).nth(1).locator('.card').first()).toContainText('Plan release notes');
 });
@@ -2689,7 +2627,7 @@ test('moves the active card to the top of the previous list from the keyboard sh
     return entries.filter((entry) => entry.endsWith('.md')).sort();
   }).toEqual([
     '000-polish-copy-stock.md',
-    '001-plan-release-stock.md',
+    '000-plan-release-stock.md',
   ]);
   await expect(boardLists(page).first().locator('.card').first()).toContainText('Polish homepage copy');
 });
@@ -2705,7 +2643,7 @@ test('moves the active card to the top of the selected list from the editor drop
     return entries.filter((entry) => entry.endsWith('.md')).sort();
   }).toEqual([
     '000-plan-release-stock.md',
-    '001-polish-copy-stock.md',
+    '000-polish-copy-stock.md',
   ]);
   await expect(boardLists(page).nth(1).locator('.card').first()).toContainText('Plan release notes');
 });
@@ -2989,57 +2927,13 @@ test('keeps bold-at-start list items aligned with editor caret metrics', async (
   }
 });
 
-test('closes the task due date picker when clearing a task due date', async ({ page }) => {
+test('does not render date controls next to checklist items', async ({ page }) => {
   await openFirstCardInEditor(page);
 
-  await setEditorBody(page, '- [ ] (due: 2026-04-20) Follow up with beta testers');
-  await expect(page.locator('#cardEditorOverType .task-line-date-control.has-due')).toHaveCount(1);
-
-  await page.locator('#cardEditorOverType .task-line-date-control.has-due').click();
-  await expect(page.locator('.card-date-popover')).toBeVisible();
-  await page.locator('.card-date-popover-row[data-field="due"] .card-date-popover-field').click();
-  const datepickerPopup = page.locator('.sb-themed-fdatepicker');
-  await expect(datepickerPopup).toBeVisible();
-
-  await datepickerPopup.getByRole('button', { name: 'Clear' }).click();
-
-  await expect(datepickerPopup).toBeHidden();
-  await expect(page.locator('#cardEditorOverType .task-line-date-control.has-due')).toHaveCount(0);
-  await expect(page.locator('#cardEditorOverType .overtype-input')).toHaveValue(/^- \[ \] Follow up with beta testers$/);
-
-  await page.locator('#cardEditorOverType .task-line-date-control').click();
-  await expect(page.locator('.card-date-popover')).toBeVisible();
-  await page.locator('.card-date-popover-row[data-field="due"] .card-date-popover-field').click();
-  await expect(datepickerPopup).toBeVisible();
-});
-
-test('keeps the task date popover anchored after choosing a task start date', async ({ page }) => {
-  await openFirstCardInEditor(page);
-
-  await setEditorBody(page, '- [ ] This task needs a start date');
-  const dateButton = page.locator('#cardEditorOverType .task-line-date-control').first();
-  await expect(dateButton).toBeVisible();
-
-  await dateButton.click();
-  const datePopover = page.locator('.card-date-popover');
-  await expect(datePopover).toBeVisible();
-  const initialPopoverBox = await datePopover.boundingBox();
-  expect(initialPopoverBox).toBeTruthy();
-
-  await page.locator('.card-date-popover-row[data-field="start"] .card-date-popover-field').click();
-  const datepickerPopup = page.locator('.sb-themed-fdatepicker');
-  await expect(datepickerPopup).toBeVisible();
-  await datepickerPopup.getByRole('button', { name: 'Today' }).click();
-
-  await expect(datepickerPopup).toBeHidden();
-  await expect(page.locator('#cardEditorOverType .overtype-input')).toHaveValue(/\(start: \d{4}-\d{2}-\d{2}\)/);
-  await expect(datePopover).toBeVisible();
-  await page.waitForTimeout(100);
-
-  const finalPopoverBox = await datePopover.boundingBox();
-  expect(finalPopoverBox).toBeTruthy();
-  expect(Math.abs(finalPopoverBox.x - initialPopoverBox.x)).toBeLessThan(12);
-  expect(Math.abs(finalPopoverBox.y - initialPopoverBox.y)).toBeLessThan(12);
+  await setEditorBody(page, '- [ ] (start: 2026-04-18) (due: 2026-04-20) Follow up with beta testers');
+  await expect(page.locator('#cardEditorOverType .task-line-checkbox-control')).toHaveCount(1);
+  await expect(page.locator('#cardEditorOverType .task-line-date-control')).toHaveCount(0);
+  await expect(page.locator('#cardEditorOverType .overtype-input')).toHaveValue(/\(start: 2026-04-18\) \(due: 2026-04-20\)/);
 });
 
 test('opens raw card body URLs without rewriting the body', async ({ page }) => {
@@ -3169,7 +3063,7 @@ test('persists the global quick add shortcut setting', async ({ page }) => {
   await expect(shortcutInput).toHaveValue('CommandOrControl+Shift+Space');
 });
 
-test('persists AI assistance settings and shows the card editor Smart Card Actions menu', async ({ page }) => {
+test('persists AI assistance settings without a card editor Smart Card Actions trigger', async ({ page }) => {
   const fakeOllama = await startFakeOllamaServer([
     {
       name: 'llama3.2:latest',
@@ -3292,60 +3186,8 @@ test('persists AI assistance settings and shows the card editor Smart Card Actio
     await expect(page.locator('#modalBoardSettings')).toBeHidden();
 
     await openFirstCardInEditor(page);
-    const aiButton = page.locator('#cardEditorSmartActionsButton');
-    await expect(aiButton).toBeVisible();
-    await expect(aiButton).toHaveAttribute('aria-label', 'Smart Card Actions with qwen2.5:7b');
-    await aiButton.click();
-    const smartActionsPopover = page.locator('#cardEditorSmartActionsPopover');
-    await expect(smartActionsPopover).toBeVisible();
-    await expect.poll(async () => {
-      return await page.evaluate(() => {
-        const modal = document.getElementById('modalEditCard');
-        const popover = document.getElementById('cardEditorSmartActionsPopover');
-        return {
-          modalZIndex: Number.parseInt(window.getComputedStyle(modal).zIndex || '0', 10),
-          popoverZIndex: Number.parseInt(window.getComputedStyle(popover).zIndex || '0', 10),
-          popoverHidden: popover.classList.contains('hidden'),
-        };
-      });
-    }).toEqual({
-      modalZIndex: 50,
-      popoverZIndex: 12020,
-      popoverHidden: false,
-    });
-    for (const label of defaultSmartCardActionLabels) {
-      await expect(smartActionsPopover).toContainText(label);
-    }
-
-    const summaryIconClass = await page.evaluate(() => {
-      const button = Array.from(document.querySelectorAll('.card-editor-smart-action-button'))
-        .find((element) => element.textContent.includes('Generate card summary'));
-      const icon = button ? button.querySelector('svg') : null;
-      return icon ? String(icon.getAttribute('class') || '') : '';
-    });
-    expect(summaryIconClass).toContain('feather-pen-tool');
-
-    const settingsShortcut = smartActionsPopover.getByRole('button', { name: 'Open Smart Actions settings' });
-    await expect(settingsShortcut).toBeVisible();
-    const quickSmartActionButton = smartActionsPopover.locator('.card-editor-smart-action-button').filter({ hasText: 'Quick Smart Action' });
-    await expect(quickSmartActionButton).toBeVisible();
-    await quickSmartActionButton.click();
-    await expect(page.locator('#cardEditorQuickSmartActionPrompt')).toBeVisible();
-    await expect(page.locator('#cardEditorQuickSmartActionTarget')).toHaveValue('content');
-    expect(await page.locator('#cardEditorQuickSmartActionTarget').evaluate((element) => getComputedStyle(element).backgroundImage)).not.toBe('none');
-    await smartActionsPopover.getByRole('button', { name: 'Back' }).click();
-    const questionCardButton = smartActionsPopover.locator('.card-editor-smart-action-button').filter({ hasText: 'Question the Card' });
-    await expect(questionCardButton).toBeVisible();
-    await questionCardButton.click();
-    await expect(page.locator('#cardEditorQuestionCardPrompt')).toBeVisible();
-    await expect(page.locator('#cardEditorQuestionCardTarget')).toHaveCount(0);
-    await smartActionsPopover.getByRole('button', { name: 'Back' }).click();
-    await expect(settingsShortcut).toBeVisible();
-    await settingsShortcut.click();
-    await expect(page.locator('#modalEditCard')).toBeHidden();
-    await expect(page.locator('#modalBoardSettings')).toBeVisible();
-    await expect(page.locator('#boardSettingsNavSmartActions')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#boardSettingsPanelSmartActions')).toHaveClass(/is-active/);
+    await expect(page.locator('#cardEditorSmartActionsButton')).toHaveCount(0);
+    await expect(page.locator('#cardEditorSmartActionsPopover')).toHaveCount(0);
   } finally {
     await fakeOllama.close();
   }
@@ -3371,87 +3213,6 @@ test('inserts generated Smart Card Action summaries at the top of the card body'
     '',
     '- [ ] Keep this task',
   ].join('\n'));
-});
-
-test('anchors Smart Card Action results and refreshes generated task controls', async ({ page }) => {
-  await page.evaluate(async () => {
-    const current = await window.electronAPI.readAppSettings();
-    await window.electronAPI.updateAppSettings({
-      ai: {
-        ...current.ai,
-        enabled: true,
-        ollama: {
-          ...current.ai.ollama,
-          model: 'llama3.2',
-        },
-        smartCardActions: current.ai.smartCardActions,
-      },
-    });
-    if (typeof loadAppSettings === 'function') {
-      await loadAppSettings();
-    }
-  });
-
-  await openFirstCardInEditor(page);
-
-  const aiButton = page.locator('#cardEditorSmartActionsButton');
-  await expect(aiButton).toBeVisible();
-  await aiButton.click();
-
-  const smartActionsPopover = page.locator('#cardEditorSmartActionsPopover');
-  await expect(smartActionsPopover).toBeVisible();
-
-  const assertPopoverAboveButton = async () => {
-    const geometry = await page.evaluate(() => {
-      const button = document.getElementById('cardEditorSmartActionsButton');
-      const popover = document.getElementById('cardEditorSmartActionsPopover');
-      const buttonRect = button.getBoundingClientRect();
-      const popoverRect = popover.getBoundingClientRect();
-      return {
-        buttonTop: buttonRect.top,
-        popoverBottom: popoverRect.bottom,
-        popoverLeft: popoverRect.left,
-        popoverRight: popoverRect.right,
-        viewportWidth: window.innerWidth,
-      };
-    });
-    expect(geometry.popoverBottom).toBeLessThanOrEqual(geometry.buttonTop - 4);
-    expect(geometry.popoverLeft).toBeGreaterThanOrEqual(7);
-    expect(geometry.popoverRight).toBeLessThanOrEqual(geometry.viewportWidth - 7);
-  };
-
-  await assertPopoverAboveButton();
-
-  await page.evaluate(() => {
-    const popover = document.getElementById('cardEditorSmartActionsPopover');
-    window.renderCardEditorSmartTasksResult(
-      popover,
-      { id: 'generate-task-list', type: 'tasks', label: 'Generate task list' },
-      {
-        actionType: 'tasks',
-        tasks: [
-          '(due: 2026-03-10) Prepare launch checklist',
-          'Draft handoff notes',
-        ],
-      },
-    );
-  });
-  await expect(smartActionsPopover).toContainText('Suggested tasks');
-  await assertPopoverAboveButton();
-
-  await smartActionsPopover.getByRole('button', { name: 'Back' }).click();
-  await expect(smartActionsPopover).toContainText('Smart Card Actions');
-  await assertPopoverAboveButton();
-
-  await page.evaluate(async () => {
-    await window.insertCardEditorSmartTasks([
-      '(due: 2026-03-10) Prepare launch checklist',
-      'Draft handoff notes',
-    ]);
-  });
-
-  await expect(page.locator('#cardEditorOverType .task-line-checkbox-control')).toHaveCount(2);
-  await expect(page.locator('#cardEditorOverType .task-line-date-control.has-due')).toHaveCount(1);
 });
 
 test('merges auto-label Smart Card Action suggestions with existing card labels', async ({ page }) => {

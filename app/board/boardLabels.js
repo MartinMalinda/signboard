@@ -1583,44 +1583,7 @@ function renderBoardLabelFilterPopover() {
 
   const labels = getBoardLabels();
   const selectedFilterIds = new Set(getActiveBoardLabelFilterIds());
-  const activeDateFilter = getActiveBoardDateFilter();
   popover.innerHTML = '';
-
-  const createDateFilterRow = (filterValue, labelText, iconName) => {
-    const row = document.createElement('label');
-    row.className = 'label-popover-row';
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = activeDateFilter === filterValue;
-    checkbox.addEventListener('change', async (event) => {
-      await handleBoardDateFilterChange(filterValue, event.target.checked);
-    });
-
-    const icon = document.createElement('i');
-    icon.className = 'label-filter-feature-icon';
-    icon.setAttribute('data-feather', iconName);
-
-    const text = document.createElement('span');
-    text.textContent = labelText;
-
-    row.appendChild(checkbox);
-    row.appendChild(icon);
-    row.appendChild(text);
-
-    return row;
-  };
-
-  popover.appendChild(createDateFilterRow(BOARD_DATE_FILTER_TODAY, 'Today', 'sun'));
-  popover.appendChild(createDateFilterRow(BOARD_DATE_FILTER_OVERDUE, 'Overdue', 'alert-circle'));
-  popover.appendChild(createDateFilterRow(BOARD_DATE_FILTER_NEXT_7, 'Next 7 days', 'calendar'));
-  popover.appendChild(createDateFilterRow(BOARD_DATE_FILTER_NEXT_14, 'Next 14 days', 'calendar'));
-  popover.appendChild(createDateFilterRow(BOARD_DATE_FILTER_NEXT_30, 'Next 30 days', 'calendar'));
-
-  const separator = document.createElement('div');
-  separator.className = 'label-popover-separator';
-  separator.setAttribute('aria-hidden', 'true');
-  popover.appendChild(separator);
 
   const labelList = document.createElement('div');
   labelList.className = 'label-popover-labels';
@@ -1666,8 +1629,8 @@ function renderBoardLabelFilterPopover() {
   clearButton.type = 'button';
   clearButton.className = 'label-popover-clear';
   clearButton.textContent = 'Clear filters';
-  clearButton.title = 'Clear active date and label filters';
-  clearButton.disabled = selectedFilterIds.size === 0 && !activeDateFilter;
+  clearButton.title = 'Clear active label filters';
+  clearButton.disabled = selectedFilterIds.size === 0;
   clearButton.addEventListener('click', async () => {
     await clearActiveBoardFilters();
   });

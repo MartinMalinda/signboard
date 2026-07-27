@@ -642,10 +642,10 @@ async function run() {
   filterState.activeDateFilter = 'today';
   context.renderBoardLabelFilterPopover();
 
-  assert(filterPopover.textContent.includes('Today'), 'expected Today row in filter popover');
-  assert(filterPopover.textContent.includes('Overdue'), 'expected Overdue row in filter popover');
-  assert(filterPopover.textContent.includes('Next 7 days'), 'expected Next 7 days row in filter popover');
-  assert(findFirstByClass(filterPopover, 'label-popover-separator'), 'expected separator in filter popover');
+  assert(!filterPopover.textContent.includes('Today'), 'expected date filters to be absent from filter popover');
+  assert(!filterPopover.textContent.includes('Overdue'), 'expected date filters to be absent from filter popover');
+  assert(!filterPopover.textContent.includes('Next 7 days'), 'expected date filters to be absent from filter popover');
+  assert(!findFirstByClass(filterPopover, 'label-popover-separator'), 'expected no separator before label filters');
   assert(findFirstByClass(filterPopover, 'label-popover-labels-scroll'), 'expected scroll container for long label lists');
 
   const clearButton = findFirstByClass(filterPopover, 'label-popover-clear');

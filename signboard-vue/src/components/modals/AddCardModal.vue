@@ -2,12 +2,13 @@
 import { computed, ref } from 'vue'
 import Modal from '../../lib/components/Modal.vue'
 import { buildCardPath } from '../../../lib/cardCreation.js'
+import { displayListName } from '../../../lib/boardLabels.js'
 import { useUiStore } from '../../stores/useUiStore'
 import type { BoardLabel } from '../../types'
 
 const props = defineProps<{ isOpen: boolean; listPath: string; labels: BoardLabel[]; onClose: () => void; onCreated: (path: string, options?: { openAfterCreate?: boolean }) => void }>()
 const ui = useUiStore(); const name = ref(''); const selectedLabels = ref<string[]>([]); const saving = ref(false)
-const heading = computed(() => { const parts = props.listPath.split('/').filter(Boolean); return `Add card to ${parts[parts.length - 1] || 'list'}` })
+const heading = computed(() => { const parts = props.listPath.split('/').filter(Boolean); return `Add card to ${displayListName(parts[parts.length - 1] || 'list') || 'list'}` })
 function reset() { name.value = ''; selectedLabels.value = [] }
 async function submit(openAfterCreate = false) {
   if (saving.value || !props.listPath || !name.value.trim() || !window.board.createCard) return

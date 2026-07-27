@@ -60,17 +60,17 @@ You can create a list in a few ways:
 - Press `Cmd/Ctrl + Shift + N`
 - Use the list actions menu on an existing list and choose `Add new list`
 
-Signboard creates a numbered folder for the list and keeps ordering based on that folder prefix.
+Signboard creates a folder for the list. Existing numeric prefixes are retained for compatibility, but ordering is stored in the board root `.board.json` manifest.
 
 ### Rename a list
 
 Click a list title, edit it inline, and press `Enter` or click away.
 
-Under the hood, Signboard updates the folder name while preserving its ordering prefix.
+Under the hood, Signboard updates the folder name while preserving the list's position in `.board.json`.
 
 ### Move lists
 
-Lists can be reordered visually in the board. Since list order is stored in the folder naming scheme, Signboard updates the underlying directory names.
+Lists can be reordered visually in the board. Signboard updates the board root `.board.json` file; the list directories themselves keep their names.
 
 You can also open a list's actions menu and choose `Move list left` or `Move list right`.
 
@@ -92,9 +92,9 @@ You can create a card by:
 - Pressing `Cmd/Ctrl + N` to open Quick Add for any currently open board
 - Using the `Add new card` button for a specific list
 
-In the Quick Add card modal, choose the board and list before creating the card. Press `Shift + Enter` after typing the title to create the card, open it immediately, and focus the notes field.
+Use the plus button in a Kanban list header to open Add Card directly for that list, or use the header `Card` button / `Cmd/Ctrl + N` for the cross-board Quick Add modal. In the Quick Add card modal, choose the board and list before creating the card. Press `Shift + Enter` after typing the title to create the card, open it immediately, and focus the notes field.
 
-Card filenames are chosen based on the name or title you first give it, along with a prefix for ordering, and a random card ID suffix (to help with name collisions). Once set, the filename will stay the same even if you rename the card.
+Card filenames are chosen based on the name or title you first give it, with a random card ID suffix (to help with name collisions). Older cards may still have numeric prefixes, but those prefixes are no longer rewritten for ordering. Card order is stored in each list's `.board.json` file, and the filename stays the same even if you rename or reorder the card.
 
 ### Open and edit a card
 
@@ -111,10 +111,10 @@ Click a card to open it. In the card editor you can:
 - Open it in Obsidian or the default Markdown app
 - Open raw web URLs from the card body
 - Create, open, or remove linked objects
-- Use Smart Card Actions when AI assistance is enabled
+- Configure Smart Card Actions in App Settings when AI assistance is enabled
 - Archive it
 
-The card body is Markdown, so plain text notes, headings, lists, and checklists all work naturally.
+The card body is Markdown, so plain text notes, headings, lists, and checklists all work naturally. In the Vue card editor, checklist items use native accessible checkboxes; checking one still saves the standard Markdown task marker.
 
 Raw `http://`, `https://`, and `www.` URLs in the body stay as plain Markdown text. When the cursor is in one, Signboard shows a small open-link control; Cmd/Ctrl-clicking the URL also opens it in your default browser.
 
@@ -122,13 +122,15 @@ The editor shows when the card was created and when it was last updated. Newer c
 
 Right-click in editable areas of the card title or body to use the native cut, copy, paste, delete, and select-all context menu.
 
+In Kanban view, right-click a card surface to open its action menu and choose `Duplicate card` or `Archive card`. Labels, metadata controls, and editable fields keep their existing context-menu behavior.
+
 ### Move cards
 
-Drag a card between lists in Kanban view. You can also move it from the card editor by changing its list in the dropdown menu at the top of the card modal, or from Table view by changing the row's list dropdown.
+Drag a card between lists in Kanban view. In the card editor, use the adjacent-list arrow or the card-move keyboard shortcuts. From Table view, change the row's list dropdown.
 
 While dragging, the board shows an empty insertion slot where the card would land; the card is moved only after you drop it.
 
-The list dropdown, arrow action, and card move keyboard shortcuts in the editor place moved cards at the top of the destination list.
+The arrow action and card-move keyboard shortcuts in the editor place moved cards at the top of the destination list.
 
 ### Duplicate a card
 
@@ -189,7 +191,7 @@ Example:
 - [x] Review copy
 ```
 
-Task dates are separate from the card’s main start and due dates. Open checklist item start/due dates are included in Planner and board date filters, so a card can surface because one of its unchecked checklist items is dated even if the card itself has no top-level date. Once that checklist item is checked off, its date stays in the Markdown but no longer keeps the card in date-based views. CLI due filters expose `--task-status open|any` when you need to choose whether checked task due markers count.
+Task dates are separate from the card’s main start and due dates. Open checklist item start/due dates are included in Planner, so a card can surface because one of its unchecked checklist items is dated even if the card itself has no top-level date. Once that checklist item is checked off, its date stays in the Markdown but no longer keeps the card in date-based views. CLI due filters expose `--task-status open|any` when you need to choose whether checked task due markers count.
 
 ### Labels
 
@@ -217,9 +219,9 @@ Search matches card title and body text.
 
 From the search field, press `Enter` or `Arrow Down` to focus the first visible matching card. While a card title is focused, use arrow keys to move between visible matches, `Enter` or `Space` to open the card, and `Esc` to return to the search field. Press `Esc` again from the search field to clear the search.
 
-### Date and Label filters
+### Label filters
 
-Use the filter button in the header to narrow the visible cards by `Today`, `Overdue`, `Next 7 days`, `Next 14 days`, `Next 30 days`, and your board labels. When filters are active, Signboard shows a compact summary chip beside search; click it to clear the active filters.
+Use the filter button in the header to narrow the visible cards by your board labels. When filters are active, Signboard shows a compact summary chip beside search; click it to clear the active filters. Use Planner for date-based views and filters.
 
 When a filter popover is open, use arrow keys, `Home`, and `End` to move through its controls. Press `Esc` to close the popover and return focus to the button that opened it.
 
@@ -354,7 +356,7 @@ The `App Settings` group controls settings that apply across Signboard:
 
 If notifications are enabled, Signboard checks open boards each day at the configured local time and shows a reminder when cards are due. The notification time field is shown only while reminders are enabled.
 
-When AI assistance is enabled, Signboard checks the configured Ollama URL, shows whether it can connect, and loads the locally installed models from Ollama into a model dropdown. Use the refresh button next to the model picker after pulling a new model. When AI assistance is off, Smart Actions shows a setup state with an enable button. The card editor then shows a floating Smart Card Actions button with default actions for generating a new title, generating a summary, generating a task list, auto-labeling from the current board's existing labels, smart paste formatting, a one-off Quick Smart Action, and a read-only Question the Card action. Use the gear in the Smart Card Actions menu to open the Smart Actions settings panel directly. App Settings lets you drag actions to reorder them, expand an action with `Edit`, customize each built-in prompt, and add custom actions with a label, affected card data, and prompt. Custom actions can target Title, Labels, Content, Due Dates, or Attachments. Content suggestions are appended to the card instead of replacing existing notes. Quick Smart Action is reorderable in settings but does not store a prompt; choose its prompt and target when you run it from the card editor. Question the Card is reorderable in settings but does not store a prompt or show an affected-data selector; type a question when you run it, review the answer in the modal, and optionally ask a fresh follow-up without storing chat history or changing card data. New custom actions appear at the top of the actions list. For the generated task list action, change the number in the prompt when you want a different number of tasks. Suggestions are previewed before they replace the title, insert Markdown, set a due date, link suggested URL/app attachments, or apply labels. Auto-label only applies labels that already exist on the current board, preserves labels already assigned to the card, and skips duplicates. Attachment suggestions only link web URLs, app links, or `signboard://` links after confirmation; local file paths are not attached by AI. Card title, body, board/list context, start/due dates, current labels, available board labels, linked-object summaries, a compact markdown-file view of the card for questions, pasted smart-paste text, Quick Smart Action prompts, and Question the Card prompts are sent to the configured Ollama URL only when you use an action.
+When AI assistance is enabled, Signboard checks the configured Ollama URL, shows whether it can connect, and loads the locally installed models from Ollama into a model dropdown. Use the refresh button next to the model picker after pulling a new model. Smart Actions remain configurable in App Settings, but the card editor no longer shows the floating Smart Card Actions button. App Settings lets you drag actions to reorder them, expand an action with `Edit`, customize each built-in prompt, and add custom actions with a label, affected card data, and prompt.
 
 ### External Published Calendar
 
@@ -406,7 +408,7 @@ You can also apply the color scheme to all currently open boards.
 
 The `Workflow` section controls which lists count as completed work for the current board.
 
-Completed-list cards and checked-off task date markers keep their dates, but Planner date views, Planner date filters, board date filters, and daily due reminders hide them by default so finished work does not look actionable.
+Completed-list cards and checked-off task date markers keep their dates, but Planner date views, Planner date filters, and daily due reminders hide them by default so finished work does not look actionable.
 
 Auto-detection is enabled by default. You can turn it off, manually choose completed lists, or uncheck an auto-detected list.
 

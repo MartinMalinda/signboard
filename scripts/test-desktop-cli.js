@@ -143,12 +143,12 @@ async function main() {
   assert.strictEqual(createdBoard.boardRoot, createdBoardRoot);
   assert.strictEqual(createdBoard.cardFile, '000-hello-stock.md');
   assert.deepStrictEqual(
-    (await fs.readdir(createdBoardRoot)).sort(),
-    ['000-To-do-stock', '001-Doing-stock', '002-Done-stock', 'XXX-Archive'].sort(),
+    (await fs.readdir(createdBoardRoot)).filter((name) => !name.startsWith('.')).sort(),
+    ['To-do', 'Doing', 'Done', 'XXX-Archive'].sort(),
   );
 
   const starterCard = await cardFrontmatter.readCard(
-    path.join(createdBoardRoot, '000-To-do-stock', '000-hello-stock.md')
+    path.join(createdBoardRoot, 'To-do', '000-hello-stock.md')
   );
   assert.strictEqual(starterCard.frontmatter.title, '👋 Start Here');
   assert.ok(starterCard.body.includes('Cmd/Ctrl + K'));

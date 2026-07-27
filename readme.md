@@ -13,11 +13,12 @@ Signboard is free for personal use. If you are using Signboard for your work, it
 
 ## ✨ Highlights
 - 📂 Cards saved as Markdown files
+- ↕️ Stable card and list filenames with ordering persisted in per-directory `.board.json` manifests
 - 💎 Full Obsidian support
 - 🖌️ Color scheme per board (several to choose from!)
 - 🌙 Light and dark mode variants for all color schemes
 - 🏷 Custom labels per board
-- 🗓 Compact calendar controls for card and task list item start/due dates
+- 🗓 Compact calendar controls for card start/due dates, with task-level date markers supported in Markdown
 - 📋 Bottom view dock for Planner, Kanban, and Table, including card age columns, sorting, list filtering, and bulk actions in Table
 - 🗂 Planner workspace view for actionable dated work across open boards
 - 📆 Optional local External Published Calendar feed for calendar app subscriptions
@@ -98,11 +99,13 @@ In board search, Planner search, and archive search, `Enter` or `Arrow Down` mov
 Board tabs, list actions, label/filter popovers, and Settings sections support arrow-key navigation. `Home` and `End` jump to the edges, `Esc` closes popovers, and `Delete` / `Backspace` closes a focused board tab.
 
 When a card is open, workspace-level shortcuts such as create, board switcher, Planner/view switching, Settings, Archive, and search close the card first. Card-specific shortcuts such as moving or archiving the open card still act on that card.
-Use the header `Card` button or `Cmd/Ctrl + N` to open Quick Add. In the Quick Add card modal, choose the board and list before creating the card. `Shift + Enter` creates the card, opens it immediately, and focuses the notes field. App Settings can also register an optional global Quick Add shortcut that works while Signboard is open.
+Use a Kanban list header’s plus button to open Add Card directly for that list, or use the header `Card` button / `Cmd/Ctrl + N` to open Quick Add. In the Quick Add card modal, choose the board and list before creating the card. `Shift + Enter` creates the card, opens it immediately, and focuses the notes field. App Settings can also register an optional global Quick Add shortcut that works while Signboard is open.
 
 You can also open the shortcut helper from `Help > Keyboard Shortcuts`.
 
 Editable fields, including the card title and body editor, support the native right-click text editing menu for cut, copy, paste, delete, and select all.
+
+On Kanban cards, right-click the card surface to open its action menu and choose `Duplicate card` or `Archive card`. Right-clicking labels, metadata controls, or editable fields keeps their existing interaction menus.
 
 Raw `http://`, `https://`, and `www.` URLs typed in the card body are visually marked in the editor. Use the inline open-link control or Cmd/Ctrl-click the URL to open it in your default browser without changing the card's Markdown.
 

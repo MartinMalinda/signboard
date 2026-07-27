@@ -96,7 +96,7 @@ signboard boards create /Path/To/EmptyBoard --no-welcome
 Notes:
 
 - `boards list --json` reports the current CLI board plus desktop-open and desktop-trusted boards when Signboard has synced that state.
-- New boards get `000-To-do-stock`, `001-Doing-stock`, `002-Done-stock`, and `XXX-Archive`.
+- New boards get `To-do`, `Doing`, `Done`, and the internal `XXX-Archive` folder.
 - By default, Signboard seeds `000-hello-stock.md` in the To do list with the same starter guidance used by MCP-created boards.
 - Add `--use` to make the new board the active CLI board for later commands.
 - Add `--no-welcome` to create only the default list folders.
@@ -115,7 +115,7 @@ signboard lists rename "Waiting" "Blocked"
 Notes:
 
 - `signboard lists` excludes `XXX-Archive` unless you add `--include-archive`.
-- Newly created lists get an ordering prefix and a unique suffix automatically. This helps with name collisions.
+- Newly created lists keep the existing readable naming convention, but list order is stored separately in the board root `.board.json` file.
 
 ### `cards`
 
@@ -236,7 +236,7 @@ Edit options:
 
 #### Duplicate a card
 
-Use `cards duplicate` when you want Signboard to copy the full card structure, frontmatter, body, checklist metadata, ordering prefix, and future card fields.
+Use `cards duplicate` when you want Signboard to copy the full card structure, frontmatter, body, checklist metadata, filename identity, and future card fields. The duplicate is added to the target list's `.board.json` order.
 
 ```bash
 signboard cards duplicate --card ab123 --list "Leads" --title "New lead"

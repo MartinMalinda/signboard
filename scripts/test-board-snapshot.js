@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const cardFrontmatter = require('../lib/cardFrontmatter');
 const { readBoardSnapshot } = require('../lib/boardSnapshot');
+const { writeOrderManifest } = require('../lib/orderManifest');
 
 async function testReadBoardSnapshot() {
   const boardRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'signboard-board-snapshot-'));
@@ -35,27 +36,30 @@ async function testReadBoardSnapshot() {
       },
       body: 'Archived',
     });
+    await writeOrderManifest(boardRoot, [path.basename(doneList), path.basename(todoList), path.basename(archiveList)]);
 
     const snapshot = await readBoardSnapshot(boardRoot);
 
     assert.strictEqual(snapshot.ok, true);
     assert.strictEqual(snapshot.boardName, path.basename(boardRoot));
     assert.deepStrictEqual(snapshot.lists.map((list) => list.listName), [
-      '000-To-do-stock',
       '001-Done-stock',
+      '000-To-do-stock',
     ]);
     assert(snapshot.boardSettings, 'expected board settings in snapshot');
-    assert.strictEqual(snapshot.lists[0].cards.length, 1);
-    assert.strictEqual(snapshot.lists[0].cards[0].frontmatter.title, 'Alpha');
-    assert.deepStrictEqual(snapshot.lists[0].cards[0].taskStartDates, ['2026-03-09']);
-    assert.deepStrictEqual(snapshot.lists[0].cards[0].taskDueDates, ['2026-03-08']);
-    assert.deepStrictEqual(snapshot.lists[0].cards[0].incompleteTaskDueDates, []);
-    assert(snapshot.lists[0].cards[0].timestamps.updatedAt, 'expected card timestamps');
+    const todoSnapshot = snapshot.lists.find((list) => list.listName === '000-To-do-stock');
+    assert(todoSnapshot, 'expected the To-do list in the snapshot');
+    assert.strictEqual(todoSnapshot.cards.length, 1);
+    assert.strictEqual(todoSnapshot.cards[0].frontmatter.title, 'Alpha');
+    assert.deepStrictEqual(todoSnapshot.cards[0].taskStartDates, ['2026-03-09']);
+    assert.deepStrictEqual(todoSnapshot.cards[0].taskDueDates, ['2026-03-08']);
+    assert.deepStrictEqual(todoSnapshot.cards[0].incompleteTaskDueDates, []);
+    assert(todoSnapshot.cards[0].timestamps.updatedAt, 'expected card timestamps');
 
     const snapshotWithArchive = await readBoardSnapshot(boardRoot, { includeArchive: true });
     assert.deepStrictEqual(snapshotWithArchive.lists.map((list) => list.listName), [
-      '000-To-do-stock',
       '001-Done-stock',
+      '000-To-do-stock',
       'XXX-Archive',
     ]);
 
@@ -64,7 +68,7 @@ async function testReadBoardSnapshot() {
       includeTimestamps: false,
       includeTaskItems: false,
     });
-    const leanCard = leanSnapshot.lists[0].cards[0];
+    const leanCard = leanSnapshot.lists.find((list) => list.listName === '000-To-do-stock').cards[0];
     assert.strictEqual(leanSnapshot.boardSettings, null);
     assert.strictEqual(Object.prototype.hasOwnProperty.call(leanCard, 'timestamps'), false);
     assert.strictEqual(Object.prototype.hasOwnProperty.call(leanCard, 'taskItems'), false);

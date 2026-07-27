@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { BoardLabel, BoardListSnapshot } from '../../types'
+import type { BoardListSnapshot } from '../../types'
 import CardItem from './CardItem.vue'
 import { useSortable } from '../../composables/useSortable'
 import { useBoardsStore } from '../../stores/useBoardsStore'
@@ -8,7 +8,7 @@ import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import ListColumnHeader from './ListColumnHeader.vue'
 import { useUiStore } from '../../stores/useUiStore'
 
-const props = defineProps<{ list: BoardListSnapshot; labels: BoardLabel[]; visibleCardPaths?: Set<string>; onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onArchiveCard?: (path: string) => void; onLabelsChanged?: () => void; onListChanged?: () => void }>()
+const props = defineProps<{ list: BoardListSnapshot; visibleCardPaths?: Set<string>; onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void; onListChanged?: () => void }>()
 const displayName = computed(() => props.list.listName.replace(/^\d{3}-/, '').replace(/-(?:stock|[^-]{5})$/, ''))
 const headingId = computed(() => `list-name-${props.list.listName.replace(/[^a-zA-Z0-9_-]/g, '-')}`)
 const cards = ref<HTMLElement | null>(null)
@@ -41,7 +41,7 @@ useSortable(cards, {
   <section class="list" :data-path="list.listPath" role="region" :aria-labelledby="headingId">
     <ListColumnHeader :id="headingId" :list="list" :display-name="displayName" :on-add-card="props.onAddCard" :on-list-changed="props.onListChanged" />
     <div ref="cards" class="cards" :data-path="list.listPath" role="list" :aria-label="`${displayName} cards`">
-      <CardItem v-for="card in list.cards" :key="card.cardPath" :card="card" :labels="labels" :is-visible="props.visibleCardPaths?.has(card.cardPath) !== false" :on-open="props.onOpen" :on-archive="props.onArchiveCard" :on-labels-changed="props.onLabelsChanged" />
+      <CardItem v-for="card in list.cards" :key="card.cardPath" :card="card" :is-visible="props.visibleCardPaths?.has(card.cardPath) !== false" :on-open="props.onOpen" :on-archive="props.onArchiveCard" :on-duplicate="props.onDuplicateCard" />
     </div>
   </section>
 </template>

@@ -8,6 +8,7 @@ import { useBoardsStore } from '../stores/useBoardsStore'
 import { useStaticModalStore } from '../stores/useStaticModalStore'
 import BoardSwitcherModal from '../components/modals/BoardSwitcherModal.vue'
 import StaticModals from '../components/modals/StaticModals.vue'
+import AddCardModal from '../components/modals/AddCardModal.vue'
 import Modal from '../lib/components/Modal.vue'
 
 const archiveCard = { kind: 'card' as const, entryPath: '/board/XXX-Archive/000-plan.md', title: 'Plan release', archivedAt: '2026-07-25T10:00:00Z', originalListDirectoryName: '000-To-do-stock', originalListDisplayName: 'To do' }
@@ -106,6 +107,20 @@ describe('Task 09 archive and static modal parity', () => {
     expect(root).toBeNull()
     expect(document.querySelectorAll('#modals .modal-wrap')).toHaveLength(0)
     wrapper.unmount()
+  })
+
+  it('uses the Kanban display name in the Add Card heading', async () => {
+    const modals = document.createElement('div')
+    modals.id = 'modals'
+    document.body.appendChild(modals)
+    const wrapper = mount(AddCardModal, {
+      attachTo: document.body,
+      props: { isOpen: true, listPath: '/board/002-Doing-stock/', labels: [], onClose: vi.fn(), onCreated: vi.fn() },
+    })
+    await wrapper.vm.$nextTick()
+    expect(document.querySelector('#addCardHeading')?.textContent).toBe('Add card to Doing')
+    wrapper.unmount()
+    modals.remove()
   })
 
   it('restores the opener after a static modal Escape/close lifecycle', async () => {

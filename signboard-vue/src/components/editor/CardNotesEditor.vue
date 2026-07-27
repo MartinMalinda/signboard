@@ -2,13 +2,14 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useUiStore } from '../../stores/useUiStore'
-import TaskLineDateControls from './TaskLineDateControls.vue'
+import RichTextEditor from '../../lib/components/RichTextEditor.vue'
 import { findRawUrls } from '../../../lib/rawUrls.js'
 
 const editorStore = useEditorStore()
 const ui = useUiStore()
 const host = ref<HTMLElement | null>(null)
-const taskControls = ref<InstanceType<typeof TaskLineDateControls> | null>(null)
+const tiptap = ref<InstanceType<typeof RichTextEditor> | null>(null)
+const useTiptap = import.meta.env.VITE_CARD_EDITOR_NOTES_EDITOR !== 'overtype'
 type OverTypeEditor = { setValue?: (value: string) => void; destroy?: () => void; textarea?: HTMLTextAreaElement; container?: HTMLElement }
 let editor: OverTypeEditor | null = null
 let themeObserver: MutationObserver | null = null
@@ -65,7 +66,8 @@ function applyTheme() {
 }
 
 onMounted(async () => {
-  if (!host.value || !window.OverType) return
+  if (!useTiptap && (!host.value || !window.OverType)) return
+  if (useTiptap) return
   const OverType = window.OverType
   const result = new OverType(host.value, {
     value: editorStore.body, fontSize: '16px', lineHeight: 1.6, padding: '16px', toolbar: true, placeholder: 'Notes...',
@@ -74,7 +76,6 @@ onMounted(async () => {
   editor = (Array.isArray(result) ? result[0] : result) as OverTypeEditor | null
   editor?.setValue?.(editorStore.body)
   applyTheme()
-  taskControls.value?.attach(editor)
   preview = editor?.container?.querySelector<HTMLElement>('.overtype-preview') || null
   preview?.addEventListener('click', onPreviewClick)
   preview?.addEventListener('auxclick', onPreviewAuxClick)
@@ -84,7 +85,6 @@ onMounted(async () => {
   themeObserver = new MutationObserver(applyTheme)
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
   await nextTick()
-  taskControls.value?.render()
 })
 
 onBeforeUnmount(() => {
@@ -98,10 +98,25 @@ onBeforeUnmount(() => {
   editor = null
 })
 
-function setBody(value: string) { editorStore.setBody(value); editor?.setValue?.(value) }
-function setExternalBody(value: string) { editor?.setValue?.(value) }
-defineExpose({ setBody, setExternalBody, getTextarea: () => editor?.textarea })
+function setBody(value: string) {
+  editorStore.setBody(value)
+  if (!useTiptap) editor?.setValue?.(value)
+}
+
+function setExternalBody(value: string) {
+  if (useTiptap) tiptap.value?.setExternalBody(value)
+  else editor?.setValue?.(value)
+}
+function focus() {
+  if (useTiptap) tiptap.value?.focus()
+  else editor?.textarea?.focus()
+}
+defineExpose({ setBody, setExternalBody, focus, getTextarea: () => editor?.textarea })
 </script>
 <template>
-  <div id="cardEditorOverType" ref="host"><TaskLineDateControls ref="taskControls" :on-body-change="setBody" /></div>
+  <div v-if="useTiptap" class="card-editor-notes-implementation">
+    <RichTextEditor ref="tiptap" :model-value="editorStore.body" @update:model-value="setBody" />
+  </div>
+  <div v-else id="cardEditorOverType" ref="host">
+  </div>
 </template>

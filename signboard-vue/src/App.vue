@@ -109,6 +109,17 @@ async function archiveCard(path: string) {
   if (typeof window.confirm === 'function' && !window.confirm('Archive this card?')) return
   await window.board.archiveCard(path); await data.reconcileAfterMutation(boards.activeBoardPath); ui.announceStatus('Archived card.')
 }
+async function duplicateCard(path: string) {
+  if (!window.board.duplicateCard) return
+  try {
+    await window.board.duplicateCard(path)
+    await data.reconcileAfterMutation(boards.activeBoardPath)
+    ui.announceStatus('Duplicated card.')
+  } catch (error) {
+    console.error('Failed to duplicate card.', error)
+    ui.announceStatus('Card could not be duplicated.')
+  }
+}
 
 function openArchive() { void archive.open() }
 function openBoardSwitcher() { switcher.open() }
@@ -163,7 +174,12 @@ onMounted(async () => {
   switcherDisposer = window.electronAPI.onOpenBoardSwitcher?.(openBoardSwitcher)
   aboutDisposer = window.electronAPI.onOpenAboutSignboard?.(() => staticModals.openAbout())
   keyboardDisposer = window.electronAPI.onOpenKeyboardShortcuts?.(() => staticModals.openKeyboardShortcuts())
-  await boards.restoreSession()
+  const initialBoardPath = await window.electronAPI.getInitialBoardPath?.()
+  if (initialBoardPath) {
+    await boards.openBoard(initialBoardPath)
+  } else {
+    await boards.restoreSession()
+  }
   syncBodyState()
   dueNotifications.start()
   externalSync.start({
@@ -179,7 +195,7 @@ onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisp
   <main id="board" :class="{ 'board-view-kanban': Boolean(boards.activeBoardPath) && view.activeView === 'kanban', 'board-view-table': Boolean(boards.activeBoardPath) && view.activeView === 'table' }">
     <template v-if="!boards.activeBoardPath"><EmptyBoardCta :on-open="openBoard" /></template>
     <MissingBoardAlert v-else-if="data.error" :board-path="boards.activeBoardPath" :on-locate="locateBoard" :on-remove="removeBoard" />
-    <KanbanBoard v-else-if="view.activeView === 'kanban'" :on-open="openCard" :on-add-card="openAddCard" :on-add-list="openAddList" :on-archive-card="archiveCard" :on-labels-changed="() => data.reconcileAfterMutation(boards.activeBoardPath)" />
+    <KanbanBoard v-else-if="view.activeView === 'kanban'" :on-open="openCard" :on-add-card="openAddCard" :on-add-list="openAddList" :on-archive-card="archiveCard" :on-duplicate-card="duplicateCard" :on-labels-changed="() => data.reconcileAfterMutation(boards.activeBoardPath)" />
     <TableView v-else-if="view.activeView === 'table'" :on-open="openCard" />
     <div v-else aria-hidden="true"></div>
   </main>

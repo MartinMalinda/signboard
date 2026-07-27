@@ -74,7 +74,7 @@ Here are a few example tasks so you can see how checklists and task due dates wo
 - Use the bottom view dock to switch between Planner, Kanban, and Table.
 - Open Planner Calendar or This Week to see dated work across open boards.
 - Switch the bottom view dock to Table and scan cards across lists.
-- Open the filter menu and try the Today, Overdue, and label filters.
+- Open the filter menu and try the label filters.
 - Open Settings and customize labels, completed-list behavior, and board colors.
 - Open Archive from the Board menu after archiving a card or list.
 
@@ -99,31 +99,6 @@ On macOS use Cmd. On Windows and Linux use Ctrl.
 ## One last thing
 
 Keep this card as a reference, or archive it and start fresh.`
-}
-
-async function normalizeBoardPrefixes(boardRoot: string) {
-  const directories = await window.board.listDirectories(boardRoot)
-  for (const directory of directories.filter((name) => name !== 'XXX-Archive')) {
-    const match = String(directory).match(/^(\d{1,2})(-.+)$/)
-    if (!match || !window.board.moveList) continue
-    const nextName = `${(match[1] || '').padStart(3, '0')}${match[2] || ''}`
-    if (nextName !== directory) {
-      try { await window.board.moveList(`${boardRoot}${directory}`, `${boardRoot}${nextName}`) } catch (error) { console.warn('Unable to normalize list prefix.', error) }
-    }
-  }
-  if (!window.board.listLists || !window.board.listCards || !window.board.moveCard) return
-  const lists = await window.board.listLists(boardRoot)
-  for (const list of lists) {
-    const listPath = `${boardRoot}${list}/`
-    for (const card of await window.board.listCards(listPath)) {
-      const match = String(card).match(/^(\d{1,2})(-.+)$/)
-      if (!match) continue
-      const nextName = `${(match[1] || '').padStart(3, '0')}${match[2] || ''}`
-      if (nextName !== card) {
-        try { await window.board.moveCard(`${listPath}${card}`, `${listPath}${nextName}`) } catch (error) { console.warn('Unable to normalize card prefix.', error) }
-      }
-    }
-  }
 }
 
 export const useBoardsStore = defineStore('boards', () => {
@@ -187,16 +162,15 @@ export const useBoardsStore = defineStore('boards', () => {
   async function openBoard(selection: string | DirectorySelection | null) {
     const authorized = await authorize(selection)
     if (!authorized) return false
-    await normalizeBoardPrefixes(authorized)
     const directories = await window.board.listDirectories(authorized)
     if (directories.length === 0) {
       await Promise.all([
-        window.board.createList(`${authorized}000-To-do-stock`),
-        window.board.createList(`${authorized}001-Doing-stock`),
-        window.board.createList(`${authorized}002-Done-stock`),
+        window.board.createList(`${authorized}To-do`),
+        window.board.createList(`${authorized}Doing`),
+        window.board.createList(`${authorized}Done`),
         window.board.createList(`${authorized}XXX-Archive`),
       ])
-      await window.board.createCard(`${authorized}000-To-do-stock/000-hello-stock.md`, starterContent())
+      await window.board.createCard(`${authorized}To-do/000-hello-stock.md`, starterContent())
     }
     if (!openBoardPaths.value.includes(authorized)) openBoardPaths.value.push(authorized)
     activeBoardPath.value = authorized

@@ -31,6 +31,7 @@ function parseTaskDateMarkers(contentValue) {
   let remaining = String(contentValue || '').replace(/^\s+/, '');
   let due = '';
   let start = '';
+  let startMarker = '';
   let consumedAnyMarker = false;
 
   while (remaining) {
@@ -49,6 +50,7 @@ function parseTaskDateMarkers(contentValue) {
         due = markerValue;
       } else {
         start = markerValue;
+        startMarker = markerName;
       }
     }
     remaining = remaining.slice(markerMatch[0].length);
@@ -57,6 +59,7 @@ function parseTaskDateMarkers(contentValue) {
   return {
     due,
     start,
+    startMarker,
     contentWithoutDateMarkers: consumedAnyMarker ? remaining : String(contentValue || '').replace(/^\s+/, ''),
   };
 }
@@ -89,6 +92,7 @@ function parseTaskListItemLine(lineValue) {
     contentWithoutDateMarkers: dateMarkers.contentWithoutDateMarkers,
     due: dateMarkers.due,
     start: dateMarkers.start,
+    startMarker: dateMarkers.startMarker,
   };
 }
 
@@ -253,7 +257,7 @@ function setTaskListItemDateByLineIndex(bodyValue, lineIndex, dateKind, dateValu
   const trimmedContent = String(parsedLine.contentWithoutDue || '').trimStart();
   const startValue = normalizedKind === 'start' ? normalizedDate : parsedLine.start;
   const dueValue = normalizedKind === 'due' ? normalizedDate : parsedLine.due;
-  const startPrefix = startValue ? `(start: ${startValue}) ` : '';
+  const startPrefix = startValue ? `(${parsedLine.startMarker || 'start'}: ${startValue}) ` : '';
   const duePrefix = dueValue ? `(due: ${dueValue}) ` : '';
   lines[requestedLineIndex] = `${parsedLine.prefix}${startPrefix}${duePrefix}${trimmedContent}`;
 
@@ -338,5 +342,4 @@ export {
   setTaskListItemDueDateByLineIndex, setTaskListItemStartDateByLineIndex,
   setTaskListItemCompletionByLineIndex, getLineEndOffsetByLineIndex,
 };
-
 

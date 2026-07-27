@@ -1,55 +1,3 @@
-function getPaddedOrderedEntryName(entryName) {
-    const match = String(entryName || '').match(/^(\d{1,2})(-.+)$/);
-    if (!match) {
-        return '';
-    }
-
-    return `${match[1].padStart(3, '0')}${match[2]}`;
-}
-
-async function renameEntriesWithPaddedPrefixes(parentPath, entryNames, moveEntry) {
-    const normalizedParentPath = normalizeBoardPath(parentPath);
-    if (!normalizedParentPath || typeof moveEntry !== 'function') {
-        return;
-    }
-
-    for (const entryName of Array.isArray(entryNames) ? entryNames : []) {
-        const nextEntryName = getPaddedOrderedEntryName(entryName);
-        if (!nextEntryName || nextEntryName === entryName) {
-            continue;
-        }
-
-        try {
-            await moveEntry(`${normalizedParentPath}${entryName}`, `${normalizedParentPath}${nextEntryName}`);
-        } catch (error) {
-            console.warn(`Unable to normalize board entry name from ${entryName} to ${nextEntryName}.`, error);
-        }
-    }
-}
-
-async function normalizeBoardPrefixes(boardPath) {
-    const normalizedBoardPath = normalizeBoardPath(boardPath);
-    if (!normalizedBoardPath) {
-        return;
-    }
-
-    const listDirectoryNames = await window.board.listDirectories(normalizedBoardPath);
-    await renameEntriesWithPaddedPrefixes(
-        normalizedBoardPath,
-        listDirectoryNames.filter((directoryName) => directoryName !== 'XXX-Archive'),
-        window.board.moveList,
-    );
-
-    const normalizedListNames = await window.board.listLists(normalizedBoardPath);
-    for (const listName of normalizedListNames) {
-        await renameEntriesWithPaddedPrefixes(
-            `${normalizedBoardPath}${listName}/`,
-            await window.board.listCards(`${normalizedBoardPath}${listName}/`),
-            window.board.moveCard,
-        );
-    }
-}
-
 async function pickAndOpenBoard() {
     const selection = await window.chooser.pickDirectory({ /* defaultPath: '/some/path' */ });
     if (!selection) {
@@ -115,7 +63,7 @@ Here are a few example tasks so you can see how checklists and task due dates wo
 - Use the bottom view dock to switch between Planner, Kanban, and Table.
 - Open Planner Calendar or This Week to see dated work across open boards.
 - Switch the bottom view dock to Table and scan cards across lists.
-- Open the filter menu and try the Today, Overdue, and label filters.
+- Open the filter menu and try the label filters.
 - Open Settings and customize labels, completed-list behavior, and board colors.
 - Open Archive from the Board menu after archiving a card or list.
 
@@ -166,19 +114,17 @@ async function openBoard( dir ) {
         await migrateAppSettingsFromOpenBoards();
     }
 
-    await normalizeBoardPrefixes(boardPath);
-
     const directories = await window.board.listDirectories( boardPath );
 
     if ( directories.length == 0 ) {
         await Promise.all([
-            window.board.createList(boardPath + '000-To-do-stock'),
-            window.board.createList(boardPath + '001-Doing-stock'),
-            window.board.createList(boardPath + '002-Done-stock'),
+            window.board.createList(boardPath + 'To-do'),
+            window.board.createList(boardPath + 'Doing'),
+            window.board.createList(boardPath + 'Done'),
             window.board.createList(boardPath + 'XXX-Archive'),
         ]);
 
-        await window.board.createCard( boardPath + '000-To-do-stock/000-hello-stock.md', buildStarterCardContent() );
+        await window.board.createCard( boardPath + 'To-do/000-hello-stock.md', buildStarterCardContent() );
     }
 
     window.boardRoot = boardPath;

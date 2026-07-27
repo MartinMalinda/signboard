@@ -42,9 +42,8 @@ later task).
 - `OpenWithMenu.vue` — default-app open, reveal file, copy Signboard link;
   Obsidian entries only when inside a detected vault (preload exposes vault
   status — check the exact bridge method used by legacy).
-- `TaskLineDateControls.vue` — per-task calendar controls positioned from
-  **measured textarea line-start coordinates** (not line-index math). Port the
-  measurement logic verbatim; this is the single most fiddly piece.
+- Task-level start/due markers remain supported in Markdown, but the editor does
+  not render a separate date control beside each checklist item.
 - Editor store: open card path, draft state, dirty/clean, save queue,
   popover anchoring state.
 
@@ -65,7 +64,7 @@ later task).
 4. Title/dates/timestamps; round-trip a card with every frontmatter combo
    (no dates, start only, due only, both) and diff the files vs legacy writes.
 5. Move/archive/duplicate/Open With.
-6. Task-line controls; test with wrapped long lines (the drift case).
+6. Verify checklist editing preserves task date markers in wrapped long lines.
 7. External-edit reconciliation: edit the card file on disk while the editor
    is open (clean vs dirty) — behavior must match legacy (`app/init.js` sync
    loop semantics; the Vue renderer needs its own board-watch hookup via the

@@ -286,8 +286,8 @@ async function closeAllModals(e, options = {}){
     }
 
     if (editModalClosed) {
-        if (typeof destroyTaskLineDueDateControls === 'function') {
-            destroyTaskLineDueDateControls();
+        if (typeof destroyTaskLineCheckboxControls === 'function') {
+            destroyTaskLineCheckboxControls();
         }
         FDatepicker.destroyAll();
         OverType.destroyAll();

@@ -12,7 +12,7 @@ import { useSearchStore } from '../stores/useSearchStore'
 const boards = useBoardsStore()
 const props = defineProps<{ onQuickAdd?: () => void; onOpenSettings?: () => void; onOpenArchive?: () => void; onOpenSponsor?: () => void }>()
 const labelsStore = useLabelsStore(); const search = useSearchStore(); const filterOpener = ref<HTMLElement | null>(null); const filterOpen = ref(false)
-const filterSummary = computed(() => { const count = getActiveFilterCount({ dateFilter: labelsStore.dateFilter, selectedLabelIds: labelsStore.filterIds }); if (!count) return ''; if (count === 1 && labelsStore.dateFilter) return `Filter: ${labelsStore.dateFilter === 'today' ? 'Today' : labelsStore.dateFilter === 'overdue' ? 'Overdue' : `Next ${labelsStore.dateFilter.split(':')[1]} days`}`; if (count === 1) return 'Filter: 1 label'; return `Filters: ${count} active` })
+const filterSummary = computed(() => { const count = getActiveFilterCount({ selectedLabelIds: labelsStore.filterIds }); if (!count) return ''; if (count === 1) return 'Filter: 1 label'; return `Filters: ${count} active` })
 const resultButtons = () => Array.from(document.querySelectorAll<HTMLButtonElement>('.card:not(.card-filtered-out) .card-title-button')).filter((button) => !button.disabled)
 function focusResult(index: number) { const buttons = resultButtons(); if (!buttons.length) return; const safe = ((index % buttons.length) + buttons.length) % buttons.length; search.setResultIndex(safe); buttons[safe]?.focus(); buttons[safe]?.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }
 function searchKeydown(event: KeyboardEvent) { if (event.key === 'Escape' && (search.inputQuery || search.isActive)) { event.preventDefault(); search.reset(); return } if (event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); search.flush(); const index = search.moveResult(event.key === 'ArrowUp' ? -1 : 1, resultButtons().length); if (index >= 0) focusResult(index) } }
@@ -37,8 +37,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', resultKeydown))
             <span class="menu-shortcut-hint">{{ getShortcutHintText('addCard') }}</span>
           </button>
           <div class="board-toolbar-group">
-            <button id="labelFilterButton" type="button" title="Filter cards" :aria-label="filterSummary ? `Filter cards: ${filterSummary.replace(/^Filter: |^Filters: /, '')}` : 'Filter cards'" :aria-expanded="filterOpen" :data-active-filters="getActiveFilterCount({ dateFilter: labelsStore.dateFilter, selectedLabelIds: labelsStore.filterIds })" :class="{ 'is-active': Boolean(filterSummary) }" @click="toggleFilter"><FeatherIcon name="filter" /></button>
-            <LabelFilterPopover :is-open="filterOpen" :opener="filterOpener" :labels="labelsStore.labels" :selected-ids="labelsStore.filterIds" :date-filter="labelsStore.dateFilter" :on-close="closeFilter" :on-toggle-label="labelsStore.toggleFilterLabel" :on-date-filter="labelsStore.setDateFilter" :on-clear="clearFilters" />
+            <button id="labelFilterButton" type="button" title="Filter cards" :aria-label="filterSummary ? `Filter cards: ${filterSummary.replace(/^Filter: |^Filters: /, '')}` : 'Filter cards'" :aria-expanded="filterOpen" :data-active-filters="getActiveFilterCount({ selectedLabelIds: labelsStore.filterIds })" :class="{ 'is-active': Boolean(filterSummary) }" @click="toggleFilter"><FeatherIcon name="filter" /></button>
+            <LabelFilterPopover :is-open="filterOpen" :opener="filterOpener" :labels="labelsStore.labels" :selected-ids="labelsStore.filterIds" :on-close="closeFilter" :on-toggle-label="labelsStore.toggleFilterLabel" :on-clear="clearFilters" />
           </div>
           <BoardMenu :on-open-settings="props.onOpenSettings" :on-open-archive="props.onOpenArchive" :on-open-sponsor="props.onOpenSponsor" />
         </div>

@@ -24,6 +24,6 @@ The plugin is desktop-only because folder conversion and Signboard app launching
 
 ## Folder Conversion
 
-`Create Signboard` asks for confirmation before it changes anything. It adds `board-settings.md`, creates Signboard list folders when needed, treats existing direct child folders as lists, moves top-level Markdown notes into `000-To-do-stock`, adds Signboard frontmatter to cards, and opens the folder with `signboard://open-board?path=...`.
+`Create Signboard` asks for confirmation before it changes anything. It adds `board-settings.md`, creates Signboard list folders when needed, treats existing direct child folders as lists, moves top-level Markdown notes into `To-do`, adds Signboard frontmatter to cards, and opens the folder with `signboard://open-board?path=...`.
 
 No content is deleted. Existing child folders are not renamed.

@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld('board', {
     invokeBoard('updateBoardSettings', boardRoot, partialSettings),
   duplicateBoard: async (boardRoot, options) => invokeBoard('duplicateBoard', boardRoot, options),
   createCard: async (filePath, content, options) => invokeBoard('createCard', filePath, content, options),
+  duplicateCard: async (filePath) => invokeBoard('duplicateCard', filePath),
   generateObsidianBase: async (boardRoot) => invokeBoard('generateObsidianBase', boardRoot),
   openObsidianBase: async (boardRoot) => invokeBoard('openObsidianBase', boardRoot),
   createLinkedObsidianNote: async (boardRoot, filePath) =>
@@ -130,6 +131,7 @@ contextBridge.exposeInMainWorld('chooser', {
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  getInitialBoardPath: () => ipcRenderer.invoke('get-initial-board-path'),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
   readAppSettings: () => ipcRenderer.invoke('read-app-settings'),
   updateAppSettings: (partialSettings) => ipcRenderer.invoke('update-app-settings', partialSettings),

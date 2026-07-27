@@ -474,7 +474,7 @@ async function runForTransport(transportMode, fixture) {
   if (createBoardOutput.boardRoot !== createdBoardRoot) {
     throw new Error(`create_board returned unexpected boardRoot (${transportMode}): ${JSON.stringify(createBoardOutput)}`);
   }
-  const expectedCreatedLists = ['000-To-do-stock', '001-Doing-stock', '002-Done-stock', 'XXX-Archive'];
+  const expectedCreatedLists = ['To-do', 'Doing', 'Done', 'XXX-Archive'];
   if (
     !Array.isArray(createBoardOutput.listNames) ||
     expectedCreatedLists.some((listName) => !createBoardOutput.listNames.includes(listName))
@@ -493,7 +493,7 @@ async function runForTransport(transportMode, fixture) {
       name: 'signboard_read_card',
       arguments: {
         boardRoot: createdBoardRoot,
-        listName: '000-To-do-stock',
+        listName: 'To-do',
         cardFile: '000-hello-stock.md',
       },
     },
@@ -683,8 +683,8 @@ async function runForTransport(transportMode, fixture) {
   }
 
   const restoreArchiveCardOutput = restoreArchiveCardResponse.result?.structuredContent || {};
-  if (!String(restoreArchiveCardOutput.restoredCardFile || '').startsWith('000-')) {
-    throw new Error(`restore_archived_card did not restore card to top (${transportMode}): ${JSON.stringify(restoreArchiveCardOutput)}`);
+  if (!restoreArchiveCardOutput.restoredCardFile || restoreArchiveCardOutput.restoredCardFile !== archiveOutput.archivedCardFile) {
+    throw new Error(`restore_archived_card did not preserve the card filename (${transportMode}): ${JSON.stringify(restoreArchiveCardOutput)}`);
   }
 
   send({
@@ -695,7 +695,7 @@ async function runForTransport(transportMode, fixture) {
       name: 'signboard_archive_list',
       arguments: {
         boardRoot: createdBoardRoot,
-        listName: '002-Done-stock',
+        listName: 'Done',
       },
     },
   });
@@ -815,7 +815,8 @@ async function runForTransport(transportMode, fixture) {
     throw new Error(`import_trello did not create the expected list (${transportMode}).`);
   }
 
-  const trelloImportedCards = await fs.readdir(path.join(fixture.boardRoot, trelloImportedList.name));
+  const trelloImportedCards = (await fs.readdir(path.join(fixture.boardRoot, trelloImportedList.name)))
+    .filter((name) => !name.startsWith('.'));
   if (trelloImportedCards.length !== 1) {
     throw new Error(`import_trello created an unexpected card count (${transportMode}): ${JSON.stringify(trelloImportedCards)}`);
   }
@@ -857,7 +858,8 @@ async function runForTransport(transportMode, fixture) {
     throw new Error(`import_obsidian did not create the expected Inbox list (${transportMode}).`);
   }
 
-  const obsidianImportedCards = await fs.readdir(path.join(fixture.boardRoot, obsidianImportedList.name));
+  const obsidianImportedCards = (await fs.readdir(path.join(fixture.boardRoot, obsidianImportedList.name)))
+    .filter((name) => !name.startsWith('.'));
   if (obsidianImportedCards.length !== 1) {
     throw new Error(`import_obsidian created an unexpected Inbox card count (${transportMode}): ${JSON.stringify(obsidianImportedCards)}`);
   }
@@ -899,7 +901,8 @@ async function runForTransport(transportMode, fixture) {
     throw new Error(`import_tasksmd did not create the expected Tasks Inbox list (${transportMode}).`);
   }
 
-  const tasksMdImportedCards = await fs.readdir(path.join(fixture.boardRoot, tasksMdImportedList.name));
+  const tasksMdImportedCards = (await fs.readdir(path.join(fixture.boardRoot, tasksMdImportedList.name)))
+    .filter((name) => !name.startsWith('.'));
   const tasksMdImportedCardBody = await fs.readFile(
     path.join(fixture.boardRoot, tasksMdImportedList.name, tasksMdImportedCards[0]),
     'utf8',
@@ -1140,8 +1143,8 @@ async function runForTransport(transportMode, fixture) {
   }
 
   const moveCardOutput = moveCardResponse.result?.structuredContent || {};
-  if (!String(moveCardOutput.newCardFile || '').startsWith('000-')) {
-    throw new Error(`move_card did not place card at top (${transportMode}): ${JSON.stringify(moveCardOutput)}`);
+  if (!moveCardOutput.newCardFile || moveCardOutput.newCardFile !== createCardOutput.cardFile) {
+    throw new Error(`move_card did not preserve the card filename (${transportMode}): ${JSON.stringify(moveCardOutput)}`);
   }
 
   send({

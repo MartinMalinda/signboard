@@ -89,7 +89,7 @@ async function testArchiveCardCreatesMetadataAndRestore(root) {
 
   const restoredFileNames = await fs.readdir(doingList);
   assert.ok(restoredFileNames.includes('000-plan-release-stock.md'));
-  assert.ok(restoredFileNames.includes('001-existing-card-stock.md'));
+  assert.ok(restoredFileNames.includes('000-existing-card-stock.md'));
 
   const restoredCard = await cardFrontmatter.readCard(restored.restoredCardPath);
   assert.strictEqual(Object.prototype.hasOwnProperty.call(restoredCard.frontmatter, 'archive'), false);

@@ -181,7 +181,7 @@ in `signboard-vue/src/`; the right column shows the legacy module each replaces.
 
 `EditCardModal.vue` (lifecycle, save orchestration) · `CardTitleField.vue` ·
 `CardNotesEditor.vue` (OverType wrapper) · `CardDatesPopover.vue` ·
-`TaskLineDateControls.vue` (measured coordinates) · `CardLabelsPicker.vue` ·
+`CardLabelsPicker.vue` ·
 `LinkedObjectsPanel.vue` + `LinkedObjectChip.vue` ·
 `SmartActionsButton.vue` + `SmartActionsPopover.vue` + `SmartActionPreview.vue` ·
 `CardMoveControls.vue` · `OpenWithMenu.vue` · `CardTimestamps.vue` ·

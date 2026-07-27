@@ -1,31 +1,22 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import Modal from '../../lib/components/Modal.vue'
 import CardTitleField from './CardTitleField.vue'
 import CardNotesEditor from './CardNotesEditor.vue'
-import CardDatesControl from './CardDatesControl.vue'
 import CardTimestamps from './CardTimestamps.vue'
-import CardMoveControls from './CardMoveControls.vue'
 import CardEditorActions from './CardEditorActions.vue'
-import OpenWithMenu from './OpenWithMenu.vue'
 import FeatherIcon from '../FeatherIcon.vue'
-import LinkedObjectsPanel from './LinkedObjectsPanel.vue'
-import SmartActionsButton from './SmartActionsButton.vue'
 
 const editor = useEditorStore()
 const listPaths = ref<string[]>([])
-const inObsidianVault = ref(false)
 const status = ref('')
 const notes = ref<InstanceType<typeof CardNotesEditor> | null>(null)
 let externalSyncTimer: number | null = null
-const startDate = computed(() => String(editor.frontmatter.start || ''))
-const dueDate = computed(() => String(editor.frontmatter.due || ''))
 
 async function loadEditorExtras() {
   const root = editor.boardPathForCard(editor.cardPath)
   if (window.board.listLists && root) listPaths.value = (await window.board.listLists(root)).map((name) => `${root}${name}`)
-  if (window.board.getCardExternalLinks) inObsidianVault.value = Boolean((await window.board.getCardExternalLinks(editor.cardPath)).inObsidianVault)
 }
 
 async function openCard(path: string, options: { focusNotes?: boolean } = {}) {
@@ -62,11 +53,6 @@ async function moveAdjacent(direction: -1 | 1) {
 
 async function archiveActive() { await archive() }
 
-async function handleOpenWith(action: 'default' | 'reveal' | 'obsidian' | 'copy-signboard' | 'copy-obsidian') {
-  await editor.openWith(action)
-  status.value = action.startsWith('copy') ? 'Copied link.' : 'Opened card.'
-}
-
 async function handleDrop(event: DragEvent) {
   const files = event.dataTransfer?.files
   if (!files?.length || !editor.cardPath || !window.chooser.linkDroppedObjects) return
@@ -87,24 +73,15 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
 </script>
 
 <template>
-  <Modal :is-open="editor.isOpen" :on-close="close" positioning="fixed" :show-chrome="false" labelled-by="cardEditorTitle" :initial-focus="editor.focusNotes ? '#cardEditorOverType .overtype-input' : '#cardEditorTitle'">
+  <Modal :is-open="editor.isOpen" :on-close="close" positioning="fixed" :show-chrome="false" labelled-by="cardEditorTitle" :initial-focus="editor.focusNotes ? '#cardEditorNotes, #cardEditorOverType .overtype-input' : '#cardEditorTitle'">
     <div class="cardEditorHeader">
-      <CardMoveControls v-if="editor.cardPath" :card-path="editor.cardPath" :list-paths="listPaths" :on-move="move" />
+      <CardTitleField :value="editor.title" :on-change="editor.setTitle" />
       <div class="cardEditorHeaderActions">
         <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
-        <LinkedObjectsPanel />
-        <SmartActionsButton />
-        <OpenWithMenu :in-obsidian-vault="inObsidianVault" :on-action="handleOpenWith" />
         <button id="cardEditorClose" type="button" title="Close" aria-label="Close card editor" aria-keyshortcuts="Escape" @click="close"><FeatherIcon name="x" /></button>
       </div>
     </div>
     <div class="card-editor-modal-content" @dragover.prevent @drop.prevent="void handleDrop($event)">
-      <div>
-        <CardTitleField :value="editor.title" :on-change="editor.setTitle" />
-        <div class="cardEditorMetadataButtons">
-          <CardDatesControl :start="startDate" :due="dueDate" :on-change="editor.setDate" />
-        </div>
-      </div>
       <CardNotesEditor ref="notes" />
       <CardTimestamps :timestamps="editor.timestamps" />
       <input id="cardEditorCardPath" type="hidden" :value="editor.cardPath" />

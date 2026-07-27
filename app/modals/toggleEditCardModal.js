@@ -1187,7 +1187,7 @@ async function saveEditorCard(bodyValue) {
 }
 
 let activeDueDatePickerInput = null;
-let taskLineDueControlsTeardown = null;
+let taskLineCheckboxControlsTeardown = null;
 
 function destroyActiveDueDatePicker() {
     if (activeDueDatePickerInput && activeDueDatePickerInput._fdatepicker) {
@@ -1383,12 +1383,12 @@ function openDueDatePickerAtTrigger({
     }
 }
 
-function destroyTaskLineDueDateControls() {
-    if (typeof taskLineDueControlsTeardown === 'function') {
-        taskLineDueControlsTeardown();
+function destroyTaskLineCheckboxControls() {
+    if (typeof taskLineCheckboxControlsTeardown === 'function') {
+        taskLineCheckboxControlsTeardown();
     }
 
-    taskLineDueControlsTeardown = null;
+    taskLineCheckboxControlsTeardown = null;
 }
 
 function getCardEditorUrlOpenIconMarkup() {
@@ -1986,22 +1986,6 @@ function setupCardEditorBodyUrlControls(editor) {
     };
 }
 
-function getTaskLineDateControlIconMarkup() {
-    if (
-        window.feather &&
-        window.feather.icons &&
-        typeof window.feather.icons.calendar?.toSvg === 'function'
-    ) {
-        return window.feather.icons.calendar.toSvg({
-            width: 16,
-            height: 16,
-            stroke: 'currentColor',
-        });
-    }
-
-    return '<i data-feather="calendar" aria-hidden="true"></i>';
-}
-
 function getTaskLineCheckboxIconMarkup(isCompleted) {
     const iconName = isCompleted ? 'check-square' : 'square';
     if (
@@ -2019,8 +2003,8 @@ function getTaskLineCheckboxIconMarkup(isCompleted) {
     return `<i data-feather="${iconName}" aria-hidden="true"></i>`;
 }
 
-function setupTaskLineDueDateControls(editor) {
-    destroyTaskLineDueDateControls();
+function setupTaskLineCheckboxControls(editor) {
+    destroyTaskLineCheckboxControls();
 
     if (!editor || !editor.textarea || !editor.container) {
         return;
@@ -2034,7 +2018,7 @@ function setupTaskLineDueDateControls(editor) {
     }
 
     const layer = document.createElement('div');
-    layer.className = 'task-line-due-layer';
+    layer.className = 'task-line-checkbox-layer';
     wrapper.appendChild(layer);
 
     const toFiniteNumber = (value, fallback = 0) => {
@@ -2247,7 +2231,7 @@ function setupTaskLineDueDateControls(editor) {
         return positions;
     }
 
-    function renderTaskLineDueButtons() {
+    function renderTaskLineCheckboxes() {
         const taskItems = parseTaskListItems(textarea.value);
         layer.innerHTML = '';
 
@@ -2313,79 +2297,6 @@ function setupTaskLineDueDateControls(editor) {
 
             layer.appendChild(checkbox);
 
-            const dateButton = document.createElement('button');
-            dateButton.type = 'button';
-            dateButton.className = 'task-line-date-control';
-            dateButton.dataset.lineIndex = String(taskItem.lineIndex);
-            dateButton.style.top = `${buttonTop}px`;
-            dateButton.style.left = `${Math.round(controlLeft + 20)}px`;
-
-            if (taskItem.start) {
-                dateButton.classList.add('has-start');
-            }
-            if (taskItem.due) {
-                dateButton.classList.add('has-due');
-            }
-
-            if (taskItem.start && taskItem.due) {
-                dateButton.title = `Dates: starts ${formatLongDueDateLabel(taskItem.start)}, due ${formatLongDueDateLabel(taskItem.due)}`;
-                dateButton.setAttribute('aria-label', `${dateButton.title}. Change task dates.`);
-            } else if (taskItem.start) {
-                dateButton.title = `Starts ${formatLongDueDateLabel(taskItem.start)}`;
-                dateButton.setAttribute('aria-label', `${dateButton.title}. Change task dates.`);
-            } else if (taskItem.due) {
-                dateButton.title = `Due ${formatLongDueDateLabel(taskItem.due)}`;
-                dateButton.setAttribute('aria-label', `${dateButton.title}. Change task dates.`);
-            } else {
-                dateButton.title = 'Set task dates';
-                dateButton.setAttribute('aria-label', 'Set task dates');
-            }
-
-            dateButton.innerHTML = getTaskLineDateControlIconMarkup();
-            dateButton.addEventListener('click', async (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                const targetLineIndex = Number(dateButton.dataset.lineIndex);
-                const getLiveTaskItem = () => parseTaskListItems(textarea.value)
-                    .find((item) => item.lineIndex === targetLineIndex);
-                if (!getLiveTaskItem()) {
-                    return;
-                }
-
-                await toggleCardDateSelector({
-                    anchorElement: dateButton,
-                    getStartDateValue: () => {
-                        const liveTaskItem = getLiveTaskItem();
-                        return liveTaskItem ? liveTaskItem.start : '';
-                    },
-                    getDueDateValue: () => {
-                        const liveTaskItem = getLiveTaskItem();
-                        return liveTaskItem ? liveTaskItem.due : '';
-                    },
-                    formatDateValue: (value) => window.board.formatDueDate(value),
-                    onSelectStart: async (value) => {
-                        const nextValue = setTaskListItemStartDateByLineIndex(textarea.value, targetLineIndex, value);
-                        if (nextValue === textarea.value) {
-                            return;
-                        }
-
-                        const caretPosition = getLineEndOffsetByLineIndex(nextValue, targetLineIndex);
-                        applyEditorTextareaValuePreservingScroll(textarea, nextValue, caretPosition);
-                    },
-                    onSelectDue: async (value) => {
-                        const nextValue = setTaskListItemDueDateByLineIndex(textarea.value, targetLineIndex, value);
-                        if (nextValue === textarea.value) {
-                            return;
-                        }
-
-                        const caretPosition = getLineEndOffsetByLineIndex(nextValue, targetLineIndex);
-                        applyEditorTextareaValuePreservingScroll(textarea, nextValue, caretPosition);
-                    },
-                });
-            });
-
-            layer.appendChild(dateButton);
         }
     }
 
@@ -2397,7 +2308,7 @@ function setupTaskLineDueDateControls(editor) {
 
         renderRafId = window.requestAnimationFrame(() => {
             renderRafId = 0;
-            renderTaskLineDueButtons();
+            renderTaskLineCheckboxes();
         });
     };
 
@@ -2436,7 +2347,7 @@ function setupTaskLineDueDateControls(editor) {
 
     requestRender();
 
-    taskLineDueControlsTeardown = () => {
+    taskLineCheckboxControlsTeardown = () => {
         if (renderRafId) {
             window.cancelAnimationFrame(renderRafId);
             renderRafId = 0;
@@ -2462,7 +2373,7 @@ async function toggleEditCardModal(cardPath, options = {}) {
     const shouldOpenDueDatePicker = Boolean(options && options.openDueDatePicker);
     const shouldFocusNotes = Boolean(options && options.focusNotes);
     const modalEditCard = document.getElementById('modalEditCard');
-    destroyTaskLineDueDateControls();
+    destroyTaskLineCheckboxControls();
     destroyCardEditorBodyUrlControls();
 
     const card = await window.board.readCard(cardPath);
@@ -2518,7 +2429,7 @@ async function toggleEditCardModal(cardPath, options = {}) {
     editor.container.classList.remove('preview-mode');
     editor.container.classList.remove('plain-mode');
     addTimestampToolbarButton(editor);
-    setupTaskLineDueDateControls(editor);
+    setupTaskLineCheckboxControls(editor);
     setupCardEditorBodyUrlControls(editor);
 
     cardEditorTitle.onkeydown = (e) => {
@@ -2600,32 +2511,7 @@ async function toggleEditCardModal(cardPath, options = {}) {
         cardEditorShareLink.addEventListener('click', handleClickShareCard);
     }
 
-    const cardEditorOpenWithLink = document.getElementById('cardEditorOpenWithLink');
-    if (cardEditorOpenWithLink) {
-        cardEditorOpenWithLink.removeEventListener('click', toggleCardEditorOpenWithPopover);
-        cardEditorOpenWithLink.addEventListener('click', toggleCardEditorOpenWithPopover);
-    }
-
-    const cardEditorSmartActionsButton = document.getElementById('cardEditorSmartActionsButton');
-    if (cardEditorSmartActionsButton) {
-        cardEditorSmartActionsButton.removeEventListener('click', toggleCardEditorSmartActionsPopover);
-        cardEditorSmartActionsButton.addEventListener('click', toggleCardEditorSmartActionsPopover);
-        renderCardEditorSmartActionControls();
-    }
-
-    const cardEditorLinkedObjectsLink = document.getElementById('cardEditorLinkedObjectsLink');
-    if (cardEditorLinkedObjectsLink) {
-        cardEditorLinkedObjectsLink.removeEventListener('click', toggleCardEditorLinkedObjectsPopover);
-        cardEditorLinkedObjectsLink.addEventListener('click', toggleCardEditorLinkedObjectsPopover);
-    }
     initializeCardEditorDropLinking(modalEditCard);
-
-    const cardEditorMoveListLink = document.getElementById('cardEditorMoveListLink');
-    if (cardEditorMoveListLink) {
-        cardEditorMoveListLink.removeEventListener('click', handleClickMoveCard);
-        cardEditorMoveListLink.addEventListener('click', handleClickMoveCard);
-        await updateCardEditorMoveLink(cardEditorCardPath.value);
-    }
 
     const cardEditorListSelect = document.getElementById('cardEditorListSelect');
     if (cardEditorListSelect) {
@@ -2917,71 +2803,11 @@ async function refreshCardEditorAfterMove(newPath) {
     }
 
     await renderBoard();
-    await updateCardEditorMoveLink(newPath);
     await updateCardEditorListDropdown(newPath);
     if (typeof announceSignboardStatus === 'function') {
         const targetListName = getCardEditorListDisplayName(getPathDirectoryName(getCardListPath(newPath)));
         announceSignboardStatus(`Moved card to ${targetListName}.`);
     }
-}
-
-function setCardEditorMoveIcon(moveLink, iconName) {
-    if (!moveLink || !window.feather || !window.feather.icons || !window.feather.icons[iconName]) {
-        return;
-    }
-
-    moveLink.innerHTML = window.feather.icons[iconName].toSvg();
-    const svgIcon = moveLink.querySelector('svg');
-    if (svgIcon) {
-        svgIcon.setAttribute('aria-hidden', 'true');
-        svgIcon.setAttribute('focusable', 'false');
-    }
-}
-
-async function updateCardEditorMoveLink(cardPath) {
-    const moveLink = document.getElementById('cardEditorMoveListLink');
-    if (!moveLink) {
-        return null;
-    }
-
-    const moveInfo = await resolveCardMoveTarget(cardPath);
-    const isRightmost = moveInfo.listPaths.length > 0 && moveInfo.isRightmost;
-    const iconName = isRightmost ? 'arrow-left' : 'arrow-right';
-    const title = isRightmost ? 'Move to previous list' : 'Move to next list';
-
-    setCardEditorMoveIcon(moveLink, iconName);
-    moveLink.title = title;
-    moveLink.setAttribute('aria-label', title);
-    moveLink.dataset.targetPath = moveInfo.targetPath || '';
-    moveLink.dataset.direction = isRightmost ? 'left' : 'right';
-
-    return moveInfo;
-}
-
-async function handleClickMoveCard(e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const cardEditorCardPath = document.getElementById('cardEditorCardPath');
-    if (!cardEditorCardPath || !cardEditorCardPath.value) {
-        return;
-    }
-
-    await flushEditorSaveIfNeeded();
-
-    const moveInfo = await resolveCardMoveTarget(cardEditorCardPath.value);
-    if (!moveInfo || !moveInfo.targetPath) {
-        await updateCardEditorMoveLink(cardEditorCardPath.value);
-        return;
-    }
-
-    const newPath = await moveCardToTopOfListPath(cardEditorCardPath.value, moveInfo.targetPath);
-    if (!newPath) {
-        return;
-    }
-
-    await refreshCardEditorAfterMove(newPath);
-    return;
 }
 
 async function moveActiveEditorCardToAdjacentList(direction) {
@@ -2995,7 +2821,6 @@ async function moveActiveEditorCardToAdjacentList(direction) {
 
     const moveInfo = await resolveCardMoveTarget(cardEditorCardPath.value, normalizedDirection);
     if (!moveInfo || !moveInfo.targetPath) {
-        await updateCardEditorMoveLink(cardEditorCardPath.value);
         return false;
     }
 

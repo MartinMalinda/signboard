@@ -2,9 +2,9 @@ const CARD_ID_PATTERN = /-([A-Za-z0-9]{5})\.md$/;
 const LIST_NAME_PATTERN = /^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/;
 const ARCHIVE_DIRECTORY_NAME = 'XXX-Archive';
 const DEFAULT_BOARD_LIST_NAMES = Object.freeze([
-  '000-To-do-stock',
-  '001-Doing-stock',
-  '002-Done-stock',
+  'To-do',
+  'Doing',
+  'Done',
   ARCHIVE_DIRECTORY_NAME,
 ]);
 const DEFAULT_LABELS = Object.freeze([

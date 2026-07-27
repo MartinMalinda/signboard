@@ -26,13 +26,15 @@ the same PR. When a task lands, tick its boxes and list newly passing specs.
 - [x] Open/close, focus trap/restore, inert background
 - [x] Title/notes save parity (debounced + serialized, byte-identical files)
 - [x] Clean-state tracking + external-edit reload
-- [x] Card start/due control; task-line date controls (wrapped lines)
+- [x] Card start/due control; task-level date markers remain supported in Markdown
 - [x] Created/Updated timestamps
 - [x] Move to list (dropdown + adjacent), archive, duplicate, Open With
 
 Task 03 implementation is present in the Vue side-build (`Modal`, editor
-store/save queue, OverType notes wrapper, dates/timestamps, move/actions/Open
-With, and measured task-line controls). Unit/build/type verification passes;
+store/save queue, controlled notes wrapper, dates/timestamps, move/actions/Open
+With, and checklist editing). Tiptap is now the default notes engine;
+OverType remains available as a temporary fallback for rollback/testing.
+Unit/build/type verification passes;
 the Vue Playwright suite was attempted but is not currently green, so no E2E
 rows are recorded as passing here. The focused legacy tests remain green except
 for the known `test-board-views` add-list shortcut-hint baseline failure at
@@ -255,3 +257,19 @@ Task 14 centralizes the legacy nine-scheme palette in
 Focused coverage passes for scheme selection, light/dark application, scope,
 and cleanup. Vue type-check/build/unit tests and the focused legacy board-label
 theme test pass; `git diff --check` passes.
+
+## Tiptap card editor migration (Task 15)
+
+- [x] Controlled Tiptap Markdown notes editor with native nested task checkboxes
+- [x] Markdown round-trip, clean external refresh, save-store integration, and
+      base64-image protection
+- [x] Tiptap Markdown round-trip preserving start/scheduled/due markers without
+      per-task date controls
+- [x] Raw URL decoration/open behavior, link editing, theme/accessibility hooks,
+      and temporary OverType fallback switch
+
+Task 15 is implemented in `signboard-vue/src/lib/components/RichTextEditor.vue`
+behind the existing `CardNotesEditor.vue` boundary. Focused Task 15 unit tests,
+Vue type-check, and the production build pass. The full Vue unit suite retains
+the existing Task 12 jsdom failure; Electron Playwright remains blocked by the
+environment's Electron launch `SIGABRT`.

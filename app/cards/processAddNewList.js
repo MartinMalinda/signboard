@@ -32,38 +32,17 @@ function formatListIndex(index) {
     });
 }
 
-function buildReindexedListDirectoryName(directoryName, index) {
-    const suffixMatch = String(directoryName || '').match(/^\d{3}(.*)$/);
-    const suffix = suffixMatch ? suffixMatch[1] : `-${String(directoryName || '').replace(/^\d+-?/, '')}`;
-    return `${formatListIndex(index)}${suffix}`;
-}
-
 async function reorderBoardLists(boardRoot, orderedDirectoryNames) {
     const normalizedBoardRoot = normalizeBoardRootPath(boardRoot);
     const names = Array.isArray(orderedDirectoryNames)
         ? orderedDirectoryNames.filter(Boolean)
         : [];
 
-    if (!normalizedBoardRoot || names.length === 0) {
+    if (!normalizedBoardRoot || names.length === 0 || !window.board || typeof window.board.reorderLists !== 'function') {
         return;
     }
 
-    const temporaryEntries = [];
-    for (const [index, directoryName] of names.entries()) {
-        const tempDirectoryName = `__sbtmp-${formatListIndex(index)}-${await rand5()}`;
-        await window.board.moveList(
-            `${normalizedBoardRoot}${directoryName}`,
-            `${normalizedBoardRoot}${tempDirectoryName}`,
-        );
-        temporaryEntries.push({ directoryName, tempDirectoryName });
-    }
-
-    for (const [index, entry] of temporaryEntries.entries()) {
-        await window.board.moveList(
-            `${normalizedBoardRoot}${entry.tempDirectoryName}`,
-            `${normalizedBoardRoot}${buildReindexedListDirectoryName(entry.directoryName, index)}`,
-        );
-    }
+    await window.board.reorderLists(names.map((directoryName) => `${normalizedBoardRoot}${directoryName}`));
 }
 
 function getAddListModalCoordinates(anchorElement) {
@@ -137,8 +116,7 @@ async function processAddNewList(listName, options = {}){
     }
 
     const currentLists = (await window.board.listLists(normalizedBoardRoot))
-        .filter(Boolean)
-        .sort(compareListDirectoryNames);
+        .filter(Boolean);
     const countLists = currentLists.length;
     const requestedAfterListDirectoryName = getListDirectoryNameFromPath(options.afterListPath);
 
