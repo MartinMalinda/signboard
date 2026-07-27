@@ -31,6 +31,7 @@ import BoldIcon from './editor/Bold.vue'
 import ItalicIcon from './editor/Italic.vue'
 import LinkIcon from './editor/Link.vue'
 import { findRawUrls } from '../../../lib/rawUrls.js'
+import { codeHighlightExtension } from '../codeHighlight'
 
 const BASE64_IMAGE_PATTERN = /!\[[^\]]*\]\(\s*data:image\/[^)]*\)/gi
 const rawUrlPluginKey = new PluginKey('signboardRawUrls')
@@ -127,6 +128,7 @@ const editor = useEditor({
     Blockquote,
     Code,
     CodeBlock,
+    codeHighlightExtension,
   ],
   editorProps: {
     attributes: {
@@ -310,16 +312,19 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
 .card-editor-tiptap {
   position: relative;
   color: var(--text, inherit);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .card-editor-tiptap-toolbar {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 42px;
-  padding-top: 6px;
-  padding-bottom: 14px;
-  padding-left: var(--card-editor-body-inset, 16px);
+  min-height: 35px;
+  padding: 2px 0;
   border-bottom: 1px solid var(--border, currentColor);
 }
 
@@ -363,8 +368,9 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
 }
 
 :deep(.card-editor-notes-content) {
-  min-height: 180px;
-  max-height: 600px;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   padding: 16px var(--card-editor-body-inset, 16px);
   outline: none;
@@ -389,6 +395,7 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
 :deep(.card-editor-notes-content blockquote) { margin: 0 0 0.8em; padding-left: 0.8em; border-left: 2px solid var(--border, currentColor); }
 :deep(.card-editor-notes-content code) { padding: 0.1em 0.25em; border-radius: 3px; background: color-mix(in srgb, currentColor 10%, transparent); }
 :deep(.card-editor-notes-content pre) { overflow-x: auto; padding: 0.75em; border-radius: 5px; background: color-mix(in srgb, currentColor 10%, transparent); }
+:deep(.card-editor-notes-content pre code) { padding: 0; border-radius: 0; background: transparent; }
 :deep(.card-editor-notes-content ul[data-type='taskList'] li) { display: flex; gap: 0.5em; align-items: flex-start; }
 :deep(.card-editor-notes-content ul[data-type='taskList'] li > label) { flex: none; margin-top: 0.25em; }
 :deep(.card-editor-notes-content ul[data-type='taskList'] input[type='checkbox']) { width: 1.1em; height: 1.1em; }

@@ -113,7 +113,9 @@ function createDragLifecycle(kind: 'cards' | 'lists' | 'settings', sortable: () 
     },
     onStart: begin,
     onEnd: end,
+    onCancel: end,
     onUnchoose: () => {
+      end()
       if (kind === 'cards') document.body.classList.remove('board-card-drag-active')
     },
     cleanup: () => {
@@ -143,10 +145,14 @@ export function useSortable(target: SortableTarget, options: SortableOptions) {
     const ctor = getSortableConstructor()
     const element = getTarget()
     if (!ctor || !element) return null
-    const forceFallback = options.forceFallback ?? true
+    // Card fallback dragging keeps the card ghost predictable in Electron.
+    // Lists do not need a detached fixed clone; native sorting keeps a
+    // canceled/interrupted list drag from leaving a floating column over the
+    // board.
+    const forceFallback = options.forceFallback ?? (kind === 'cards')
     instance = new ctor(element, {
       forceFallback,
-      fallbackOnBody: options.fallbackOnBody ?? forceFallback,
+      fallbackOnBody: options.fallbackOnBody ?? (kind === 'cards' && forceFallback),
       // Ignore small pointer wobble so a click on a card does not become a drag.
       fallbackTolerance: options.fallbackTolerance ?? (kind === 'cards' ? 5 : 0),
       fallbackClass: kind === 'cards' ? 'card-sortable--fallback' : 'list-sortable--fallback',
@@ -160,6 +166,7 @@ export function useSortable(target: SortableTarget, options: SortableOptions) {
       onChoose: lifecycle.onChoose,
       onStart: lifecycle.onStart,
       onUnchoose: lifecycle.onUnchoose,
+      onCancel: lifecycle.onCancel,
       onEnd: async (event: SortableEventLike) => {
         try { await options.onEnd(event) } finally { lifecycle.onEnd(event) }
       },

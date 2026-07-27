@@ -33,6 +33,7 @@ same preload/main-process APIs.
 - Settings, including app-wide General/Notifications/Smart Actions panels, drag-reorderable local Ollama Smart Card Actions for generated titles/summaries/task lists/auto-labeling/smart paste/due dates/linked-object suggestions, one-off Quick Smart Actions, read-only card questions, and board-specific General, Labels, Appearance, Workflow, Obsidian, and Import panels, plus board rename/move/duplicate actions
 - Obsidian integration, including boards stored inside vaults, Open With actions, generated Bases files, linked notes, missing-note handling, linked objects, dropped local-file linking, URL favicons, `signboard://` card/board links, and the optional Obsidian companion plugin
 - Raw web URLs in card bodies, opened from the editor through the inline open-link control or Cmd/Ctrl-click
+- Syntax-highlighted fenced Markdown code blocks in the Vue card editor, including `ts` and `json` language labels
 - Native text editing context menus in editable fields, plus a Kanban card right-click action menu
 - Accessibility support for keyboard-operable cards/list actions, modal focus handling, live status announcements, reduced motion, and forced-colors mode
 - Keyboard result/menu navigation for board search, Planner search, Archive search, board tabs, list actions, label/filter popovers, and Settings sections

@@ -114,7 +114,7 @@ Click a card to open it. In the card editor you can:
 - Configure Smart Card Actions in App Settings when AI assistance is enabled
 - Archive it
 
-The card body is Markdown, so plain text notes, headings, lists, and checklists all work naturally. In the Vue card editor, checklist items use native accessible checkboxes; checking one still saves the standard Markdown task marker.
+The card body is Markdown, so plain text notes, headings, lists, checklists, and fenced code blocks all work naturally. Fenced blocks with `ts` or `json` language labels receive syntax highlighting in the Vue card editor while preserving the original Markdown. In the Vue card editor, checklist items use native accessible checkboxes; checking one still saves the standard Markdown task marker.
 
 Raw `http://`, `https://`, and `www.` URLs in the body stay as plain Markdown text. When the cursor is in one, Signboard shows a small open-link control; Cmd/Ctrl-clicking the URL also opens it in your default browser.
 

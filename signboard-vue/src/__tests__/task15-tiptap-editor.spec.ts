@@ -51,4 +51,30 @@ describe('Task 15 Tiptap card notes editor', () => {
     expect(openExternal).toHaveBeenCalledWith('https://example.test/docs')
     expect((mounted.vm as unknown as { getMarkdown: () => string }).getMarkdown()).toContain('https://example.test/docs.')
   })
+
+  it('keeps fenced code blocks separate from inline code styling', async () => {
+    mounted = mount(RichTextEditor, {
+      props: {
+        modelValue: 'Inline `foo`\n\n```ts\ntype NormalizedEvent = {\n  baseId: string;\n}\n```',
+      },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const inlineCode = mounted.find('p code')
+    const fencedCode = mounted.find('pre code')
+    expect(inlineCode.exists()).toBe(true)
+    expect(fencedCode.exists()).toBe(true)
+    expect(fencedCode.element.parentElement?.tagName).toBe('PRE')
+    expect(fencedCode.text()).toContain('type NormalizedEvent')
+  })
+
+  it('highlights fenced TypeScript without changing the Markdown representation', async () => {
+    const markdown = '```ts\nconst value: string = "ok"\n```'
+    mounted = mount(RichTextEditor, { props: { modelValue: markdown } })
+
+    await vi.waitFor(() => expect(mounted?.findAll('pre .shiki').length).toBeGreaterThan(0), { timeout: 3000 })
+
+    expect((mounted.vm as unknown as { getMarkdown: () => string }).getMarkdown()).toContain(markdown)
+    expect(mounted.find('pre').attributes('style')).toContain('--prosemirror-highlight')
+  })
 })

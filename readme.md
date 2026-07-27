@@ -109,6 +109,8 @@ On Kanban cards, right-click the card surface to open its action menu and choose
 
 Raw `http://`, `https://`, and `www.` URLs typed in the card body are visually marked in the editor. Use the inline open-link control or Cmd/Ctrl-click the URL to open it in your default browser without changing the card's Markdown.
 
+Fenced Markdown code blocks with `ts` or `json` language labels receive syntax highlighting in the Vue card editor without changing the stored Markdown.
+
 Cards, list actions, and dialogs are keyboard-operable, with screen-reader status announcements for common actions. Focus indicators appear for keyboard navigation without adding persistent outlines to the card editor for pointer users.
 
 ## 🤖 MCP Server

@@ -130,7 +130,7 @@ html, body { margin: 0; height: 100%; }
   /* Column sizing */
   --list-min: 280px;
   --list-max: 280px;
-  --card-gap: 10px;
+  --card-gap: 4px;
 
   /* Card sizing */
   --card-spacing: 8px;
@@ -201,6 +201,17 @@ body {
   flex-direction: column;
   min-height: 100vh;
   overflow: hidden;
+}
+
+/* The Vue renderer mounts the app shell inside this wrapper. Keep that
+   wrapper in the same constrained column as the legacy direct body children
+   so workspace views can own their scroll regions. */
+#app {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
 }
 
 button,
@@ -1461,6 +1472,7 @@ body:not(.board-empty) #boardMenuButton,
 main#board {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -1503,7 +1515,8 @@ body:not(.board-empty) main#board.board-view-week {
 .board-table-view {
   height: 100%;
   width: 100%;
-  min-width: 1280px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -1749,6 +1762,7 @@ body:not(.board-empty) main#board.board-view-week {
 .board-table-scroll {
   flex: 1 1 auto;
   width: 100%;
+  max-width: 100%;
   min-height: 0;
   overflow: auto;
   border: 1px solid var(--border);
@@ -4565,8 +4579,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #modalEditCard .modal-scale-wrap,
-#modalEditCard .modal-content,
-#modalEditCard .card-editor-modal-content {
+#modalEditCard .modal-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -4574,7 +4587,25 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #modalEditCard .card-editor-modal-content {
-  padding-top: 12px;
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  min-height: 0;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+#modalEditCard .card-editor-notes-implementation {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#modalEditCard .card-editor-notes-content {
+  min-height: 0;
+  max-height: none;
 }
 
 #modalEditCard.card-editor-drop-active {
@@ -6719,6 +6750,28 @@ select:disabled {
 
 #cardEditorOverType .overtype-container.preview-mode .task-line-checkbox-layer {
   display: none;
+}
+
+.card-editor-notes-content pre {
+  color: var(--prosemirror-highlight, inherit);
+  background: var(--prosemirror-highlight-bg, color-mix(in srgb, currentColor 10%, transparent));
+}
+
+:root[data-theme="dark"] .card-editor-notes-content pre {
+  color: var(--shiki-dark, var(--prosemirror-highlight, inherit));
+  background: var(--shiki-dark-bg, var(--prosemirror-highlight-bg, color-mix(in srgb, currentColor 10%, transparent)));
+}
+
+:root[data-theme="dark"] .card-editor-notes-content pre .shiki {
+  color: var(--shiki-dark, currentColor) !important;
+}
+
+@media (forced-colors: active) {
+  .card-editor-notes-content pre,
+  .card-editor-notes-content pre .shiki {
+    color: CanvasText !important;
+    background: Canvas !important;
+  }
 }
 
 .overtype-container {

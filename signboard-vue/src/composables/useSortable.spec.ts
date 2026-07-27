@@ -29,4 +29,26 @@ describe('useSortable', () => {
       expect.objectContaining({ forceFallback: true, fallbackTolerance: 5 }),
     )
   })
+
+  it('keeps list sorting in the board instead of using a detached fallback clone', () => {
+    const SortableMock = vi.fn(function (this: { destroy: () => void }) {
+      this.destroy = vi.fn()
+    })
+    vi.stubGlobal('Sortable', SortableMock)
+
+    const Harness = defineComponent({
+      setup() {
+        const target = ref<HTMLElement | null>(null)
+        useSortable(target, { kind: 'lists', draggable: '.list', onEnd: vi.fn() })
+        return () => h('div', { ref: target }, [h('div', { class: 'list' })])
+      },
+    })
+
+    mount(Harness)
+
+    expect(SortableMock).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ forceFallback: false, fallbackOnBody: false, onCancel: expect.any(Function) }),
+    )
+  })
 })
