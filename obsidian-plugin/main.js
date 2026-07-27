@@ -167,6 +167,15 @@ const helpers = (() => {
     ].join('\n');
   }
 
+  function buildBoardSettingsJson() {
+    return `${JSON.stringify({
+      version: 1,
+      settings: {
+        labels: DEFAULT_LABELS,
+      },
+    }, null, 2)}\n`;
+  }
+
   function normalizeStringList(value) {
     const values = Array.isArray(value)
       ? value
@@ -357,6 +366,7 @@ const helpers = (() => {
   return {
     ARCHIVE_DIRECTORY_NAME,
     DEFAULT_BOARD_LIST_NAMES,
+    buildBoardSettingsJson,
     buildBoardSettingsMarkdown,
     buildCardFileName,
     buildSignboardBoardUri,
@@ -752,10 +762,23 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
       return false;
     }
 
-    return folder.children.some((child) => (
+    const hasLegacySettings = folder.children.some((child) => (
       child instanceof TFile &&
       child.name === 'board-settings.md'
-    )) || folder.children.some((child) => (
+    ));
+    if (hasLegacySettings) {
+      return true;
+    }
+
+    const hasBoardManifest = folder.children.some((child) => (
+      child instanceof TFile &&
+      child.name === '.board.json'
+    ));
+    if (hasBoardManifest && folder.children.some((child) => child instanceof TFolder)) {
+      return true;
+    }
+
+    return folder.children.some((child) => (
       child instanceof TFolder &&
       (/^\d{3}-.+/.test(child.name) || child.name === helpers.ARCHIVE_DIRECTORY_NAME)
     ));
@@ -938,12 +961,12 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
   }
 
   async ensureBoardSettings(folder) {
-    const settingsPath = helpers.slashPath(`${folder.path}/board-settings.md`);
+    const settingsPath = helpers.slashPath(`${folder.path}/.board.json`);
     if (this.app.vault.getAbstractFileByPath(settingsPath)) {
       return;
     }
 
-    await this.app.vault.create(settingsPath, helpers.buildBoardSettingsMarkdown());
+    await this.app.vault.create(settingsPath, helpers.buildBoardSettingsJson());
   }
 
   getDirectMarkdownChildren(folder) {

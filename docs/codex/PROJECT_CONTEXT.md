@@ -6,7 +6,7 @@ Signboard is a local-first board app built with Electron and plain JavaScript. B
 - A board is a folder on disk.
 - Lists are subdirectories inside that board folder.
 - Cards are Markdown files in each list directory.
-- Board-level settings are stored in `board-settings.md` at the board root, including labels, color scheme data, completed-list workflow rules, and whether the board participates in External Published Calendar.
+- Board-level settings are stored under `settings` in the board root `.board.json` manifest, including labels, color scheme data, completed-list workflow rules, and whether the board participates in External Published Calendar. Legacy `board-settings.md` and `labels.md` files remain readable and migrate when settings are ensured.
 - App-level tooltip, notification, Quick Add global shortcut, AI assistance/Ollama, and External Published Calendar settings are stored in `app-settings.json` under Electron `userData`.
 - Obsidian integration is outbound and file-native: boards can live inside a vault, cards gain flat Obsidian-friendly properties on create/write/move, managed `Signboard Board.base` files are auto-created/updated for boards inside detected vaults unless the user customizes them, and board activation may ensure that Base without rewriting card Markdown; full metadata reconciliation is reserved for imports, board moves, and explicit Base actions. Vault-only card actions can write linked notes in the board root, non-vault linked-note/Base actions show an info modal, legacy `related` Obsidian wikilinks remain readable, structured `linked_objects` render as removable chips for notes/files/folders/URLs/app links/Signboard links, Obsidian-note chips prefer the current `related` wikilink name/open/status/recreate target when Obsidian renames notes, missing Obsidian notes remain linked until the user recreates, relinks, or removes them, Kanban/Table views show linked-object counts, local files can be linked by dragging them onto the card editor, `signboard://open-card?id=...` deep links resolve only through trusted board roots, and `signboard://open-board?path=...` opens validated vault-contained board folders after user confirmation.
 - The optional Obsidian companion plugin source lives in `obsidian-plugin/`; it can open/copy Signboard links, attach active notes to cards, ask before removing links to deleted notes, handle `obsidian://signboard?...`, and convert a non-root Obsidian folder into a Signboard board after warning the user.
@@ -93,11 +93,12 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
 - `window.boardRoot` is the absolute board path with trailing slash.
 - Open board tabs are persisted in `localStorage.openBoardPaths` without a hard count limit; active/open board state is also mirrored to `open-boards.json` under Electron `userData` for MCP/CLI board discovery, and the visible tab strip collapses excess tabs behind an `N more` control.
 - Active board root is persisted in `localStorage.activeBoardPath` and mirrored in legacy `localStorage.boardPath` for backward compatibility.
-- `board-settings.md` is auto-created with default label definitions when missing; legacy tooltip/notification keys are read for app-settings migration and removed on rewrite; board-level External Published Calendar inclusion defaults on and only serializes when disabled.
+- `.board.json` is auto-created with default label definitions when board settings are missing; legacy `board-settings.md`/`labels.md` values and tooltip/notification keys are read for migration; board-level External Published Calendar inclusion defaults on and only serializes when disabled.
 - Imports are additive only: they create new lists/cards in the current board and never modify external source files.
 
 ### List directories
-- Pattern: `NNN-<list-name>-<suffix>`
+- New lists use the sanitized display name directly, such as `Ongoing` or `Done`.
+- Legacy `NNN-<list-name>-<suffix>` directories remain readable and renameable for compatibility.
 - Default starter lists use suffix `-stock`.
 - Archive list is always `XXX-Archive` and hidden from normal board rendering.
 - Empty desktop-created and MCP-created boards seed the same `👋 Start Here` card, including current workflow hints and generated upcoming checklist due-date examples.
@@ -401,9 +402,9 @@ File: `lib/archive.js`
 
 File: `lib/boardLabels.js`
 
-- Reads/writes board label definitions in `board-settings.md`.
+- Reads/writes board label definitions in the root `.board.json` manifest under `settings.labels`.
 - Creates default labels when settings are missing.
-- Migrates legacy `labels.md` reads into `board-settings.md`.
+- Migrates legacy `board-settings.md` and `labels.md` reads into the root `.board.json` manifest.
 - Normalizes completed-list workflow settings under `workflow`, defaulting auto-detection on for common list names while preserving manual completed and ignored-list overrides.
 - Normalizes board-level External Published Calendar inclusion under `externalPublishedCalendar`.
 - Exposes OR-based label filtering helper logic.

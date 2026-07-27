@@ -1471,11 +1471,23 @@ main#board {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Kanban columns stay in the workspace viewport while their card stacks
+   scroll independently. This keeps list actions available on long lists. */
+main#board.board-view-kanban {
+  align-items: stretch;
+  overflow-y: hidden;
+}
+
 main#board.board-view-table,
 main#board.board-view-calendar,
 main#board.board-view-week {
   display: block;
   padding: 16px 16px calc(var(--workspace-view-dock-height) + var(--workspace-view-dock-bottom) + 24px);
+}
+
+main#board.board-view-table {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 body:not(.board-empty) main#board {
@@ -1489,8 +1501,12 @@ body:not(.board-empty) main#board.board-view-week {
 }
 
 .board-table-view {
+  height: 100%;
   width: 100%;
   min-width: 1280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .board-table-header {
@@ -1731,7 +1747,9 @@ body:not(.board-empty) main#board.board-view-week {
 }
 
 .board-table-scroll {
+  flex: 1 1 auto;
   width: 100%;
+  min-height: 0;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -2500,10 +2518,12 @@ body.board-empty main#board {
   cursor: grab;
   display: flex;
   flex-direction: column;
-  align-self: flex-start;
+  align-self: stretch;
   gap: var(--card-gap);
   min-width: var(--list-min);
   max-width: var(--list-max);
+  min-height: 0;
+  max-height: 100%;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -2539,6 +2559,20 @@ body.board-empty main#board {
   opacity: 1 !important;
   border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
   box-shadow: 0 12px 28px color-mix(in oklab, var(--shadow) 74%, transparent);
+}
+
+.lazy-card {
+  min-width: 0;
+  margin-bottom: var(--card-spacing);
+  cursor: grab;
+}
+
+.lazy-card > .card {
+  margin-bottom: 0;
+}
+
+.lazy-card-filtered-out {
+  display: none;
 }
 
 /* List header row */
@@ -2683,9 +2717,22 @@ body.board-empty main#board {
 }
 
 .cards {
-  min-height: 125px;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 136px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Keep vertical overscroll in the card stack, but let horizontal wheel /
+     trackpad movement chain to the board underneath the list. */
+  overscroll-behavior-x: auto;
+  overscroll-behavior-y: contain;
   padding-top: 8px;
   padding-bottom: 50px;
+}
+
+.cards:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--accent) 45%, var(--bg-card));
+  outline-offset: 2px;
 }
 
 /* Add List Phantom Card */
@@ -2784,7 +2831,8 @@ body.board-empty main#board {
   box-shadow: 0 6px 18px var(--shadow-card);
 }
 
-.card-sortable--chosen > .card-drag-frame {
+.card-sortable--chosen > .card-drag-frame,
+.lazy-card.card-sortable--chosen > .card > .card-drag-frame {
   box-shadow: 0 10px 24px var(--shadow-card);
 }
 
@@ -2792,14 +2840,16 @@ body.board-empty main#board {
   opacity: 1;
 }
 
-.card-sortable--ghost > .card-drag-frame {
+.card-sortable--ghost > .card-drag-frame,
+.lazy-card.card-sortable--ghost > .card > .card-drag-frame {
   background: color-mix(in oklab, var(--accent) 6%, var(--bg-card));
   border: 1px dashed color-mix(in oklab, var(--accent) 28%, var(--border));
   box-shadow: none;
   transform: none;
 }
 
-.card-sortable--ghost > .card-drag-frame > * {
+.card-sortable--ghost > .card-drag-frame > *,
+.lazy-card.card-sortable--ghost > .card > .card-drag-frame > * {
   visibility: hidden;
 }
 
@@ -2813,7 +2863,9 @@ body.board-empty main#board {
 }
 
 .card-sortable--dragging > .card-drag-frame,
-.card-sortable--fallback > .card-drag-frame {
+.card-sortable--fallback > .card-drag-frame,
+.lazy-card.card-sortable--dragging > .card > .card-drag-frame,
+.lazy-card.card-sortable--fallback > .card > .card-drag-frame {
   border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
   box-shadow: 0 12px 28px color-mix(in oklab, var(--shadow-card) 74%, transparent);
   transform: rotate(var(--card-drag-tilt, 0deg));
@@ -2857,6 +2909,14 @@ body.board-card-drag-active * {
 .card-body {
   font-size: var(--font-sm);
   color: var(--muted);
+}
+.card-body-preview {
+  display: -webkit-box;
+  margin: 0 0 8px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .metadata {
   display: flex;

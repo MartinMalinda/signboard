@@ -94,7 +94,7 @@ async function run() {
 
     const directoryNames = await listDirectories(boardRoot);
     const displayNames = directoryNames.map((name) => getListDisplayName(name));
-    assert.deepStrictEqual(displayNames, ['In Progress', 'Backlog']);
+    assert.deepStrictEqual([...displayNames].sort(), ['Backlog', 'In Progress']);
 
     const doingDirectory = directoryNames.find((name) => getListDisplayName(name) === 'In Progress');
     const doingFiles = await listMarkdownFiles(path.join(boardRoot, doingDirectory));

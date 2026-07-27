@@ -25,7 +25,7 @@ Signboard is file-first.
 - A board is a folder on disk.
 - Lists are folders inside the board.
 - Cards are Markdown files inside those list folders.
-- Board-level settings live in `board-settings.md`.
+- Board-level settings live under `settings` in the root `.board.json` manifest. Older boards with `board-settings.md` are migrated when Signboard next writes their settings.
 - Archived cards and lists live in `XXX-Archive`.
 
 Boards can live inside an Obsidian vault. Use a normal folder such as `Vault/Signboard/<Board Name>/`; do not create a nested vault inside the board. You can also move an existing board into a vault later from `Settings > General > Move Board`.
@@ -60,7 +60,7 @@ You can create a list in a few ways:
 - Press `Cmd/Ctrl + Shift + N`
 - Use the list actions menu on an existing list and choose `Add new list`
 
-Signboard creates a folder for the list. Existing numeric prefixes are retained for compatibility, but ordering is stored in the board root `.board.json` manifest.
+Signboard creates a folder using the sanitized list name, such as `Ongoing`, `Staging`, or `Done`. Existing numeric prefixes and random suffixes are retained for compatibility, but new lists do not need them because ordering is stored in the board root `.board.json` manifest.
 
 ### Rename a list
 

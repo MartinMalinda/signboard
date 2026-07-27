@@ -156,6 +156,15 @@ function buildBoardSettingsMarkdown() {
   ].join('\n');
 }
 
+function buildBoardSettingsJson() {
+  return `${JSON.stringify({
+    version: 1,
+    settings: {
+      labels: DEFAULT_LABELS,
+    },
+  }, null, 2)}\n`;
+}
+
 function normalizeStringList(value) {
   const values = Array.isArray(value)
     ? value
@@ -346,6 +355,7 @@ function addLinkedObjectToFrontmatter(frontmatter, linkedObject, relatedLink = '
 module.exports = {
   ARCHIVE_DIRECTORY_NAME,
   DEFAULT_BOARD_LIST_NAMES,
+  buildBoardSettingsJson,
   buildBoardSettingsMarkdown,
   buildCardFileName,
   buildSignboardBoardUri,

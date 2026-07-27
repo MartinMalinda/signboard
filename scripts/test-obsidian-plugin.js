@@ -148,6 +148,9 @@ async function run() {
   assert(settings.includes('labels:'), 'board settings should include labels');
   assert(settings.includes('colorLight: #22c55e'), 'board settings should include default label colors');
 
+  const settingsManifest = JSON.parse(helpers.buildBoardSettingsJson());
+  assert(settingsManifest.settings && settingsManifest.settings.labels, 'JSON board settings should include labels');
+
   const frontmatter = {
     related: '[[Existing]]',
     linked_objects: [

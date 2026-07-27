@@ -7,7 +7,7 @@ describe('Task 04 creation and shortcut primitives', () => {
     const cardPath = await buildCardPath('/boards/demo/001-doing/', 'Fix the search box', 2)
     const listPath = await buildListPath('/boards/demo/', 'Doing', 3)
     expect(cardPath).toMatch(/^\/boards\/demo\/001-doing\/003-fix-the-search-box-[a-z0-9]{5}\.md$/i)
-    expect(listPath).toMatch(/^\/boards\/demo\/003-Doing-[a-z0-9]{5}$/i)
+    expect(listPath).toBe('/boards/demo/Doing')
     expect(listRoot('/boards/demo/001-doing/')).toBe('/boards/demo/')
   })
 

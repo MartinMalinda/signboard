@@ -25,13 +25,6 @@ function compareListDirectoryNames(left, right) {
     });
 }
 
-function formatListIndex(index) {
-    return Number(index || 0).toLocaleString('en-US', {
-        minimumIntegerDigits: 3,
-        useGrouping: false,
-    });
-}
-
 async function reorderBoardLists(boardRoot, orderedDirectoryNames) {
     const normalizedBoardRoot = normalizeBoardRootPath(boardRoot);
     const names = Array.isArray(orderedDirectoryNames)
@@ -127,9 +120,7 @@ async function processAddNewList(listName, options = {}){
         ? afterListIndex + 1
         : countLists;
 
-    const nextListNumber = formatListIndex(countLists);
-    const userCreatedListName = await sanitizeFileName(listName.slice(0,25) + '-' + await rand5());
-    const createdDirectoryName = `${nextListNumber}-${userCreatedListName}`;
+    const createdDirectoryName = await sanitizeFileName(listName.slice(0, 25));
 
     await window.board.createList(`${normalizedBoardRoot}${createdDirectoryName}`);
 

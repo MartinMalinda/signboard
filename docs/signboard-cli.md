@@ -82,7 +82,7 @@ The CLI is organized into six command groups:
 
 ### `boards`
 
-List known boards or create a new board folder with Signboard's default starter lists.
+List known boards or create a new board folder with Signboard's default starter lists. `lists create <name>` stores new lists in a folder named after the sanitized list name; older numbered/randomized list folders remain supported.
 
 ```bash
 signboard boards list
@@ -453,7 +453,7 @@ This returns the board settings Markdown document, including labels, color schem
 
 Current CLI editing support is intentionally narrow.
 
-For label editing, color-scheme changes, completed-list workflow changes, and External Published Calendar board inclusion changes, use the desktop app or edit `board-settings.md` carefully.
+For label editing, color-scheme changes, completed-list workflow changes, and External Published Calendar board inclusion changes, use the desktop app or edit the `settings` object in the root `.board.json` carefully.
 
 ### Import from Trello
 

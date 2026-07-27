@@ -370,7 +370,7 @@ async function main() {
   const createdList = JSON.parse(
     runCli(['lists', 'create', 'Blocked', '--json'], env).stdout
   );
-  assert.ok(createdList.directoryName.startsWith('002-Blocked-'));
+  assert.strictEqual(createdList.directoryName, 'Blocked');
 
   const renamedList = JSON.parse(
     runCli(['lists', 'rename', 'Blocked', 'Waiting', '--json'], env).stdout

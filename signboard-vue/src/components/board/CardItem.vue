@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getFrontmatterLinkedObjectCount } from '../../../lib/linkedObjects.js'
+import { getCardBodyPreviewText } from '../../lib/cardPreview'
 import type { CardSnapshot } from '../../types'
 import FeatherIcon from '../FeatherIcon.vue'
 
@@ -8,7 +9,7 @@ const props = withDefaults(defineProps<{ card: CardSnapshot; isVisible?: boolean
 const frontmatter = computed(() => props.card.frontmatter || {})
 const title = computed(() => String(frontmatter.value.title || '').replace('# ', '') || 'Untitled')
 const linkedCount = computed(() => getFrontmatterLinkedObjectCount(frontmatter.value))
-const preview = computed(() => props.card.body.split(/\r?\n/).find((line) => line.trim()) || '')
+const preview = computed(() => getCardBodyPreviewText(props.card.body))
 const startDate = computed(() => String(frontmatter.value.start || '').trim())
 const dueDate = computed(() => String(frontmatter.value.due || '').trim())
 const CARD_CLICK_DRAG_TOLERANCE_PX = 6
@@ -184,7 +185,7 @@ onBeforeUnmount(() => {
   <div class="card" :class="{ 'card-filtered-out': !props.isVisible }" :data-path="card.cardPath" role="listitem" @pointerdown.capture="handlePointerDown" @click="handleCardClick" @contextmenu="openContextMenu">
     <div class="card-drag-frame">
       <h3><button class="card-title-button" type="button" :aria-label="`Open card: ${title}`">{{ title }}</button></h3>
-      <div class="card-body"><p>{{ preview.length > 50 ? `${preview.slice(0, 35)}...` : preview }}</p>
+      <div class="card-body"><p v-if="preview" class="card-body-preview">{{ preview }}</p>
         <div class="metadata">
           <button v-if="dates" class="metadata-action card-date-action" type="button" disabled :aria-label="`Dates ${dates}`"><FeatherIcon name="calendar" /><span class="card-date-label">{{ dates }}</span></button>
           <span v-if="card.taskSummary.total" class="task-progress-badge metadata-action task-progress-badge-inline" :class="{ 'task-progress-badge-complete': card.taskSummary.completed >= card.taskSummary.total }" :aria-label="`${card.taskSummary.completed}/${card.taskSummary.total} tasks completed`"><FeatherIcon name="check-square" /><span class="task-progress-badge-text">{{ card.taskSummary.completed }}/{{ card.taskSummary.total }}</span></span>

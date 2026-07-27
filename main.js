@@ -1855,9 +1855,21 @@ async function pathLooksLikeSignboardBoardRoot(boardRoot) {
     return false;
   }
 
-  const hasBoardSettings = entries.some((entry) => entry.isFile() && entry.name === 'board-settings.md');
-  if (hasBoardSettings) {
+  const hasLegacyBoardSettings = entries.some((entry) => entry.isFile() && entry.name === 'board-settings.md');
+  if (hasLegacyBoardSettings) {
     return true;
+  }
+
+  const boardManifestEntry = entries.find((entry) => entry.isFile() && entry.name === '.board.json');
+  if (boardManifestEntry) {
+    try {
+      const manifest = JSON.parse(await fsPromises.readFile(path.join(normalizedBoardRoot, boardManifestEntry.name), 'utf8'));
+      if (manifest && typeof manifest === 'object' && !Array.isArray(manifest) && manifest.settings) {
+        return true;
+      }
+    } catch {
+      // Fall through to the directory-based board check.
+    }
   }
 
   return entries.some((entry) => (

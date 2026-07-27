@@ -7,6 +7,7 @@ import { sanitizeFileName } from '../../../lib/santizeFileName.js'
 import { useBoardsStore } from '../../stores/useBoardsStore'
 import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import { useUiStore } from '../../stores/useUiStore'
+import { getLegacyListNameParts } from '../../../lib/listNaming.js'
 
 const props = defineProps<{ id: string; list: BoardListSnapshot; displayName: string; onAddCard?: (path: string) => void; onListChanged?: () => void }>()
 const boards = useBoardsStore(); const data = useBoardDataStore(); const ui = useUiStore()
@@ -26,10 +27,10 @@ async function rename() {
   try {
     const text = draftTitle.value.trim() || original
     if (!text || text === original) { draftTitle.value = original; return }
-    const oldPath = props.list.listPath; const prefix = oldPath.match(/(\d{3}-)/)?.[1] || ''
-    const suffix = props.list.listName.match(/-(?:stock|[^-]{5})$/)?.[0] || ''
+    const oldPath = props.list.listPath; const legacy = getLegacyListNameParts(props.list.listName)
     const clean = await sanitizeFileName(text)
-    const nextPath = `${oldPath.slice(0, oldPath.lastIndexOf('/') + 1)}${prefix}${clean}${suffix}`
+    const nextDirectoryName = legacy ? `${legacy[1]}${clean}${legacy[3]}` : clean
+    const nextPath = `${oldPath.slice(0, oldPath.lastIndexOf('/') + 1)}${nextDirectoryName}`
     if (nextPath !== oldPath) { await window.board.moveList(oldPath, nextPath); original = text; await data.reconcileAfterMutation(boards.activeBoardPath); ui.announceStatus(`Renamed ${text}.`); props.onListChanged?.() }
   } catch { draftTitle.value = original; ui.announceStatus('List name could not be saved.') }
   finally { isRenaming = false }

@@ -8,7 +8,8 @@ async function createListElement(name, listPath, cardNames, options = {}) {
   const listName = document.createElement('span');
   listName.setAttribute('contenteditable',true);
   listName.setAttribute('data-listpath',listPath);
-  listName.textContent = name.substring(4,name.length-6);
+  const structuredName = String(name || '').match(/^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/);
+  listName.textContent = structuredName ? structuredName[2] : String(name || '').replace(/^\d+-/, '');
   listName.id = typeof createStableDomId === 'function'
     ? createStableDomId('list-name', listPath)
     : '';
@@ -130,15 +131,11 @@ async function createListElement(name, listPath, cardNames, options = {}) {
 
 async function renameList( e ) {
   const currentListName = await window.board.getListDirectoryName( e.target.dataset.listpath );
-  const listNameMatch = currentListName.match(/^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/);
-
-  if (!listNameMatch) {
-    return;
-  }
-
   const sanitizedListName = sanitizeListName(e.target.textContent);
-  const [, prefix, , suffix] = listNameMatch;
-  const newListDirectoryName = `${prefix}${sanitizedListName}${suffix}`;
+  const listNameMatch = currentListName.match(/^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/);
+  const newListDirectoryName = listNameMatch
+    ? `${listNameMatch[1]}${sanitizedListName}${listNameMatch[3]}`
+    : sanitizedListName;
 
   if (newListDirectoryName === currentListName) {
     return;

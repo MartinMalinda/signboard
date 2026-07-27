@@ -90,7 +90,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `lib/cardOrdering.js` - Shared transactional ordering helpers used by main-process/MCP restore and move flows to insert a card at the top, reorder cards in a list, and reorder lists by updating per-directory `.board.json` manifests without renaming card files or list directories.
 - `lib/orderManifest.js` - Atomic `.board.json` read/write/migration helpers; maps a board root to list order and each list directory to card order, with compatibility for legacy `.list.json` and `.signboard-order.json` files.
 - `lib/archive.js` - Archive/archive-list filesystem operations plus archive listing/detail/restore helpers and legacy archive fallback handling.
-- `lib/boardLabels.js` - Board-level label/theme/workflow/External Published Calendar inclusion settings read/write/defaults/filter helpers (`board-settings.md`) plus legacy app-setting extraction for migration.
+- `lib/boardLabels.js` - Board-level label/theme/workflow/External Published Calendar inclusion settings read/write/defaults/filter helpers (root `.board.json` `settings`) plus legacy Markdown/app-setting extraction for migration.
 - `lib/boardDuplication.js` - Board folder duplication helper used by desktop Settings; copies board contents, assigns fresh copied-card IDs, refreshes copied Signboard metadata, rewrites internal `signboard://open-card` references, rewrites copied local linked-object paths, and resets copied managed Base state.
 - `lib/appSettings.js` - App-wide tooltip/notification/Quick Add global shortcut/AI assistance and External Published Calendar JSON persistence under Electron `userData`, delegating defaults and normalization to `shared/appSettingsSchema.js`.
 - `lib/aiTaskSuggestions.js` - Ollama `/api/tags` model-list inspection, chat request construction, response parsing, Smart Card Action output parsing including label references, due dates, linked-object attachment suggestions, read-only card-question answers, checklist task cleanup, and card-context prompt helpers for Card Editor Smart Card Actions.
@@ -105,7 +105,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `lib/boardDiscovery.js` - Shared known-board discovery for MCP and CLI, including desktop trusted-root reads, last-known desktop open-board state reads, board-looking folder detection, and bounded allowed-root scans.
 - `lib/mcpServer.js` - Headless MCP stdio server for agent access to board/list/card/settings/archive operations inside configured or desktop-trusted roots, safe board discovery/creation, archive browse/read/restore tools, Trello/Obsidian/Tasks.md imports, dry-run card writes, and timestamp/task metadata on card tools.
 - `lib/cliApp.js` - CLI command parsing/output for `use`, `boards`, `lists`, `cards`, `archive`, `settings`, and path-based `import` commands, including board discovery/creation, card duplicate/template commands, `--start` writes, section/note card edits, dry-run previews, JSON timestamp/date output, and `--task-status open|any` for card due filtering.
-- `lib/cliBoard.js` - CLI list/card filesystem operations, record loading, card duplication/template creation, section/note body edits, explicit label clearing, due/search/label filtering, start/task-date metadata output, and created/updated age sorting; overdue task filtering defaults to incomplete/open task markers unless callers pass `--task-status any`.
+- `lib/cliBoard.js` - CLI list/card filesystem operations, plain-name list creation with legacy list-name compatibility, record loading, card duplication/template creation, section/note body edits, explicit label clearing, due/search/label filtering, start/task-date metadata output, and created/updated age sorting; overdue task filtering defaults to incomplete/open task markers unless callers pass `--task-status any`.
 - `lib/cliInstall.js` - User-level CLI shim + shell profile installation; packaged shims run `app.asar/bin/signboard.js` under `ELECTRON_RUN_AS_NODE` instead of launching the desktop lifecycle.
 
 ## Scripts (`scripts/`)
@@ -155,7 +155,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 
 - `build/entitlements.mac.plist` - macOS hardened runtime entitlements.
 - `dist/` - Build outputs and unpacked platform artifacts (generated).
-- `board-settings.md` (runtime, per board folder) - Board settings frontmatter file for labels/color scheme/workflow/External Published Calendar inclusion data; legacy tooltip/notification fields are migrated to app settings and removed on rewrite.
+- `.board.json` (runtime, per board folder) - Root manifest containing list order plus board settings under `settings` for labels/color scheme/workflow/External Published Calendar inclusion data; legacy Markdown and tooltip/notification fields are migrated on rewrite.
 - `app-settings.json` (runtime, Electron `userData`) - App-wide tooltip, notification, Quick Add global shortcut, AI assistance, and External Published Calendar preferences.
 
 ## Usually ignored for code tasks

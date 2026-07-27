@@ -17,8 +17,8 @@ async function buildCardPath(listPath, cardName, cardCount) {
 }
 
 async function buildListPath(boardRoot, listName, listCount) {
-  const base = `${String(listName || '').trim().slice(0, 25)}-${await rand5()}`;
-  return `${normalizeRoot(boardRoot)}${String(Number(listCount || 0)).padStart(3, '0')}-${await sanitizeFileName(base)}`;
+  void listCount;
+  return `${normalizeRoot(boardRoot)}${await sanitizeFileName(String(listName || '').trim().slice(0, 25))}`;
 }
 
 function insertAfter(items, item, after) {

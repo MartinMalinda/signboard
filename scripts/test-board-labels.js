@@ -13,6 +13,7 @@ const {
   isAutoDetectedCompletedListName,
   isCompletedListByWorkflow,
 } = require('../lib/boardLabels');
+const { readOrderManifest, writeOrderManifest } = require('../lib/orderManifest');
 
 async function run() {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'signboard-board-labels-'));
@@ -20,7 +21,7 @@ async function run() {
   await fs.mkdir(boardPath, { recursive: true });
 
   try {
-    // 1) Missing board-settings file should create defaults.
+    // 1) Missing board manifest should create default settings.
     const defaults = await readBoardSettings(boardPath);
     assert.strictEqual(defaults.labels.length, 3);
     assert.strictEqual(defaults.labels[0].id, 'label-1');
@@ -33,11 +34,11 @@ async function run() {
     assert.deepStrictEqual(defaults.externalPublishedCalendar, { include: true });
     assert.deepStrictEqual(defaults.obsidianBase, { managedHash: '', updatedAt: '' });
 
-    const settingsPath = path.join(boardPath, 'board-settings.md');
-    const writtenRaw = await fs.readFile(settingsPath, 'utf8');
-    assert(writtenRaw.includes('labels:'), 'board-settings.md should contain labels');
-    assert(!writtenRaw.includes('notifications:'), 'board-settings.md should not contain app notification settings');
-    assert(!writtenRaw.includes('tooltipsEnabled:'), 'board-settings.md should not contain app tooltip settings');
+    const settingsPath = path.join(boardPath, '.board.json');
+    const writtenRaw = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
+    assert(writtenRaw.settings && writtenRaw.settings.labels, '.board.json should contain board settings');
+    assert(!writtenRaw.settings.notifications, '.board.json should not contain app notification settings');
+    assert(!writtenRaw.settings.tooltipsEnabled, '.board.json should not contain app tooltip settings');
 
     // 2) Updating labels should persist and preserve ids.
     const updatedLabels = [
@@ -100,9 +101,13 @@ async function run() {
       managedHash: 'a'.repeat(64),
       updatedAt: '2026-06-09T12:00:00.000Z',
     });
-    const clearedRaw = await fs.readFile(settingsPath, 'utf8');
-    assert(clearedRaw.includes('externalPublishedCalendar:'), 'board calendar publishing opt-out should be persisted');
-    assert(clearedRaw.includes('obsidianBase:'), 'managed Obsidian Base metadata should be persisted');
+    const clearedRaw = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
+    assert(clearedRaw.settings.externalPublishedCalendar, 'board calendar publishing opt-out should be persisted');
+    assert(clearedRaw.settings.obsidianBase, 'managed Obsidian Base metadata should be persisted');
+
+    await writeOrderManifest(boardPath, ['first-list', 'second-list']);
+    await updateBoardLabels(boardPath, updatedLabels);
+    assert.deepStrictEqual((await readOrderManifest(boardPath)).order, ['first-list', 'second-list']);
 
     const legacyAppBoardPath = path.join(tmpDir, 'board-app-legacy');
     await fs.mkdir(legacyAppBoardPath, { recursive: true });
@@ -125,11 +130,11 @@ async function run() {
     assert.strictEqual(legacyAppSettings.tooltipsEnabled, false);
     assert.strictEqual(legacyAppSettings.hasLegacyAppSettings, true);
     await readBoardSettings(legacyAppBoardPath);
-    const legacyAppRaw = await fs.readFile(path.join(legacyAppBoardPath, 'board-settings.md'), 'utf8');
-    assert(!legacyAppRaw.includes('notifications:'), 'legacy app notification settings should be removed on rewrite');
-    assert(!legacyAppRaw.includes('tooltipsEnabled:'), 'legacy app tooltip settings should be removed on rewrite');
+    const legacyAppRaw = JSON.parse(await fs.readFile(path.join(legacyAppBoardPath, '.board.json'), 'utf8'));
+    assert(!legacyAppRaw.settings.notifications, 'legacy app notification settings should be removed on rewrite');
+    assert(!legacyAppRaw.settings.tooltipsEnabled, 'legacy app tooltip settings should be removed on rewrite');
 
-    // 5) Legacy labels.md file should be migrated to board-settings.md.
+    // 5) Legacy labels.md file should be migrated to .board.json.
     const legacyBoardPath = path.join(tmpDir, 'board-two');
     await fs.mkdir(legacyBoardPath, { recursive: true });
     const legacySource = [
@@ -145,8 +150,8 @@ async function run() {
 
     const migrated = await readBoardSettings(legacyBoardPath);
     assert.strictEqual(migrated.labels[0].id, 'legacy-1');
-    const migratedRaw = await fs.readFile(path.join(legacyBoardPath, 'board-settings.md'), 'utf8');
-    assert(migratedRaw.includes('legacy-1'), 'legacy labels should be written to board-settings.md');
+    const migratedRaw = JSON.parse(await fs.readFile(path.join(legacyBoardPath, '.board.json'), 'utf8'));
+    assert.strictEqual(migratedRaw.settings.labels[0].id, 'legacy-1');
 
     // 6) Filtering is OR-based.
     assert.strictEqual(cardMatchesLabelFilter(['label-1'], []), true);

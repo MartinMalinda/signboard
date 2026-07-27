@@ -45,9 +45,9 @@ same preload/main-process APIs.
 Signboard is intentionally simple on disk:
 
 - A board is a folder.
-- Each list is a subfolder inside the board's folder.
+- Each list is a subfolder inside the board's folder; new list folders use the sanitized list name directly, while older numbered/randomized names remain supported.
 - Each card is a Markdown file inside a list folder.
-- Board settings are stored in `board-settings.md`.
+- Board settings are stored under `settings` in the root `.board.json` manifest; legacy `board-settings.md` files are migrated when read with file creation enabled.
 - Archived cards and lists live in `XXX-Archive`.
 - Obsidian helpers auto-create a managed `Signboard Board.base` for boards inside detected vaults, create linked notes in the board root when requested, and mark missing linked notes for explicit recreate/relink/remove actions. Existing boards can be moved into an Obsidian vault from `Settings > General > Move Board`. The optional `obsidian-plugin/` companion plugin can open/copy Signboard links, attach active notes, ask before removing links to deleted notes, and create a Signboard board from an Obsidian folder after confirmation.
 

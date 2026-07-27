@@ -1,6 +1,6 @@
 # Signboard
 
-Signboard is a local-first desktop kanban app that stores your lists as directories and cards as Markdown files on disk.
+Signboard is a local-first desktop kanban app that stores your lists as directories and cards as Markdown files on disk. New list directories use the sanitized list name directly; older numbered/randomized list names remain compatible.
 
 Signboard is free for personal use. If you are using Signboard for your work, it would be appreciated if you make the commercial-use sponsorship payment to support future development. See the app's "Sponsor" button.
 
@@ -13,7 +13,7 @@ Signboard is free for personal use. If you are using Signboard for your work, it
 
 ## ✨ Highlights
 - 📂 Cards saved as Markdown files
-- ↕️ Stable card and list filenames with ordering persisted in per-directory `.board.json` manifests
+- ↕️ Stable card and list filenames with ordering persisted in per-directory `.board.json` manifests, with board settings in the root manifest
 - 💎 Full Obsidian support
 - 🖌️ Color scheme per board (several to choose from!)
 - 🌙 Light and dark mode variants for all color schemes

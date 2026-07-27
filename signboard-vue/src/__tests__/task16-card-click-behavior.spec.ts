@@ -32,6 +32,23 @@ describe('CardItem click behavior', () => {
     } as unknown as typeof window.board
   })
 
+  it('renders a plain-text body preview without extra lines', () => {
+    const wrapper = mount(CardItem, {
+      global: { plugins: [createPinia()] },
+      props: {
+        card: {
+          ...card,
+          body: '## Scope\n\n**Plan** [details](https://example.com)\n- [ ] Keep it short',
+        },
+      },
+    })
+
+    expect(wrapper.find('.card-body-preview').text()).toBe('Scope Plan details Keep it short')
+    expect(wrapper.find('.card-body-preview').classes()).toContain('card-body-preview')
+
+    wrapper.unmount()
+  })
+
   it('opens from the card surface while card-level archive and label controls stay hidden', async () => {
     const onOpen = vi.fn()
     const onArchive = vi.fn()
