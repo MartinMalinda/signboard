@@ -75,6 +75,15 @@ async function main() {
     },
     'Archived body',
   );
+  await writeCard(
+    path.join(todoList, 'automation-mapping-change-notes.md'),
+    {
+      title: 'Automation Mapping Change Notes',
+      signboard_id: 'notes',
+      signboard_uri: 'signboard://open-card?id=notes',
+    },
+    'Ad-hoc body',
+  );
 
   const result = await duplicateBoard({
     sourceBoardRoot: sourceRoot,
@@ -83,7 +92,7 @@ async function main() {
   });
 
   assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.cardsDuplicated, 3);
+  assert.strictEqual(result.cardsDuplicated, 4);
   assert.strictEqual(result.boardRoot, path.join(destinationParent, 'Source Board Copy'));
   assert.strictEqual(await fs.access(path.join(sourceRoot, '001-To-do-stock', '000-source-card-Ab123.md')).then(() => true), true);
 
@@ -113,6 +122,14 @@ async function main() {
     `signboard://open-card?id=${copiedDoingId}`,
   );
   assert.strictEqual(copiedSourceCard.body, `See signboard://open-card?id=${copiedDoingId}`);
+
+  const copiedAdHocPath = path.join(result.boardRoot, '001-To-do-stock', 'automation-mapping-change-notes.md');
+  const copiedAdHocCard = await cardFrontmatter.readCard(copiedAdHocPath);
+  assert.strictEqual(copiedAdHocCard.frontmatter.signboard_id, undefined);
+  assert.strictEqual(
+    copiedAdHocCard.frontmatter.signboard_uri,
+    'signboard://open-card?path=001-To-do-stock%2Fautomation-mapping-change-notes.md',
+  );
 
   const copiedSettings = await boardLabels.readBoardSettings(result.boardRoot, { ensureFile: false });
   assert.deepStrictEqual(copiedSettings.obsidianBase, { managedHash: '', updatedAt: '' });

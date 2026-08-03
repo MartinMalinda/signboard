@@ -1,4 +1,4 @@
-const CARD_ID_PATTERN = /-([A-Za-z0-9]{5})\.md$/;
+const CARD_ID_PATTERN = /^\d{3}-.+-([A-Za-z0-9]{5})\.md$/;
 const LIST_NAME_PATTERN = /^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/;
 const ARCHIVE_DIRECTORY_NAME = 'XXX-Archive';
 const DEFAULT_BOARD_LIST_NAMES = Object.freeze([
@@ -81,6 +81,11 @@ function buildSignboardCardUri(cardId) {
   return normalizedId ? `signboard://open-card?id=${encodeURIComponent(normalizedId)}` : '';
 }
 
+function buildSignboardCardPathUri(cardPath) {
+  const normalizedPath = slashPath(cardPath).replace(/^\/+/, '');
+  return normalizedPath ? `signboard://open-card?path=${encodeURIComponent(normalizedPath)}` : '';
+}
+
 function buildSignboardBoardUri(boardPath) {
   const normalizedPath = trimString(boardPath);
   return normalizedPath ? `signboard://open-board?path=${encodeURIComponent(normalizedPath)}` : '';
@@ -126,8 +131,7 @@ function getListDisplayName(listDirectoryName) {
 function cleanCardTitleFromFileName(filePath) {
   const basename = getBaseName(filePath).replace(/\.md$/i, '');
   return basename
-    .replace(/^\d{3}-/, '')
-    .replace(/-[A-Za-z0-9]{5}$/, '')
+    .replace(/^\d{3}-(.*)-[A-Za-z0-9]{5}$/, '$1')
     .replace(/-/g, ' ')
     .replace(/\s+/g, ' ')
     .trim() || 'Untitled';
@@ -360,6 +364,7 @@ module.exports = {
   buildCardFileName,
   buildSignboardBoardUri,
   buildSignboardCardUri,
+  buildSignboardCardPathUri,
   cleanCardTitleFromFileName,
   createObsidianNoteLinkedObject,
   extractSignboardCardId,

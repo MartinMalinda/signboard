@@ -9,7 +9,7 @@ const {
 const SIGNBOARD_ICON = 'layout-dashboard';
 const FALLBACK_ICON = 'dice';
 const helpers = (() => {
-  const CARD_ID_PATTERN = /-([A-Za-z0-9]{5})\.md$/;
+  const CARD_ID_PATTERN = /^\d{3}-.+-([A-Za-z0-9]{5})\.md$/;
   const LIST_NAME_PATTERN = /^(\d{3}-)(.*?)(-[^-]{5}|-stock)$/;
   const ARCHIVE_DIRECTORY_NAME = 'XXX-Archive';
   const DEFAULT_BOARD_LIST_NAMES = Object.freeze([
@@ -92,6 +92,11 @@ const helpers = (() => {
     return normalizedId ? `signboard://open-card?id=${encodeURIComponent(normalizedId)}` : '';
   }
 
+  function buildSignboardCardPathUri(cardPath) {
+    const normalizedPath = slashPath(cardPath).replace(/^\/+/, '');
+    return normalizedPath ? `signboard://open-card?path=${encodeURIComponent(normalizedPath)}` : '';
+  }
+
   function buildSignboardBoardUri(boardPath) {
     const normalizedPath = trimString(boardPath);
     return normalizedPath ? `signboard://open-board?path=${encodeURIComponent(normalizedPath)}` : '';
@@ -137,8 +142,7 @@ const helpers = (() => {
   function cleanCardTitleFromFileName(filePath) {
     const basename = getBaseName(filePath).replace(/\.md$/i, '');
     return basename
-      .replace(/^\d{3}-/, '')
-      .replace(/-[A-Za-z0-9]{5}$/, '')
+      .replace(/^\d{3}-(.*)-[A-Za-z0-9]{5}$/, '$1')
       .replace(/-/g, ' ')
       .replace(/\s+/g, ' ')
       .trim() || 'Untitled';
@@ -371,6 +375,7 @@ const helpers = (() => {
     buildCardFileName,
     buildSignboardBoardUri,
     buildSignboardCardUri,
+    buildSignboardCardPathUri,
     cleanCardTitleFromFileName,
     createObsidianNoteLinkedObject,
     extractSignboardCardId,
@@ -672,14 +677,14 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
     }
 
     const frontmatter = this.getFileFrontmatter(file);
-    const explicitUri = String(frontmatter.signboard_uri || '').trim();
-    if (explicitUri.startsWith('signboard://')) {
-      return explicitUri;
+    const cardId = helpers.getCardFileId(file.path);
+    if (!cardId && !frontmatter.signboard_board && !frontmatter.signboard_list) {
+      return '';
     }
 
-    const cardId = String(frontmatter.signboard_id || frontmatter.signboard_card_id || '').trim()
-      || helpers.getCardFileId(file.path);
-    return helpers.buildSignboardCardUri(cardId);
+    return cardId
+      ? helpers.buildSignboardCardUri(cardId)
+      : helpers.buildSignboardCardPathUri(file.path);
   }
 
   openSignboardUri(uri) {
@@ -713,7 +718,7 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
     }
 
     const frontmatter = this.getFileFrontmatter(file);
-    if (frontmatter.signboard_id || helpers.getCardFileId(file.path)) {
+    if (frontmatter.signboard_board || frontmatter.signboard_list || frontmatter.signboard_id || helpers.getCardFileId(file.path)) {
       this.statusBarItem.textContent = 'Signboard card';
       return;
     }
@@ -1009,20 +1014,23 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
     return ids;
   }
 
-  async processSignboardCardFrontmatter(cardFile, boardFolder, listFolder, existingIds) {
+  async processSignboardCardFrontmatter(cardFile, boardFolder, listFolder) {
     if (!(cardFile instanceof TFile) || !(boardFolder instanceof TFolder) || !(listFolder instanceof TFolder)) {
       return;
     }
 
     await this.app.fileManager.processFrontMatter(cardFile, (frontmatter) => {
-      const cardId = String(frontmatter.signboard_id || '').trim()
-        || helpers.getCardFileId(cardFile.path)
-        || helpers.randomId(existingIds);
+      const cardId = helpers.getCardFileId(cardFile.path);
       const listName = helpers.getListDisplayName(listFolder.name);
 
       frontmatter.title = String(frontmatter.title || '').trim() || helpers.cleanCardTitleFromFileName(cardFile.path);
-      frontmatter.signboard_id = cardId;
-      frontmatter.signboard_uri = helpers.buildSignboardCardUri(cardId);
+      if (cardId) {
+        frontmatter.signboard_id = cardId;
+        frontmatter.signboard_uri = helpers.buildSignboardCardUri(cardId);
+      } else {
+        delete frontmatter.signboard_id;
+        frontmatter.signboard_uri = helpers.buildSignboardCardPathUri(cardFile.path);
+      }
       frontmatter.signboard_board = boardFolder.name;
       frontmatter.signboard_list = listName;
       frontmatter.status = listName;
@@ -1087,7 +1095,7 @@ module.exports = class SignboardCompanionPlugin extends Plugin {
 
     for (const listFolder of listFolders) {
       for (const cardFile of this.getDirectMarkdownChildren(listFolder)) {
-        await this.processSignboardCardFrontmatter(cardFile, boardFolder, listFolder, existingIds);
+        await this.processSignboardCardFrontmatter(cardFile, boardFolder, listFolder);
       }
     }
 

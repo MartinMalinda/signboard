@@ -8,9 +8,12 @@ const {
   buildGeneratedBaseYaml,
   buildObsidianOpenUri,
   buildSignboardCardUri,
+  buildSignboardCardPathUri,
+  buildSignboardCardUriForCard,
   createLinkedObsidianNote,
   createLinkedObsidianNoteAtPath,
   findObsidianVaultRoot,
+  getCardFileId,
   getSignboardCardId,
   normalizeSignboardCardFrontmatter,
   parseObsidianWikilink,
@@ -40,7 +43,33 @@ async function run() {
     });
 
     assert.strictEqual(getSignboardCardId(cardPath, { signboard_id: 'old01' }), 'ab123');
+    assert.strictEqual(getCardFileId('automation-mapping-change-notes.md'), '');
+    assert.strictEqual(getCardFileId('001-automation-mapping-change-notes.md'), 'notes');
     assert.strictEqual(buildSignboardCardUri('ab123'), 'signboard://open-card?id=ab123');
+    assert.strictEqual(
+      buildSignboardCardPathUri('000-To-do-stock/automation-mapping-change-notes.md'),
+      'signboard://open-card?path=000-To-do-stock%2Fautomation-mapping-change-notes.md',
+    );
+    assert.strictEqual(
+      buildSignboardCardUriForCard({
+        boardRoot,
+        cardPath: path.join(listRoot, 'automation-mapping-change-notes.md'),
+        frontmatter: { signboard_id: 'notes' },
+      }),
+      'signboard://open-card?path=000-To-do-stock%2Fautomation-mapping-change-notes.md',
+    );
+    assert.notStrictEqual(
+      buildSignboardCardUriForCard({
+        boardRoot,
+        cardPath: path.join(boardRoot, 'Doing', 'automation-mapping-change-notes.md'),
+        frontmatter: { signboard_id: 'notes' },
+      }),
+      buildSignboardCardUriForCard({
+        boardRoot,
+        cardPath: path.join(listRoot, 'automation-mapping-change-notes.md'),
+        frontmatter: { signboard_id: 'notes' },
+      }),
+    );
     assert(buildObsidianOpenUri(cardPath).startsWith('obsidian://open?'));
     const trickyObsidianUri = buildObsidianOpenUri(path.join(
       tmpDir,
@@ -68,6 +97,20 @@ async function run() {
     assert.strictEqual(normalized.signboard_list, 'To-do');
     assert.strictEqual(normalized.status, 'To-do');
     assert.deepStrictEqual(normalized.related, ['[[Existing Note]]']);
+
+    const normalizedAdHoc = normalizeSignboardCardFrontmatter({
+      boardRoot,
+      cardPath: path.join(listRoot, 'automation-mapping-change-notes.md'),
+      frontmatter: {
+        title: 'Automation Mapping Change Notes',
+        signboard_id: 'notes',
+      },
+    });
+    assert.strictEqual(normalizedAdHoc.signboard_id, undefined);
+    assert.strictEqual(
+      normalizedAdHoc.signboard_uri,
+      'signboard://open-card?path=000-To-do-stock%2Fautomation-mapping-change-notes.md',
+    );
 
     const baseYaml = buildGeneratedBaseYaml(boardRoot, vaultRoot);
     const parsedBase = yaml.load(baseYaml, { schema: yaml.JSON_SCHEMA });

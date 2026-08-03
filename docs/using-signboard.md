@@ -118,7 +118,7 @@ The card body is Markdown, so plain text notes, headings, lists, checklists, and
 
 Raw `http://`, `https://`, and `www.` URLs in the body stay as plain Markdown text. When the cursor is in one, Signboard shows a small open-link control; Cmd/Ctrl-clicking the URL also opens it in your default browser.
 
-The editor shows when the card was created and when it was last updated. Newer cards use Signboard's card metadata for the created date; older cards fall back to filesystem timestamps.
+The editor shows when the card was created and when it was last updated. Newer cards use Signboard's card metadata for the created date; older cards fall back to filesystem timestamps. When a card is dragged between lists, its frontmatter also records the ISO `statusChangedAt` timestamp for the latest status/list change.
 
 Right-click in editable areas of the card title or body to use the native cut, copy, paste, delete, and select-all context menu.
 
@@ -152,7 +152,7 @@ The same paperclip menu can link local files, folders, web URLs, app deep links,
 
 Linked objects appear in the card editor as removable chips. Click the object name to open it, or click its remove control to unlink it from the card without deleting the underlying file, folder, or note. If a linked Obsidian note cannot be found, Signboard keeps the link, marks the chip as missing, and offers controls to recreate the note, relink it to another Markdown note, or remove the link. Cards with linked objects also show a small paperclip count in Kanban and Table views.
 
-New or edited cards include flat Obsidian-friendly properties such as `title`, `signboard_id`, `signboard_board`, `signboard_list`, `status`, `signboard_uri`, and `related`, plus structured `linked_objects` when the card has linked files, folders, URLs, app links, or Obsidian notes. When a board is inside a vault, Signboard automatically creates `Signboard Board.base` for Obsidian Bases and keeps it current while it is still Signboard-managed. If you customize the Base in Obsidian, Signboard leaves it alone until you choose `Settings > Obsidian > Generate Base` again.
+New or edited cards include flat Obsidian-friendly properties such as `title`, `signboard_board`, `signboard_list`, `status`, `signboard_uri`, and `related`, plus structured `linked_objects` when the card has linked files, folders, URLs, app links, or Obsidian notes. Canonical Signboard-generated filenames also include `signboard_id`; existing Markdown files with ad-hoc names do not need a custom ID and use a relative-path Signboard link instead. When a board is inside a vault, Signboard automatically creates `Signboard Board.base` for Obsidian Bases and keeps it current while it is still Signboard-managed. If you customize the Base in Obsidian, Signboard leaves it alone until you choose `Settings > Obsidian > Generate Base` again.
 
 Signboard also includes an optional desktop-only Obsidian companion plugin in `obsidian-plugin/`. Copy or symlink that folder into your vault as `.obsidian/plugins/signboard-companion` and enable it from Obsidian's Community plugins settings. The plugin can open and copy Signboard links, attach the active Obsidian note to a Signboard card, open cards by `obsidian://signboard?cardId=...`, and add a folder context-menu action named `Create Signboard`. That action asks first, then adds board metadata/list folders, treats existing child folders as lists, moves top-level Markdown notes into a To-do list, and opens the board in Signboard. When you delete an Obsidian note that is linked from Signboard cards, the plugin asks before removing those linked objects from the cards.
 
@@ -385,7 +385,7 @@ The board `General` section lets you:
 - move the board folder to a new location
 - duplicate the board into a chosen folder with a chosen board name
 
-Duplicating a board copies the board folder, lists, cards, labels, settings, archive contents, and linked objects. Signboard gives copied cards fresh card IDs and updates their `signboard://open-card` links so the new board does not collide with the original.
+Duplicating a board copies the board folder, lists, cards, labels, settings, archive contents, and linked objects. Canonical generated cards receive fresh IDs and their `signboard://open-card?id=...` links are updated; ad-hoc cards continue to use relative-path links within the copied board.
 
 ### Labels
 

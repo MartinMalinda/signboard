@@ -1813,14 +1813,17 @@ function parseSignboardProtocolUrl(candidateUrl) {
   const action = parsedUrl.hostname || parsedUrl.pathname.replace(/^\/+/, '');
   if (action === 'open-card') {
     const cardId = String(parsedUrl.searchParams.get('id') || '').trim();
-    if (!cardId || !/^[A-Za-z0-9]{5,64}$/.test(cardId)) {
-      return null;
+    if (cardId && /^[A-Za-z0-9]{5,64}$/.test(cardId)) {
+      return {
+        action,
+        cardId,
+      };
     }
 
-    return {
-      action,
-      cardId,
-    };
+    const cardPath = normalizeSignboardCardRelativePath(parsedUrl.searchParams.get('path') || '');
+    return cardPath
+      ? { action, cardPath }
+      : null;
   }
 
   if (action === 'open-board') {
@@ -1836,6 +1839,27 @@ function parseSignboardProtocolUrl(candidateUrl) {
   }
 
   return null;
+}
+
+function normalizeSignboardCardRelativePath(value) {
+  const normalizedPath = String(value || '')
+    .trim()
+    .replace(/\\/g, '/');
+  if (
+    !normalizedPath ||
+    normalizedPath.startsWith('/') ||
+    path.posix.isAbsolute(normalizedPath) ||
+    !normalizedPath.toLowerCase().endsWith('.md')
+  ) {
+    return '';
+  }
+
+  const segments = normalizedPath.split('/');
+  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+    return '';
+  }
+
+  return segments.join('/');
 }
 
 async function pathLooksLikeSignboardBoardRoot(boardRoot) {
@@ -1967,6 +1991,7 @@ async function findCardInBoardRootBySignboardId(boardRoot, cardId) {
     return null;
   }
 
+  const filenameMatches = [];
   for (const listEntry of listEntries) {
     if (!listEntry.isDirectory()) {
       continue;
@@ -1980,20 +2005,29 @@ async function findCardInBoardRootBySignboardId(boardRoot, cardId) {
       continue;
     }
 
-    const filenameMatch = cardEntries.find((cardEntry) => (
-      cardEntry.isFile() &&
-      cardEntry.name.endsWith('.md') &&
-      obsidianIntegration.getCardFileId(cardEntry.name) === normalizedCardId
-    ));
-
-    if (filenameMatch) {
-      return {
-        boardRoot: normalizedBoardRoot,
-        cardPath: path.join(listPath, filenameMatch.name),
-      };
+    for (const cardEntry of cardEntries) {
+      if (
+        cardEntry.isFile() &&
+        cardEntry.name.endsWith('.md') &&
+        obsidianIntegration.getCardFileId(cardEntry.name) === normalizedCardId
+      ) {
+        filenameMatches.push(path.join(listPath, cardEntry.name));
+      }
     }
   }
 
+  if (filenameMatches.length === 1) {
+    return {
+      boardRoot: normalizedBoardRoot,
+      cardPath: filenameMatches[0],
+    };
+  }
+
+  if (filenameMatches.length > 1) {
+    return null;
+  }
+
+  const frontmatterMatches = [];
   for (const listEntry of listEntries) {
     if (!listEntry.isDirectory()) {
       continue;
@@ -2016,10 +2050,7 @@ async function findCardInBoardRootBySignboardId(boardRoot, cardId) {
       try {
         const card = await cardFrontmatter.readCard(cardPath);
         if (String(card.frontmatter.signboard_id || '').trim() === normalizedCardId) {
-          return {
-            boardRoot: normalizedBoardRoot,
-            cardPath,
-          };
+          frontmatterMatches.push(cardPath);
         }
       } catch {
         // Ignore malformed cards while resolving a deep link.
@@ -2027,7 +2058,72 @@ async function findCardInBoardRootBySignboardId(boardRoot, cardId) {
     }
   }
 
-  return null;
+  if (frontmatterMatches.length !== 1) {
+    return null;
+  }
+
+  return {
+    boardRoot: normalizedBoardRoot,
+    cardPath: frontmatterMatches[0],
+  };
+}
+
+async function findCardInBoardRootByRelativePath(boardRoot, requestedPath) {
+  const normalizedBoardRoot = normalizeBoardRootPath(boardRoot);
+  const normalizedRequestedPath = normalizeSignboardCardRelativePath(requestedPath);
+  if (!normalizedBoardRoot || !normalizedRequestedPath) {
+    return null;
+  }
+
+  let listEntries = [];
+  try {
+    listEntries = await fsPromises.readdir(normalizedBoardRoot, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+
+  const suffixMatches = [];
+  for (const listEntry of listEntries) {
+    if (!listEntry.isDirectory()) {
+      continue;
+    }
+
+    const listPath = path.join(normalizedBoardRoot, listEntry.name);
+    let cardEntries = [];
+    try {
+      cardEntries = await fsPromises.readdir(listPath, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const cardEntry of cardEntries) {
+      if (!cardEntry.isFile() || !cardEntry.name.toLowerCase().endsWith('.md')) {
+        continue;
+      }
+
+      const cardPath = path.join(listPath, cardEntry.name);
+      const relativePath = path.relative(normalizedBoardRoot, cardPath).split(path.sep).join('/');
+      if (relativePath === normalizedRequestedPath) {
+        return {
+          boardRoot: normalizedBoardRoot,
+          cardPath,
+        };
+      }
+
+      if (relativePath.endsWith(`/${normalizedRequestedPath}`)) {
+        suffixMatches.push(cardPath);
+      }
+    }
+  }
+
+  if (suffixMatches.length !== 1) {
+    return null;
+  }
+
+  return {
+    boardRoot: normalizedBoardRoot,
+    cardPath: suffixMatches[0],
+  };
 }
 
 async function resolveSignboardProtocolLink(candidateUrl) {
@@ -2041,22 +2137,31 @@ async function resolveSignboardProtocolLink(candidateUrl) {
   }
 
   const trustedRoots = Array.from(readTrustedBoardRoots());
+  const matches = [];
   for (const boardRoot of trustedRoots) {
-    const match = await findCardInBoardRootBySignboardId(boardRoot, parsed.cardId);
+    const match = parsed.cardPath
+      ? await findCardInBoardRootByRelativePath(boardRoot, parsed.cardPath)
+      : await findCardInBoardRootBySignboardId(boardRoot, parsed.cardId);
     if (match) {
-      return {
-        ok: true,
-        ...match,
-        cardId: parsed.cardId,
-      };
+      matches.push(match);
     }
+  }
+
+  if (matches.length === 1) {
+    return {
+      ok: true,
+      ...matches[0],
+      cardId: parsed.cardId || '',
+      cardPath: parsed.cardPath || '',
+    };
   }
 
   return {
     ok: false,
     action: 'open-card',
     error: 'CARD_NOT_FOUND',
-    cardId: parsed.cardId,
+    cardId: parsed.cardId || '',
+    cardPath: parsed.cardPath || '',
   };
 }
 
@@ -4226,8 +4331,12 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     case 'copyCardSignboardUri': {
       const filePath = requireReadablePath(event.sender, args[0]);
       const card = await cardFrontmatter.readCard(filePath);
-      const cardId = obsidianIntegration.getSignboardCardId(filePath, card.frontmatter);
-      const signboardUri = obsidianIntegration.buildSignboardCardUri(cardId);
+      const boardRoot = resolveTrustedBoardRootForPath(event.sender, filePath);
+      const signboardUri = obsidianIntegration.buildSignboardCardUriForCard({
+        boardRoot,
+        cardPath: filePath,
+        frontmatter: card.frontmatter,
+      });
       clipboard.writeText(signboardUri);
       return { ok: true, signboardUri };
     }
@@ -4235,12 +4344,16 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     case 'getCardExternalLinks': {
       const filePath = requireReadablePath(event.sender, args[0]);
       const card = await cardFrontmatter.readCard(filePath);
-      const cardId = obsidianIntegration.getSignboardCardId(filePath, card.frontmatter);
+      const boardRoot = resolveTrustedBoardRootForPath(event.sender, filePath);
       const vaultRoot = await obsidianIntegration.findObsidianVaultRoot(filePath);
       return {
         ok: true,
         obsidianUri: obsidianIntegration.buildObsidianOpenUri(filePath),
-        signboardUri: obsidianIntegration.buildSignboardCardUri(cardId),
+        signboardUri: obsidianIntegration.buildSignboardCardUriForCard({
+          boardRoot,
+          cardPath: filePath,
+          frontmatter: card.frontmatter,
+        }),
         inObsidianVault: Boolean(vaultRoot),
         vaultRoot,
       };

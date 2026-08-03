@@ -20,7 +20,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `buildjs.sh` - Deprecated legacy-only build that concatenates shared renderer schema and renderer modules into `app/signboard.js` for `SIGNBOARD_RENDERER=legacy`.
 - `electron-builder.json` - Build targets/artifact settings.
 - `LICENSE` - MIT license.
-- `obsidian-plugin/` - Optional desktop-only Obsidian companion plugin source (`manifest.json`, self-contained `main.js`, helper/tested conversion/link/delete-cleanup utilities, styles, and plugin README) for opening/copying Signboard links, attaching active notes, asking before removing links to deleted notes, creating Signboard boards from folders, and handling `obsidian://signboard?...`.
+- `obsidian-plugin/` - Optional desktop-only Obsidian companion plugin source (`manifest.json`, self-contained `main.js`, helper/tested conversion/link/delete-cleanup utilities, styles, and plugin README) for opening/copying canonical ID and ad-hoc relative-path Signboard links, attaching active notes, asking before removing links to deleted notes, creating Signboard boards from folders, and handling `obsidian://signboard?...`.
 - `skills/signboard-mcp/SKILL.md` - Optional agent skill instructions for safe/consistent Signboard MCP tool usage.
 - `skills/signboard-mcp/agents/openai.yaml` - UI metadata for clients that support skill lists/chips.
 
@@ -86,13 +86,13 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `lib/atomicFile.js` - Shared durable write helper that writes to a same-directory temp file, fsyncs, renames into place, and best-effort fsyncs the containing directory.
 - `lib/boardSnapshot.js` - Main-process batched board reader used by renderer Kanban/Table/Planner views; returns list/card records, opt-in timestamps/task metadata/board settings, and per-card/list read errors.
 - `lib/cardFrontmatter.js` - Card parse/normalize/read/write/update with legacy support, including `start` and `due` date normalization.
-- `lib/cardLifecycle.js` - Shared card lifecycle metadata helper for `createdAt`, compact `activity` trails, archive frontmatter state, and moved/restored transitions.
+- `lib/cardLifecycle.js` - Shared card lifecycle metadata helper for `createdAt`, compact `activity` trails, archive frontmatter state, moved/restored transitions, and the `statusChangedAt` timestamp recorded on cross-list moves.
 - `lib/cardTimestamps.js` - Shared timestamp resolver for desktop reads, CLI card records/JSON output, and MCP card responses, preferring frontmatter/activity creation data and filesystem modification data.
 - `lib/cardOrdering.js` - Shared transactional ordering helpers used by main-process/MCP restore and move flows to insert a card at the top, reorder cards in a list, and reorder lists by updating per-directory `.board.json` manifests without renaming card files or list directories.
 - `lib/orderManifest.js` - Atomic `.board.json` read/write/migration helpers; maps a board root to list order and each list directory to card order, with compatibility for legacy `.list.json` and `.signboard-order.json` files.
 - `lib/archive.js` - Archive/archive-list filesystem operations plus archive listing/detail/restore helpers and legacy archive fallback handling.
 - `lib/boardLabels.js` - Board-level label/theme/workflow/External Published Calendar inclusion settings read/write/defaults/filter helpers (root `.board.json` `settings`) plus legacy Markdown/app-setting extraction for migration.
-- `lib/boardDuplication.js` - Board folder duplication helper used by desktop Settings; copies board contents, assigns fresh copied-card IDs, refreshes copied Signboard metadata, rewrites internal `signboard://open-card` references, rewrites copied local linked-object paths, and resets copied managed Base state.
+- `lib/boardDuplication.js` - Board folder duplication helper used by desktop Settings; copies board contents, assigns fresh copied-card IDs where canonical filenames support them, refreshes copied Signboard metadata, rewrites internal `signboard://open-card` references, rewrites copied local linked-object paths, and resets copied managed Base state.
 - `lib/appSettings.js` - App-wide tooltip/notification/Quick Add global shortcut/AI assistance and External Published Calendar JSON persistence under Electron `userData`, delegating defaults and normalization to `shared/appSettingsSchema.js`.
 - `lib/aiTaskSuggestions.js` - Ollama `/api/tags` model-list inspection, chat request construction, response parsing, Smart Card Action output parsing including label references, due dates, linked-object attachment suggestions, read-only card-question answers, checklist task cleanup, and card-context prompt helpers for Card Editor Smart Card Actions.
 - `lib/externalPublishedCalendar.js` - External Published Calendar event collection and iCalendar feed generation for card due dates and incomplete task due markers.
@@ -125,7 +125,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `scripts/test-external-published-calendar.js` - External Published Calendar assertions for ICS generation, completed-list skipping, checked-task skipping, and board opt-out.
 - `scripts/test-import-trello.js` - Trello importer assertions for order, label reuse, archive routing, and metadata preservation.
 - `scripts/test-import-obsidian.js` - Obsidian importer assertions for kanban/task/CardBoard cases, due conversion, and source-prefix naming.
-- `scripts/test-obsidian-integration.js` - Obsidian outbound integration assertions for URI/deep-link helpers, flat card properties, managed generated Bases YAML, linked notes, and linked-note resolution.
+- `scripts/test-obsidian-integration.js` - Obsidian outbound integration assertions for canonical ID and ad-hoc relative-path URI/deep-link helpers, flat card properties, managed generated Bases YAML, linked notes, and linked-note resolution.
 - `scripts/test-obsidian-plugin.js` - Pure helper assertions for the optional Obsidian companion plugin.
 - `scripts/test-task-list-parser.js` - Task checklist parser assertions (`completed/total` and task start/due date extraction).
 - `scripts/migrate-legacy-cards.js` - Bulk migration to YAML frontmatter format.

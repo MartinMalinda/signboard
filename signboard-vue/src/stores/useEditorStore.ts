@@ -122,6 +122,16 @@ export const useEditorStore = defineStore('editor', () => {
     await flush()
   }
 
+  async function setLabels(ids: string[]) {
+    const next = { ...frontmatter.value }
+    const normalized = [...new Set(ids.map(String).map((id) => id.trim()).filter(Boolean))]
+    if (normalized.length) next.labels = normalized
+    else delete next.labels
+    frontmatter.value = next
+    queueSave()
+    await flush()
+  }
+
   async function refreshFromDiskIfClean() {
     if (!isOpen.value || isDirty.value || saveQueue.pending) return false
     const path = cardPath.value
@@ -269,7 +279,7 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   return { isOpen, loading, cardPath, title, body, frontmatter, timestamps, focusNotes, isDirty, isSaving, saveError, linkedObjects,
-    listPathForCard, boardPathForCard, open, close, flush, setTitle, setBody, setDate,
+    listPathForCard, boardPathForCard, open, close, flush, setTitle, setBody, setDate, setLabels,
     refreshFromDiskIfClean, moveToList, archive, duplicate, openWith, queueSave,
     addLinkedObject, removeLinkedObject, openLinkedObject, recreateLinkedNote, relinkLinkedNote, createLinkedNote, runSmartAction, applySmartAction }
 })

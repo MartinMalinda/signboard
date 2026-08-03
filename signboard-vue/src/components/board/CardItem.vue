@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getFrontmatterLinkedObjectCount } from '../../../lib/linkedObjects.js'
 import { getCardBodyPreviewText } from '../../lib/cardPreview'
-import type { CardSnapshot } from '../../types'
+import { useLabelsStore } from '../../stores/useLabelsStore'
+import type { BoardLabel, CardSnapshot } from '../../types'
 import FeatherIcon from '../FeatherIcon.vue'
 
-const props = withDefaults(defineProps<{ card: CardSnapshot; isVisible?: boolean; onOpen?: (path: string) => void; onArchive?: (path: string) => void; onDuplicate?: (path: string) => void }>(), { isVisible: true })
+const props = withDefaults(defineProps<{ card: CardSnapshot; labels?: BoardLabel[]; isVisible?: boolean; onOpen?: (path: string) => void; onArchive?: (path: string) => void; onDuplicate?: (path: string) => void }>(), { isVisible: true, labels: () => [] })
+const labelsStore = useLabelsStore()
 const frontmatter = computed(() => props.card.frontmatter || {})
 const title = computed(() => String(frontmatter.value.title || '').replace('# ', '') || 'Untitled')
+const cardLabels = computed(() => readCardLabelIds(frontmatter.value.labels).map((id) => props.labels.find((label) => label.id === id) || { id, name: 'Unknown label' }))
+const visibleCardLabels = computed(() => cardLabels.value.slice(0, 2))
+const additionalCardLabelCount = computed(() => Math.max(0, cardLabels.value.length - visibleCardLabels.value.length))
 const linkedCount = computed(() => getFrontmatterLinkedObjectCount(frontmatter.value))
 const preview = computed(() => getCardBodyPreviewText(props.card.body))
 const startDate = computed(() => String(frontmatter.value.start || '').trim())
@@ -20,7 +25,18 @@ let suppressClickTimer: number | null = null
 const contextMenu = ref<HTMLElement | null>(null)
 const contextMenuPosition = ref({ left: 0, top: 0 })
 const contextMenuOpen = ref(false)
+const contextLabelIds = ref<string[]>([])
 let contextMenuRestoreTarget: HTMLElement | null = null
+
+function readCardLabelIds(value: unknown) {
+  return Array.isArray(value) ? value.map(String).filter(Boolean) : []
+}
+
+function syncContextLabelIds() {
+  contextLabelIds.value = readCardLabelIds(frontmatter.value.labels)
+}
+
+watch(() => frontmatter.value.labels, syncContextLabelIds, { deep: true, immediate: true })
 
 function dateLabel(value: string) {
   if (!value) return ''
@@ -42,7 +58,7 @@ function openCard() {
 
 function isNonCardActivationTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false
-  return Boolean(target.closest('button:not(.card-title-button), a, input, select, textarea, [contenteditable="true"], [contenteditable="plaintext-only"], .card-label-chip'))
+  return Boolean(target.closest('button:not(.card-title-button), a, input, select, textarea, [contenteditable="true"], [contenteditable="plaintext-only"], .card-label-chip:not(.card-label-chip-inline)'))
 }
 
 function handlePointerDown(event: PointerEvent) {
@@ -94,7 +110,7 @@ function handleCardClick() {
 
 function isNativeContextMenuTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false
-  return Boolean(target.closest('.card-labels, .card-label-chip, .card-archive-button, .metadata-action, input, select, textarea, [contenteditable="true"], [contenteditable="plaintext-only"]'))
+  return Boolean(target.closest('.card-labels, .card-label-chip:not(.card-label-chip-inline), .card-archive-button, .metadata-action, input, select, textarea, [contenteditable="true"], [contenteditable="plaintext-only"]'))
 }
 
 function positionContextMenu() {
@@ -138,6 +154,23 @@ function duplicateFromContextMenu() {
   props.onDuplicate?.(props.card.cardPath)
 }
 
+async function toggleContextLabel(label: BoardLabel) {
+  const current = contextLabelIds.value
+  const next = current.includes(label.id) ? current.filter((id) => id !== label.id) : [...current, label.id]
+  contextLabelIds.value = next
+  closeContextMenu()
+  try {
+    await labelsStore.updateCardLabels(props.card.cardPath, next)
+  } catch (error) {
+    contextLabelIds.value = current
+    console.error('Failed to update card labels.', error)
+  }
+}
+
+function contextLabelIsActive(label: BoardLabel) {
+  return contextLabelIds.value.includes(label.id)
+}
+
 function handleContextMenuPointerDown(event: PointerEvent) {
   if (!contextMenuOpen.value || contextMenu.value?.contains(event.target as Node)) return
   closeContextMenu()
@@ -150,7 +183,7 @@ function handleContextMenuKeydown(event: KeyboardEvent) {
     closeContextMenu()
     return
   }
-  const items = Array.from(contextMenu.value.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+  const items = Array.from(contextMenu.value.querySelectorAll<HTMLButtonElement>('[role="menuitem"], [role="menuitemcheckbox"]'))
   if (event.key === 'Home' || event.key === 'ArrowUp' || event.key === 'End' || event.key === 'ArrowDown') {
     event.preventDefault()
     const nextIndex = event.key === 'Home' || event.key === 'ArrowUp' ? 0 : items.length - 1
@@ -187,6 +220,10 @@ onBeforeUnmount(() => {
       <h3><button class="card-title-button" type="button" :aria-label="`Open card: ${title}`">{{ title }}</button></h3>
       <div class="card-body"><p v-if="preview" class="card-body-preview">{{ preview }}</p>
         <div class="metadata">
+          <span v-if="cardLabels.length" class="card-labels-inline">
+            <span v-for="label in visibleCardLabels" :key="label.id" class="card-label-chip card-label-chip-inline" :class="{ 'card-label-chip-unknown': label.name === 'Unknown label' }" :style="label.name === 'Unknown label' ? undefined : { backgroundColor: `${label.colorLight || '#94a3b8'}22`, borderColor: label.colorLight || '#94a3b8' }" :title="label.name">{{ label.name }}</span>
+            <span v-if="additionalCardLabelCount" class="card-label-chip card-label-chip-inline card-label-chip-more" :aria-label="`Plus ${additionalCardLabelCount} more label${additionalCardLabelCount === 1 ? '' : 's'}`">+{{ additionalCardLabelCount }} more</span>
+          </span>
           <button v-if="dates" class="metadata-action card-date-action" type="button" disabled :aria-label="`Dates ${dates}`"><FeatherIcon name="calendar" /><span class="card-date-label">{{ dates }}</span></button>
           <span v-if="card.taskSummary.total" class="task-progress-badge metadata-action task-progress-badge-inline" :class="{ 'task-progress-badge-complete': card.taskSummary.completed >= card.taskSummary.total }" :aria-label="`${card.taskSummary.completed}/${card.taskSummary.total} tasks completed`"><FeatherIcon name="check-square" /><span class="task-progress-badge-text">{{ card.taskSummary.completed }}/{{ card.taskSummary.total }}</span></span>
           <span v-if="linkedCount" class="linked-objects-badge metadata-action linked-objects-badge-inline" :aria-label="`${linkedCount} linked object${linkedCount === 1 ? '' : 's'}`"><span class="linked-objects-badge-icon"><FeatherIcon name="paperclip" /></span><span class="linked-objects-badge-text">{{ linkedCount }}</span></span>
@@ -194,9 +231,18 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <Teleport to="body">
-      <div v-if="contextMenuOpen" ref="contextMenu" class="card-context-menu label-popover" role="menu" aria-label="Card actions" :style="{ left: `${contextMenuPosition.left}px`, top: `${contextMenuPosition.top}px` }" @contextmenu.prevent.stop>
-        <button class="list-actions-option" type="button" role="menuitem" @click="duplicateFromContextMenu"><FeatherIcon name="copy" /><span class="list-actions-option-label">Duplicate card</span></button>
-        <button class="list-actions-option list-actions-option-destructive" type="button" role="menuitem" @click="archiveFromContextMenu"><FeatherIcon name="archive" /><span class="list-actions-option-label">Archive card</span></button>
+      <div v-if="contextMenuOpen" ref="contextMenu" class="card-context-menu label-popover" role="menu" aria-label="Actions" :style="{ left: `${contextMenuPosition.left}px`, top: `${contextMenuPosition.top}px` }" @contextmenu.prevent.stop>
+        <button class="list-actions-option" type="button" role="menuitem" @click="duplicateFromContextMenu"><FeatherIcon name="copy" /><span class="list-actions-option-label">Duplicate</span></button>
+        <div class="label-popover-separator" aria-hidden="true" />
+        <section class="card-context-menu-label-section" aria-labelledby="cardContextMenuLabelsHeading">
+          <h4 id="cardContextMenuLabelsHeading" class="card-context-menu-section-heading">Labels</h4>
+          <div v-if="props.labels.length" class="card-context-menu-labels" role="group" aria-label="Labels">
+            <button v-for="label in props.labels" :key="label.id" class="list-actions-option card-context-menu-label-option" type="button" role="menuitemcheckbox" :aria-checked="contextLabelIsActive(label)" @click="toggleContextLabel(label)"><span class="label-color-swatch" :style="{ backgroundColor: label.colorLight || '#3b82f6' }" /><span class="list-actions-option-label">{{ label.name }}</span><FeatherIcon v-if="contextLabelIsActive(label)" name="check" :size="14" /></button>
+          </div>
+          <p v-else class="label-popover-empty card-context-menu-label-empty">No labels yet.</p>
+        </section>
+        <div class="label-popover-separator" aria-hidden="true" />
+        <button class="list-actions-option list-actions-option-destructive" type="button" role="menuitem" @click="archiveFromContextMenu"><FeatherIcon name="archive" /><span class="list-actions-option-label">Archive</span></button>
       </div>
     </Teleport>
   </div>

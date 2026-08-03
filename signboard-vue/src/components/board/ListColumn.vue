@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { BoardListSnapshot } from '../../types'
+import type { BoardLabel, BoardListSnapshot } from '../../types'
 import CardItem from './CardItem.vue'
 import Lazy from './Lazy.vue'
 import { useSortable } from '../../composables/useSortable'
@@ -11,7 +11,7 @@ import { useUiStore } from '../../stores/useUiStore'
 import { getListDisplayName } from '../../../lib/listNaming.js'
 import { getCardBodyPreviewText } from '../../lib/cardPreview'
 
-const props = defineProps<{ list: BoardListSnapshot; visibleCardPaths?: Set<string>; onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void; onListChanged?: () => void }>()
+const props = defineProps<{ list: BoardListSnapshot; labels?: BoardLabel[]; visibleCardPaths?: Set<string>; onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void; onListChanged?: () => void }>()
 const displayName = computed(() => getListDisplayName(props.list.listName))
 const headingId = computed(() => `list-name-${props.list.listName.replace(/[^a-zA-Z0-9_-]/g, '-')}`)
 const cards = ref<HTMLElement | null>(null)
@@ -55,7 +55,7 @@ useSortable(cards, {
     <ListColumnHeader :id="headingId" :list="list" :display-name="displayName" :on-add-card="props.onAddCard" :on-list-changed="props.onListChanged" />
     <div ref="cards" class="cards" :data-path="list.listPath" role="list" tabindex="0" :aria-label="`${displayName} cards`">
       <Lazy v-for="card in list.cards" :key="card.cardPath" once :root="cards" :height="estimateCardHeight(card)" :class="{ 'lazy-card-filtered-out': props.visibleCardPaths?.has(card.cardPath) === false }">
-        <CardItem :card="card" :is-visible="true" :on-open="props.onOpen" :on-archive="props.onArchiveCard" :on-duplicate="props.onDuplicateCard" />
+        <CardItem :card="card" :labels="props.labels" :is-visible="true" :on-open="props.onOpen" :on-archive="props.onArchiveCard" :on-duplicate="props.onDuplicateCard" />
       </Lazy>
     </div>
   </section>

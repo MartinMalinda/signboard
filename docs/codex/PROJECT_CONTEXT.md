@@ -8,7 +8,7 @@ Signboard is a local-first board app built with Electron and plain JavaScript. B
 - Cards are Markdown files in each list directory.
 - Board-level settings are stored under `settings` in the board root `.board.json` manifest, including labels, color scheme data, completed-list workflow rules, and whether the board participates in External Published Calendar. Legacy `board-settings.md` and `labels.md` files remain readable and migrate when settings are ensured.
 - App-level tooltip, notification, Quick Add global shortcut, AI assistance/Ollama, and External Published Calendar settings are stored in `app-settings.json` under Electron `userData`.
-- Obsidian integration is outbound and file-native: boards can live inside a vault, cards gain flat Obsidian-friendly properties on create/write/move, managed `Signboard Board.base` files are auto-created/updated for boards inside detected vaults unless the user customizes them, and board activation may ensure that Base without rewriting card Markdown; full metadata reconciliation is reserved for imports, board moves, and explicit Base actions. Vault-only card actions can write linked notes in the board root, non-vault linked-note/Base actions show an info modal, legacy `related` Obsidian wikilinks remain readable, structured `linked_objects` render as removable chips for notes/files/folders/URLs/app links/Signboard links, Obsidian-note chips prefer the current `related` wikilink name/open/status/recreate target when Obsidian renames notes, missing Obsidian notes remain linked until the user recreates, relinks, or removes them, Kanban/Table views show linked-object counts, local files can be linked by dragging them onto the card editor, `signboard://open-card?id=...` deep links resolve only through trusted board roots, and `signboard://open-board?path=...` opens validated vault-contained board folders after user confirmation.
+- Obsidian integration is outbound and file-native: boards can live inside a vault, cards gain flat Obsidian-friendly properties on create/write/move, managed `Signboard Board.base` files are auto-created/updated for boards inside detected vaults unless the user customizes them, and board activation may ensure that Base without rewriting card Markdown; full metadata reconciliation is reserved for imports, board moves, and explicit Base actions. Vault-only card actions can write linked notes in the board root, non-vault linked-note/Base actions show an info modal, legacy `related` Obsidian wikilinks remain readable, structured `linked_objects` render as removable chips for notes/files/folders/URLs/app links/Signboard links, Obsidian-note chips prefer the current `related` wikilink name/open/status/recreate target when Obsidian renames notes, missing Obsidian notes remain linked until the user recreates, relinks, or removes them, Kanban/Table views show linked-object counts, local files can be linked by dragging them onto the card editor, canonical generated card filenames use `signboard://open-card?id=...`, ad-hoc Markdown cards use relative-path `signboard://open-card?path=...` links, legacy ID links never resolve an ambiguous duplicate, and `signboard://open-board?path=...` opens validated vault-contained board folders after user confirmation.
 - The optional Obsidian companion plugin source lives in `obsidian-plugin/`; it can open/copy Signboard links, attach active notes to cards, ask before removing links to deleted notes, handle `obsidian://signboard?...`, and convert a non-root Obsidian folder into a Signboard board after warning the user.
 - Card metadata is stored in YAML frontmatter (with legacy parser support).
 - Desktop card reads, CLI JSON card output, and MCP card tool responses expose normalized timestamps in addition to frontmatter/body. `timestamps.createdAt` prefers `createdAt` frontmatter, then a `created` activity entry, then filesystem birth/ctime/mtime for legacy cards; `timestamps.updatedAt` comes from filesystem modification time. CLI card listing also supports age-oriented sort keys for updated/created oldest/newest.
@@ -28,7 +28,7 @@ File: `main.js`
 - Registers IPC handler `choose-directory` to open native folder picker.
 - Registers IPC handler `pick-import-sources` to open native file/directory pickers for Trello JSON and Obsidian markdown/vault sources.
 - Registers IPC handler `check-for-updates` for renderer-triggered manual update checks.
-- Registers the `signboard://` protocol in desktop mode, resolves `open-card` links by scanning trusted board roots for matching card IDs, and resolves `open-board` links only for board-looking folders inside an Obsidian vault after prompting before adding a new trusted root.
+- Registers the `signboard://` protocol in desktop mode, resolves canonical `open-card?id=...` links and ad-hoc `open-card?path=...` links by scanning trusted board roots, rejects ambiguous legacy IDs instead of choosing a first match, and resolves `open-board` links only for board-looking folders inside an Obsidian vault after prompting before adding a new trusted root.
 - Builds a native app menu with board view, Settings, theme, and `Check for Updates...` actions, and validates/rebuilds it on focus if required Signboard actions are missing.
 - Registers the optional app-level Quick Add global shortcut with Electron `globalShortcut` while Signboard is running; the shortcut focuses the main window and opens the same renderer Quick Add card modal as `Cmd/Ctrl + N`.
 - Handles opt-in Smart Card Actions by reading app-level Ollama settings and action prompts, verifying/listing local models through Ollama `/api/tags`, and calling the configured Ollama `/api/chat` endpoint through `lib/aiTaskSuggestions.js` for title, summary, task-list, auto-label, smart-paste, due-date, attachment, custom, one-off Quick Smart Actions, and read-only Question the Card answers.
@@ -64,7 +64,7 @@ File: `preload.js`
 
 - Exposes `window.board`, `window.chooser`, and `window.electronAPI`.
 - `window.electronAPI` includes external-link opening, clipboard text copying, manual update checks, app settings reads/writes, Smart Card Actions, Ollama model inspection, Quick Add global shortcut status, one-time migration from legacy board-level tooltip/notification settings, and main-process-triggered renderer events such as workspace view switching and Quick Add.
-- `window.electronAPI.onOpenSignboardCardLink(...)` lets `main.js` hand resolved `signboard://open-card` links to the renderer, which switches to the board and opens the normal card editor. `window.electronAPI.onOpenSignboardBoardLink(...)` switches to a board opened through `signboard://open-board`.
+- `window.electronAPI.onOpenSignboardCardLink(...)` lets `main.js` hand resolved canonical or relative-path `signboard://open-card` links to the renderer, which switches to the board and opens the normal card editor. `window.electronAPI.onOpenSignboardBoardLink(...)` switches to a board opened through `signboard://open-board`.
 - Proxies board operations to `main.js` over `ipcRenderer.invoke(...)`.
 - Does not use Node filesystem APIs directly.
 - Archive browsing uses preload bridge methods (`listArchiveEntries`, `readArchiveEntry`, `restoreArchivedCard`, `restoreArchivedList`) backed by the same trusted-board gate as normal board operations.
@@ -109,10 +109,11 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
   - YAML frontmatter (`title`, optional `due`, optional `labels`, unknown keys preserved)
   - Markdown body
 - Card `labels` frontmatter stores board label ids (e.g. `labels: ["label-1"]`).
-- Card writes add flat Obsidian-friendly properties for cards inside list directories: `title`, `status`, `signboard_id`, `signboard_board`, `signboard_list`, `signboard_uri`, optional legacy `related` links, and optional structured `linked_objects`. The card file suffix is preferred for `signboard_id` so duplicated cards do not inherit another card's deep-link identity.
+- Card writes add flat Obsidian-friendly properties for cards inside list directories: `title`, `status`, `signboard_board`, `signboard_list`, `signboard_uri`, optional `signboard_id` for canonical generated filenames, optional legacy `related` links, and optional structured `linked_objects`. Canonical generated card filenames provide stable ID links; ad-hoc filenames do not require custom IDs and use relative-path links so same-named cards in different lists remain distinct.
 - New cards created through current app flows now also carry:
   - `createdAt` (ISO timestamp)
   - `activity` (compact lifecycle entries only: `created`, `moved-list`, `archived`, `restored`)
+  - `statusChangedAt` (ISO timestamp updated when a card moves between lists; same-list reordering does not update it)
 - Archived cards temporarily carry an `archive` object in frontmatter while they remain archived:
   - `archivedAt`
   - `originalListDirectoryName`
@@ -234,7 +235,7 @@ rollback renderer `index.html`, generated `app/signboard.js`, source modules in
   - The canonical Vue `useSortable` card setup uses a small Sortable fallback tolerance so normal pointer wobble does not turn card clicks into drags.
   - Sanitizes list names before filesystem rename.
   - Builds card DOM for a list concurrently to reduce list render time.
-  - Delegates card drag/drop ordering to main-process transactional helpers, which update `.board.json`, preserve filenames during same-list reindexing, and record `moved-list` lifecycle events only for real cross-list card moves.
+  - Delegates card drag/drop ordering to main-process transactional helpers, which update `.board.json`, preserve filenames during same-list reindexing, and record `moved-list` lifecycle events plus `statusChangedAt` only for real cross-list card moves.
 - `app/lists/listActionsPopover.js`:
   - Renders native button actions for adding cards/lists, moving lists left/right, and archiving cards/lists.
   - Keeps the popover labelled, focuses the first enabled action on open, supports arrow-key / `Home` / `End` / `Esc` option navigation, and announces completed list actions through the shared live status helper.
@@ -371,7 +372,7 @@ File: `lib/cardLifecycle.js`
   - `createdAt` seeding on new cards
   - compact `activity` entry creation
   - temporary archive frontmatter state
-  - `moved-list` / `archived` / `restored` card metadata transitions
+  - `moved-list` / `archived` / `restored` card metadata transitions, including `statusChangedAt` for list moves
 
 File: `lib/cardTimestamps.js`
 
@@ -417,7 +418,7 @@ File: `lib/externalPublishedCalendar.js`
 
 File: `lib/obsidianIntegration.js`
 
-- Builds Obsidian `obsidian://open?path=...` URIs and Signboard `signboard://open-card?id=...` links.
+- Builds Obsidian `obsidian://open?path=...` URIs plus canonical ID or relative-path Signboard card links.
 - Normalizes card frontmatter with flat properties that work in Obsidian Properties and Bases.
 - Finds the containing Obsidian vault by walking upward for `.obsidian`, without requiring the board root itself to be the vault root.
 - Generates and hash-tracks managed `Signboard Board.base` files in the board root for Obsidian Bases, including the card `title` property as the primary readable column.

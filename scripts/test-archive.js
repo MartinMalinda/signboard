@@ -219,13 +219,21 @@ async function testRecordCardListMoveAppendsLifecycleEvent(root) {
   await fs.mkdir(doingList, { recursive: true });
 
   const cardPath = path.join(doingList, '000-track-progress-stock.md');
-  await writeCard(cardPath, { title: 'Track progress' }, 'Update the thread');
+  const initialStatusChangedAt = '2026-01-01T00:00:00.000Z';
+  await writeCard(cardPath, { title: 'Track progress', statusChangedAt: initialStatusChangedAt }, 'Update the thread');
+
+  const reordered = await recordCardListMove(boardRoot, cardPath, doingList, doingList);
+  assert.strictEqual(reordered.moved, false);
+  const reorderedCard = await cardFrontmatter.readCard(cardPath);
+  assert.strictEqual(reorderedCard.frontmatter.statusChangedAt, initialStatusChangedAt);
 
   const moved = await recordCardListMove(boardRoot, cardPath, todoList, doingList);
   assert.strictEqual(moved.moved, true);
 
   const movedCard = await cardFrontmatter.readCard(cardPath);
   assert.deepStrictEqual(getActivityTypes(movedCard.frontmatter), ['moved-list']);
+  assert.match(movedCard.frontmatter.statusChangedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  assert.strictEqual(movedCard.frontmatter.statusChangedAt, movedCard.frontmatter.activity[0].at);
   assert.strictEqual(movedCard.frontmatter.activity[0].fromListDisplayName, 'To-do');
   assert.strictEqual(movedCard.frontmatter.activity[0].toListDisplayName, 'Doing');
 }

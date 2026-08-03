@@ -24,11 +24,15 @@ export const useLabelsStore = defineStore('labels', () => {
   function setDateFilter(value: string) { const next = normalizeDateFilter(value); dateFilter.value = dateFilter.value === next ? DATE_FILTERS.none : next }
   function resetFilters() { filterIds.value = []; dateFilter.value = '' }
   function isCompletedList(listName: string) { return isCompletedListByWorkflow(listName, workflow.value) }
-  async function createLabel(name: string) {
-    const trimmed = String(name || '').trim(); if (!trimmed || !boardRoot.value) return null
+  async function createLabel(name: string, boardRootOverride = '') {
+    const trimmed = String(name || '').trim(); const root = String(boardRootOverride || boardRoot.value).trim(); if (!trimmed || !root) return null
     const existing = labels.value.find((label) => label.name.toLowerCase() === trimmed.toLowerCase()); if (existing) return existing
     const next: BoardLabel = { id: `label-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, name: trimmed, colorLight: '#3b82f6', colorDark: '#2563eb' }
-    const nextLabels = [...labels.value, next]; await window.board.updateBoardLabels?.(boardRoot.value, nextLabels); labels.value = nextLabels; return next
+    const nextLabels = [...labels.value, next]
+    if (!window.board.updateBoardLabels) throw new Error('Board label updates are unavailable.')
+    await window.board.updateBoardLabels(root, nextLabels)
+    labels.value = nextLabels
+    return next
   }
   async function updateCardLabels(cardPath: string, nextIds: string[]) { await window.board.updateFrontmatter(cardPath, { labels: [...new Set(nextIds.map(String))] }) }
 

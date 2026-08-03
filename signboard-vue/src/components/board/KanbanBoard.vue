@@ -40,7 +40,7 @@ useSortable(() => document.getElementById('board'), {
 
 <template>
   <template v-if="data.snapshot">
-    <ListColumn v-for="list in data.lists" :key="list.listPath" :list="list" :visible-card-paths="visibleCardPaths.get(list.listPath)" :on-open="props.onOpen" :on-add-card="props.onAddCard" :on-archive-card="props.onArchiveCard" :on-duplicate-card="props.onDuplicateCard" />
+    <ListColumn v-for="list in data.lists" :key="list.listPath" :list="list" :labels="labelsStore.labels" :visible-card-paths="visibleCardPaths.get(list.listPath)" :on-open="props.onOpen" :on-add-card="props.onAddCard" :on-archive-card="props.onArchiveCard" :on-duplicate-card="props.onDuplicateCard" />
     <AddListPhantom :on-add="props.onAddList" />
   </template>
 </template>

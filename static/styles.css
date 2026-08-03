@@ -3077,6 +3077,29 @@ body.board-card-drag-active * {
   cursor: pointer;
 }
 
+.card-label-chip-inline {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.9px 7.2px;
+  font-size: 90%;
+  cursor: default;
+}
+
+.card-labels-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.card-label-chip-more {
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--bg-card) 88%, var(--border));
+  color: var(--muted);
+}
+
 .card-label-chip-unknown {
   background: color-mix(in oklab, var(--bg-card) 86%, var(--border));
   color: var(--muted);
@@ -5667,6 +5690,37 @@ body:not(.board-empty) #labelFilterButton,
   gap: 4px;
 }
 
+.card-context-menu-label-section {
+  min-width: 0;
+}
+
+.card-context-menu-section-heading {
+  margin: 2px 10px 2px;
+  color: var(--muted);
+  font-size: var(--font-xs);
+  font-weight: 650;
+}
+
+.card-context-menu-labels {
+  max-height: 100px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.card-context-menu-label-option {
+  gap: 8px;
+  padding-block: 6px;
+}
+
+.card-context-menu-label-option .feather-icon {
+  color: var(--accent);
+  flex: 0 0 14px;
+}
+
+.card-context-menu-label-empty {
+  margin-block: 4px;
+}
+
 .label-popover-row {
   display: flex;
   align-items: center;
@@ -5711,6 +5765,12 @@ body:not(.board-empty) #labelFilterButton,
   margin: 6px 2px;
   font-size: var(--font-xs);
   color: var(--muted);
+}
+
+.label-popover-error {
+  margin: 8px 2px 0;
+  color: var(--danger);
+  font-size: var(--font-xs);
 }
 
 .label-popover-clear {

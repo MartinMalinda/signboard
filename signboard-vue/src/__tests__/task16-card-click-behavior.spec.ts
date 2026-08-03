@@ -102,8 +102,10 @@ describe('CardItem click behavior', () => {
 
     await wrapper.find('.card-body').trigger('contextmenu', { clientX: 120, clientY: 180 })
     expect(document.body.querySelector('.card-context-menu')).toBeTruthy()
-    expect(document.body.querySelector('.card-context-menu')?.textContent).toContain('Archive card')
-    expect(document.body.querySelector('.card-context-menu')?.textContent).toContain('Duplicate card')
+    expect(document.body.querySelector('.card-context-menu')?.textContent).toContain('Archive')
+    expect(document.body.querySelector('.card-context-menu')?.textContent).toContain('Duplicate')
+    expect(document.body.querySelector('.card-context-menu')?.textContent).not.toContain('Archive card')
+    expect(document.body.querySelector('.card-context-menu')?.textContent).not.toContain('Duplicate card')
 
     const menuItems = document.body.querySelectorAll<HTMLButtonElement>('.card-context-menu [role="menuitem"]')
     await menuItems[0]?.click()
@@ -111,11 +113,64 @@ describe('CardItem click behavior', () => {
     expect(document.body.querySelector('.card-context-menu')).toBeNull()
 
     await wrapper.find('.card-body').trigger('contextmenu', { clientX: 120, clientY: 180 })
-    const reopenedMenuItems = document.body.querySelectorAll<HTMLButtonElement>('.card-context-menu [role="menuitem"]')
+    const reopenedMenuItems = Array.from(document.body.querySelectorAll<HTMLButtonElement>('.card-context-menu [role="menuitem"]'))
 
-    await reopenedMenuItems[1]?.click()
+    await reopenedMenuItems.find((item) => item.textContent?.includes('Archive'))?.click()
     expect(onArchive).toHaveBeenCalledWith(card.cardPath)
     expect(document.body.querySelector('.card-context-menu')).toBeNull()
+
+    wrapper.unmount()
+  })
+
+  it('renders up to two selected label chips and a remaining count', () => {
+    const wrapper = mount(CardItem, {
+      global: { plugins: [createPinia()] },
+      props: {
+        card: { ...card, frontmatter: { ...card.frontmatter, labels: ['label-1', 'label-2', 'label-3', 'label-4'] } },
+        labels: [
+          { id: 'label-1', name: 'Work' },
+          { id: 'label-2', name: 'Urgent' },
+          { id: 'label-3', name: 'Research' },
+          { id: 'label-4', name: 'Customer' },
+        ],
+      },
+    })
+
+    const chips = wrapper.findAll('.card-label-chip-inline')
+    expect(chips).toHaveLength(3)
+    expect(chips.slice(0, 2).map((chip) => chip.text())).toEqual(['Work', 'Urgent'])
+    expect(chips[2]?.text()).toBe('+2 more')
+    expect(chips[2]?.attributes('aria-label')).toBe('Plus 2 more labels')
+
+    wrapper.unmount()
+  })
+
+  it('adds and removes labels from the card context menu', async () => {
+    const updateFrontmatter = vi.fn().mockResolvedValue(undefined)
+    window.board = { updateFrontmatter } as unknown as typeof window.board
+    const wrapper = mount(CardItem, {
+      global: { plugins: [createPinia()] },
+      props: {
+        card,
+        labels: [{ id: 'label-1', name: 'Work' }, { id: 'label-2', name: 'Urgent' }],
+      },
+    })
+
+    await wrapper.find('.card-body').trigger('contextmenu', { clientX: 120, clientY: 180 })
+    const menu = document.body.querySelector('.card-context-menu')
+    expect(menu?.querySelector('.card-context-menu-section-heading')?.textContent).toBe('Labels')
+    expect(menu?.querySelector('.card-context-menu-labels')).toBeTruthy()
+
+    const labelButtons = menu?.querySelectorAll<HTMLButtonElement>('.card-context-menu-label-option')
+    await labelButtons?.[1]?.click()
+    expect(updateFrontmatter).toHaveBeenLastCalledWith(card.cardPath, { labels: ['label-1', 'label-2'] })
+
+    await wrapper.find('.card-body').trigger('contextmenu', { clientX: 120, clientY: 180 })
+    const reopenedLabels = document.body.querySelectorAll<HTMLButtonElement>('.card-context-menu-label-option')
+    expect(reopenedLabels[1]?.getAttribute('aria-checked')).toBe('true')
+
+    await reopenedLabels[0]?.click()
+    expect(updateFrontmatter).toHaveBeenLastCalledWith(card.cardPath, { labels: ['label-2'] })
 
     wrapper.unmount()
   })

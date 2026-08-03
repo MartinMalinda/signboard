@@ -280,6 +280,8 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
         :aria-pressed="Boolean(editor?.isActive('link'))"
         @click="openLinkModal"
       ><LinkIcon /></button>
+      <div class="card-editor-tiptap-toolbar-spacer" aria-hidden="true" />
+      <slot name="toolbar-end" />
     </div>
     <EditorContent :editor="editor" />
     <Modal
@@ -328,6 +330,10 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
   border-bottom: 1px solid var(--border, currentColor);
 }
 
+.card-editor-tiptap-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
 .card-editor-tiptap-tool {
   display: inline-flex;
   align-items: center;
@@ -365,6 +371,82 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
   width: 16px;
   height: 16px;
   stroke-width: 1.8;
+}
+
+:deep(.card-editor-tiptap-label-trigger) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 40px;
+  max-width: min(680px, calc(100vw - 48px));
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted, currentColor);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+:deep(.card-editor-tiptap-label-trigger:hover),
+:deep(.card-editor-tiptap-label-trigger[aria-expanded='true']) {
+  background: color-mix(in oklab, var(--bg-card, transparent) 86%, var(--border, currentColor));
+  color: var(--text, currentColor);
+}
+
+:deep(.card-editor-tiptap-label-trigger:focus-visible) {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 1px;
+}
+
+:deep(.card-editor-tiptap-label-trigger.has-labels) {
+  color: var(--text, currentColor);
+}
+
+:deep(.card-editor-tiptap-label-trigger > .feather-icon) {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+:deep(.card-editor-tiptap-label-trigger > .feather-icon:last-child) {
+  width: 13px;
+  height: 13px;
+  flex-basis: 13px;
+}
+
+:deep(.card-editor-tiptap-label-trigger > .feather-icon svg) {
+  width: 100%;
+  height: 100%;
+}
+
+:deep(.card-editor-tiptap-label-chip) {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 160px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text, currentColor);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.card-editor-tiptap-label-more) {
+  flex: 0 0 auto;
+  color: var(--muted, currentColor);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 :deep(.card-editor-notes-content) {

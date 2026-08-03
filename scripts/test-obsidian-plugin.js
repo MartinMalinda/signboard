@@ -134,6 +134,11 @@ async function run() {
     'should encode board open URIs',
   );
   assert.strictEqual(
+    helpers.buildSignboardCardPathUri('Board/To-do/automation-mapping-change-notes.md'),
+    'signboard://open-card?path=Board%2FTo-do%2Fautomation-mapping-change-notes.md',
+    'should encode ad-hoc card paths',
+  );
+  assert.strictEqual(
     helpers.getListDisplayName('001-Doing-stock'),
     'Doing',
     'should display stock list names',
@@ -142,6 +147,11 @@ async function run() {
     helpers.cleanCardTitleFromFileName('000-launch-plan-ab123.md'),
     'launch plan',
     'should derive titles from Signboard filenames',
+  );
+  assert.strictEqual(
+    helpers.cleanCardTitleFromFileName('automation-mapping-change-notes.md'),
+    'automation mapping change notes',
+    'should preserve ad-hoc filename words that happen to be five characters',
   );
 
   const settings = helpers.buildBoardSettingsMarkdown();
