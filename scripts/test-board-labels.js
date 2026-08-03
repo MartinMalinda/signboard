@@ -33,12 +33,38 @@ async function run() {
     });
     assert.deepStrictEqual(defaults.externalPublishedCalendar, { include: true });
     assert.deepStrictEqual(defaults.obsidianBase, { managedHash: '', updatedAt: '' });
+    assert.deepStrictEqual(defaults.v2, {
+      enabled: false,
+      profileId: '',
+      version: 1,
+      title: '',
+      description: '',
+      stages: {
+        inbox: [],
+        shaping: [],
+        ready: [],
+        active: [],
+        review: [],
+        blocked: [],
+        done: [],
+        dropped: [],
+      },
+      dashboard: {
+        sections: ['critical', 'next_best_work', 'low_hanging_fruit', 'agent_loops', 'blocked'],
+        title: '',
+        description: '',
+      },
+      cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2' },
+      validationPolicy: 'framework_v1',
+      retainPlanner: true,
+    });
 
     const settingsPath = path.join(boardPath, '.board.json');
     const writtenRaw = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
     assert(writtenRaw.settings && writtenRaw.settings.labels, '.board.json should contain board settings');
     assert(!writtenRaw.settings.notifications, '.board.json should not contain app notification settings');
     assert(!writtenRaw.settings.tooltipsEnabled, '.board.json should not contain app tooltip settings');
+    assert(!writtenRaw.settings.v2, 'disabled default V2 profile should remain optional on disk');
 
     // 2) Updating labels should persist and preserve ids.
     const updatedLabels = [
@@ -101,6 +127,61 @@ async function run() {
       managedHash: 'a'.repeat(64),
       updatedAt: '2026-06-09T12:00:00.000Z',
     });
+
+    // 4b) V2 profiles normalize conservatively, merge partial updates, and persist atomically.
+    await updateBoardSettings(boardPath, {
+      v2: {
+        enabled: true,
+        profileId: 'signboard_v2_migration',
+        version: 1,
+        stages: { ready: [' Ready ', 'Ready', 42] },
+        dashboard: {
+          sections: ['blocked', 'unknown'],
+          title: 'V2 dashboard',
+          customDashboardKey: { preserved: true },
+        },
+        cardDefaults: { kind: 'discovery', priorityClass: 42 },
+        validationPolicy: 'framework_v1',
+        retainPlanner: false,
+        customProfileKey: { preserved: true },
+        dashboardExtra: { preserved: true },
+      },
+    });
+    const v2Settings = await readBoardSettings(boardPath);
+    assert.strictEqual(v2Settings.v2.enabled, true);
+    assert.strictEqual(v2Settings.v2.profileId, 'signboard_v2_migration');
+    assert.deepStrictEqual(v2Settings.v2.stages.ready, ['Ready']);
+    assert.deepStrictEqual(v2Settings.v2.dashboard.sections, ['blocked']);
+    assert.strictEqual(v2Settings.v2.cardDefaults.kind, 'discovery');
+    assert.strictEqual(v2Settings.v2.cardDefaults.priorityClass, 'P2');
+    assert.strictEqual(v2Settings.v2.retainPlanner, false);
+    assert.deepStrictEqual(v2Settings.v2.customProfileKey, { preserved: true });
+    assert.deepStrictEqual(v2Settings.v2.dashboard.customDashboardKey, { preserved: true });
+
+    await updateBoardSettings(boardPath, {
+      v2: { dashboard: { description: 'Decide what deserves attention next.' } },
+    });
+    const mergedV2Settings = await readBoardSettings(boardPath);
+    assert.strictEqual(mergedV2Settings.v2.enabled, true);
+    assert.strictEqual(mergedV2Settings.v2.dashboard.title, 'V2 dashboard');
+    assert.strictEqual(mergedV2Settings.v2.dashboard.description, 'Decide what deserves attention next.');
+    assert.deepStrictEqual(mergedV2Settings.v2.customProfileKey, { preserved: true });
+
+    const v2Raw = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
+    assert.strictEqual(v2Raw.settings.v2.enabled, true);
+    assert.deepStrictEqual(v2Raw.settings.v2.customProfileKey, { preserved: true });
+
+    v2Raw.customManifestKey = { preserved: true };
+    await fs.writeFile(settingsPath, `${JSON.stringify(v2Raw, null, 2)}\n`, 'utf8');
+    await updateBoardSettings(boardPath, { v2: { title: 'Updated V2 dashboard' } });
+    const preservedManifest = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
+    assert.deepStrictEqual(preservedManifest.customManifestKey, { preserved: true });
+
+    await updateBoardSettings(boardPath, {
+      v2: { enabled: true, version: 2 },
+    });
+    const invalidV2Settings = await readBoardSettings(boardPath);
+    assert.strictEqual(invalidV2Settings.v2.enabled, false, 'invalid profile versions must fail closed');
     const clearedRaw = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
     assert(clearedRaw.settings.externalPublishedCalendar, 'board calendar publishing opt-out should be persisted');
     assert(clearedRaw.settings.obsidianBase, 'managed Obsidian Base metadata should be persisted');

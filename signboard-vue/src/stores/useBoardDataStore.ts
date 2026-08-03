@@ -35,10 +35,12 @@ export const useBoardDataStore = defineStore('boardData', () => {
         includeBoardSettings: true,
         includeTimestamps: true,
         includeTaskItems: true,
+        includeV2: true,
       })
       if (token !== loadToken) return
       snapshot.value = nextSnapshot
       useLabelsStore().loadFromBoardSettings(nextSnapshot.boardSettings, normalizedRoot)
+      useViewStore().syncBoardProfile(normalizedRoot, Boolean(nextSnapshot.v2?.profile?.enabled))
     } catch (nextError) {
       if (token !== loadToken) return
       snapshot.value = null

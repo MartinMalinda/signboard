@@ -142,6 +142,9 @@ async function main() {
   );
   assert.strictEqual(createdBoard.boardRoot, createdBoardRoot);
   assert.strictEqual(createdBoard.cardFile, '000-hello-stock.md');
+  const createdBoardSettings = await boardLabels.readBoardSettings(createdBoardRoot, { ensureFile: false });
+  assert.strictEqual(createdBoardSettings.v2.enabled, true);
+  assert.strictEqual(createdBoardSettings.v2.profileId, 'default-product');
   assert.deepStrictEqual(
     (await fs.readdir(createdBoardRoot)).filter((name) => !name.startsWith('.')).sort(),
     ['To-do', 'Doing', 'Done', 'XXX-Archive'].sort(),

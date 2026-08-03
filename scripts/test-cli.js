@@ -287,6 +287,9 @@ async function main() {
   assert.strictEqual(createdBoard.cardFile, '000-hello-stock.md');
   assert.strictEqual(createdBoard.seededWelcomeCard, true);
   assert.strictEqual(createdBoard.currentBoardUpdated, true);
+  const createdBoardSettings = await boardLabels.readBoardSettings(createdBoardRoot, { ensureFile: false });
+  assert.strictEqual(createdBoardSettings.v2.enabled, true);
+  assert.strictEqual(createdBoardSettings.v2.profileId, 'default-product');
   assert.deepStrictEqual(
     await listVisibleNames(createdBoardRoot),
     ['To-do', 'Doing', 'Done', 'XXX-Archive'].sort(),
@@ -305,6 +308,8 @@ async function main() {
   assert.strictEqual(createdEmptyBoard.boardRoot, path.join(fixture.root, 'Empty CLI Board'));
   assert.strictEqual(createdEmptyBoard.cardFile, '');
   assert.strictEqual(createdEmptyBoard.seededWelcomeCard, false);
+  const createdEmptyBoardSettings = await boardLabels.readBoardSettings(createdEmptyBoard.boardRoot, { ensureFile: false });
+  assert.strictEqual(createdEmptyBoardSettings.v2.enabled, true);
   assert.deepStrictEqual(
     await listVisibleNames(path.join(createdEmptyBoard.boardRoot, 'To-do')),
     [],

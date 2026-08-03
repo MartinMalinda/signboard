@@ -171,6 +171,7 @@ export const useBoardsStore = defineStore('boards', () => {
         window.board.createList(`${authorized}XXX-Archive`),
       ])
       await window.board.createCard(`${authorized}To-do/000-hello-stock.md`, starterContent())
+      await window.board.initializeNewBoard?.(authorized)
     }
     if (!openBoardPaths.value.includes(authorized)) openBoardPaths.value.push(authorized)
     activeBoardPath.value = authorized

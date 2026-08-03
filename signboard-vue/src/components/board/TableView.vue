@@ -31,6 +31,18 @@ const ui = useUiStore()
 const view = useViewStore()
 
 const allEntries = computed(() => createTableEntries(data.lists, (listName) => labels.isCompletedList(listName)))
+const dashboardEntries = computed(() => {
+  const sectionId = view.dashboardSectionFilter
+  if (!sectionId) return allEntries.value
+  const allowedPaths = new Set((data.snapshot?.v2?.cards || [])
+    .filter((card) => sectionId === 'unshaped'
+      ? card.metadata?.present !== true || card.metadata?.valid !== true || card.scores?.priority_index === null
+      : Array.isArray(card.sections) && card.sections.some((section) => (
+        section && typeof section === 'object' && section.name === sectionId && section.included === true
+      )))
+    .map((card) => card.cardPath))
+  return allEntries.value.filter((entry) => allowedPaths.has(entry.cardPath))
+})
 const listOptions = computed(() => data.lists.map((list) => ({
   listPath: list.listPath,
   listName: list.listName,
@@ -42,13 +54,13 @@ const effectiveListFilter = computed(() => {
   if (view.listFilter.startsWith(TABLE_LIST_FILTERS.prefix)) return listOptions.value.some((list) => `list:${list.listPath}` === view.listFilter) ? view.listFilter : TABLE_LIST_FILTERS.all
   return TABLE_LIST_FILTERS.all
 })
-const boardFilteredEntries = computed(() => filterTableEntries(allEntries.value, {
+const boardFilteredEntries = computed(() => filterTableEntries(dashboardEntries.value, {
   query: search.query,
   selectedLabelIds: labels.filterIds,
   dateFilter: labels.dateFilter,
   listFilter: TABLE_LIST_FILTERS.all,
 }))
-const visibleEntries = computed(() => sortTableEntries(filterTableEntries(allEntries.value, {
+const visibleEntries = computed(() => sortTableEntries(filterTableEntries(dashboardEntries.value, {
   query: search.query,
   selectedLabelIds: labels.filterIds,
   dateFilter: labels.dateFilter,

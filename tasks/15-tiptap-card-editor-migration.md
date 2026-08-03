@@ -33,8 +33,8 @@ EditCardModal.vue
        └─ TiptapCardNotesEditor # Markdown/Tiptap implementation
 ```
 
-OverType should remain available as a temporary fallback until the Tiptap
-implementation passes the editor parity checks.
+Tiptap is now the only Vue card-editor notes implementation. The deprecated
+OverType fallback is not loaded by the canonical Vue renderer.
 
 ## Current findings
 
@@ -60,7 +60,7 @@ implementation passes the editor parity checks.
 - Preserve Markdown input/output and Signboard task-date markers.
 - Preserve card-editor save, focus, theme, external-sync, URL, and drop-linking
   behavior.
-- Add a temporary OverType/Tiptap implementation switch for rollback.
+- Keep the Vue notes surface on the single Tiptap implementation.
 - Add focused unit/component coverage and update Vue Playwright coverage.
 - Remove the fallback only after parity is verified.
 
@@ -155,12 +155,9 @@ Port or adapt the existing Tiptap behavior for:
 Avoid turning raw URLs into persisted Markdown links unless the user
 explicitly edits them as links.
 
-### 6. Add fallback switching and migrate the wrapper
+### 6. Migrate the wrapper to the single editor
 
-Add a temporary development/test switch, for example a Vue environment flag,
-that selects OverType or Tiptap inside `CardNotesEditor.vue`.
-
-Run the same editor flows against both implementations:
+Run the editor flows against Tiptap through `CardNotesEditor.vue`:
 
 - open and close;
 - focus notes on create-and-open;
@@ -179,7 +176,6 @@ Run the same editor flows against both implementations:
 After parity is demonstrated:
 
 - make Tiptap the default implementation;
-- retain OverType only for a short rollback period if needed;
 - remove the feature switch and unused OverType-specific integration code;
 - update `tasks/PARITY.md`, `vue-migration.md`, and the relevant project
   documentation;
@@ -235,10 +231,10 @@ when Electron is available.
 Implemented in the Vue renderer. `RichTextEditor.vue` is now a controlled
 Signboard Tiptap editor with Markdown serialization, native nested task
 checkboxes, link editing, raw URL decorations/open controls, external-body
-replacement, and base64-image sanitization. `CardNotesEditor.vue` keeps the
-OverType implementation behind `VITE_CARD_EDITOR_NOTES_EDITOR=overtype` for
-rollback/testing, while Tiptap is the default. The editor preserves `start`,
-`scheduled`, and `due` markers without rendering per-task date controls.
+replacement, and base64-image sanitization. `CardNotesEditor.vue` now exposes
+only the Tiptap implementation; the old OverType switch and integration code
+were removed. The editor preserves `start`, `scheduled`, and `due` markers
+without rendering per-task date controls.
 
 Passing:
 

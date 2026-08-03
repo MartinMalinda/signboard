@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "order": [
+    "00-Context",
+    "01-Shaping",
+    "02-Ready",
+    "03-Active",
+    "04-Review",
+    "05-Blocked",
+    "06-Done"
+  ],
+  "settings": {
+    "labels": [
+      {
+        "id": "epic",
+        "name": "Epic",
+        "colorLight": "#8b5cf6",
+        "colorDark": "#a78bfa"
+      },
+      {
+        "id": "discovery",
+        "name": "Discovery",
+        "colorLight": "#0ea5e9",
+        "colorDark": "#38bdf8"
+      },
+      {
+        "id": "data-model",
+        "name": "Data model",
+        "colorLight": "#f59e0b",
+        "colorDark": "#fbbf24"
+      },
+      {
+        "id": "dashboard",
+        "name": "Dashboard",
+        "colorLight": "#14b8a6",
+        "colorDark": "#2dd4bf"
+      },
+      {
+        "id": "renderer",
+        "name": "Renderer",
+        "colorLight": "#6366f1",
+        "colorDark": "#818cf8"
+      },
+      {
+        "id": "agent",
+        "name": "Agent workflow",
+        "colorLight": "#ec4899",
+        "colorDark": "#f472b6"
+      },
+      {
+        "id": "migration",
+        "name": "Migration",
+        "colorLight": "#f97316",
+        "colorDark": "#fb923c"
+      },
+      {
+        "id": "testing",
+        "name": "Testing",
+        "colorLight": "#22c55e",
+        "colorDark": "#4ade80"
+      },
+      {
+        "id": "docs",
+        "name": "Documentation",
+        "colorLight": "#64748b",
+        "colorDark": "#94a3b8"
+      },
+      {
+        "id": "ux",
+        "name": "UX",
+        "colorLight": "#f43f5e",
+        "colorDark": "#fb7185"
+      }
+    ],
+    "v2": {
+      "enabled": true,
+      "profileId": "signboard-v2-migration",
+      "version": 1,
+      "title": "Signboard V2 migration",
+      "description": "The Signboard product-development workspace managed through the V2 framework.",
+      "stages": {
+        "inbox": [
+          "00-Context"
+        ],
+        "shaping": [
+          "01-Shaping"
+        ],
+        "ready": [
+          "02-Ready"
+        ],
+        "active": [
+          "03-Active"
+        ],
+        "review": [
+          "04-Review"
+        ],
+        "blocked": [
+          "05-Blocked"
+        ],
+        "done": [
+          "06-Done"
+        ],
+        "dropped": [
+          "XXX-Archive"
+        ]
+      },
+      "dashboard": {
+        "sections": [
+          "critical",
+          "next_best_work",
+          "low_hanging_fruit",
+          "agent_loops",
+          "blocked"
+        ],
+        "title": "V2 migration dashboard",
+        "description": "What the Signboard product team should shape, build, review, or unblock next."
+      },
+      "cardDefaults": {
+        "kind": "task",
+        "workType": "product",
+        "priorityClass": "P2"
+      },
+      "validationPolicy": "framework_v1",
+      "retainPlanner": true
+    }
+  }
+}

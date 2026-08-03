@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld('board', {
   getCardFileName: (filePath) => getNormalizedBaseName(filePath),
   getListDirectoryName: (filePath) => getNormalizedBaseName(filePath),
   listDirectories: async (root) => invokeBoard('listDirectories', root),
+  initializeNewBoard: async (root) => invokeBoard('initializeNewBoard', root),
   readBoardSnapshot: async (root, options) => invokeBoard('readBoardSnapshot', root, options),
   startBoardWatch: async (boardRoot) => invokeBoard('startBoardWatch', boardRoot),
   stopBoardWatch: async () => invokeBoard('stopBoardWatch'),

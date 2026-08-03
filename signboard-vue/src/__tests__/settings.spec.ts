@@ -11,7 +11,7 @@ import {
 import { SETTINGS_NAVIGATION, useSettingsStore } from '../stores/useSettingsStore'
 import SettingsModal from '../components/settings/SettingsModal.vue'
 
-const snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { labels: [{ id: 'one', name: 'One' }], workflow: { autoDetectCompletedLists: true, completedListNames: [], ignoredCompletedListNames: [] } }, lists: [], errors: [] }
+const snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { labels: [{ id: 'one', name: 'One' }], workflow: { autoDetectCompletedLists: true, completedListNames: [], ignoredCompletedListNames: [] }, v2: { enabled: true, profileId: 'default-product', dashboard: { sections: ['critical', 'next_best_work'] }, cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2' } } }, lists: [], errors: [] }
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -26,7 +26,7 @@ beforeEach(() => {
     listCards: async () => [],
     readBoardSnapshot: async () => snapshot,
     readBoardSettings: async () => snapshot.boardSettings,
-    updateBoardSettings: async (_root, partial) => ({ ...snapshot.boardSettings, ...partial }),
+    updateBoardSettings: vi.fn(async (_root, partial) => ({ ...snapshot.boardSettings, ...partial })),
     createList: async () => undefined,
     createCard: async () => undefined,
     moveList: async () => undefined,
@@ -56,7 +56,7 @@ describe('Settings parity model', () => {
   })
 
   it('keeps the documented panel order and keyboard navigation target set', () => {
-    expect(SETTINGS_NAVIGATION.map((item) => item.id)).toEqual(['app', 'notifications', 'smart-actions', 'general', 'labels', 'colors', 'workflow', 'obsidian', 'import'])
+    expect(SETTINGS_NAVIGATION.map((item) => item.id)).toEqual(['app', 'notifications', 'smart-actions', 'general', 'project', 'labels', 'colors', 'workflow', 'obsidian', 'import'])
     const settings = useSettingsStore()
     settings.selectPanel('workflow')
     expect(settings.activePanel).toBe('workflow')
@@ -75,6 +75,27 @@ describe('Settings parity model', () => {
     ;(document.querySelector('#boardSettingsNavLabels') as HTMLButtonElement).click()
     await vi.waitFor(() => expect(document.querySelector('#boardSettingsPanelLabels')?.getAttribute('aria-hidden')).toBe('false'))
     expect(document.querySelector('#boardSettingsPanelApp')?.getAttribute('aria-hidden')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('renders the Project panel and persists V2 display/default changes', async () => {
+    const settings = useSettingsStore()
+    settings.isOpen = true
+    settings.boardRoot = '/board/'
+    settings.boardSettings = snapshot.boardSettings
+    settings.listNames = ['custom-inbox', 'custom-doing']
+    const wrapper = mount(SettingsModal, { attachTo: document.body })
+    settings.selectPanel('project')
+    await vi.waitFor(() => expect(document.querySelector('#boardSettingsPanelProject')?.getAttribute('aria-hidden')).toBe('false'))
+    const signalsToggle = document.querySelector('#boardSettingsV2SignalsToggle') as HTMLInputElement
+    signalsToggle.checked = false
+    signalsToggle.dispatchEvent(new Event('change', { bubbles: true }))
+    const prioritySelect = document.querySelector('#boardSettingsV2DefaultPriority') as HTMLSelectElement
+    prioritySelect.value = 'P1'
+    prioritySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    await vi.waitFor(() => expect(window.board.updateBoardSettings).toHaveBeenCalled())
+    expect(window.board.updateBoardSettings).toHaveBeenCalledWith('/board/', expect.objectContaining({ v2: expect.objectContaining({ cardDisplay: expect.objectContaining({ showSignals: false }) }) }))
+    expect(settings.v2Profile.cardDefaults?.priorityClass).toBe('P1')
     wrapper.unmount()
   })
 

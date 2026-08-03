@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type WorkspaceView = 'planner' | 'kanban' | 'table'
+export type WorkspaceView = 'dashboard' | 'planner' | 'kanban' | 'table'
 
-const VALID_VIEWS: WorkspaceView[] = ['planner', 'kanban', 'table']
+const VALID_VIEWS: WorkspaceView[] = ['dashboard', 'planner', 'kanban', 'table']
 
 function normalizeView(value: unknown): WorkspaceView {
   const normalized = String(value || '').toLowerCase() as WorkspaceView
@@ -18,6 +18,7 @@ export const useViewStore = defineStore('view', () => {
   const selectedPaths = ref<Set<string>>(new Set())
   const lastSelectedPath = ref('')
   const activeBulkMenu = ref('')
+  const dashboardSectionFilter = ref('')
   const viewByBoard = new Map<string, WorkspaceView>()
 
   function prepareBoard(boardRoot: string) {
@@ -26,7 +27,20 @@ export const useViewStore = defineStore('view', () => {
     activeBoardRoot.value = normalized
     activeView.value = viewByBoard.get(normalized) || 'kanban'
     listFilter.value = 'all'
+    dashboardSectionFilter.value = ''
     clearSelection()
+  }
+
+  function syncBoardProfile(boardRoot: string, dashboardEnabled: boolean) {
+    const normalized = String(boardRoot || '').trim()
+    if (normalized !== activeBoardRoot.value) return
+    if (!dashboardEnabled && activeView.value === 'dashboard') {
+      activeView.value = 'kanban'
+      viewByBoard.set(normalized, 'kanban')
+    } else if (dashboardEnabled && !viewByBoard.has(normalized)) {
+      activeView.value = 'dashboard'
+      viewByBoard.set(normalized, 'dashboard')
+    }
   }
 
   function setView(view: WorkspaceView) {
@@ -44,6 +58,15 @@ export const useViewStore = defineStore('view', () => {
   function setListFilter(value: string) {
     listFilter.value = value || 'all'
     clearSelection()
+  }
+
+  function setDashboardSectionFilter(value: string) {
+    dashboardSectionFilter.value = String(value || '').trim()
+    clearSelection()
+  }
+
+  function clearDashboardSectionFilter() {
+    dashboardSectionFilter.value = ''
   }
 
   function setSelection(paths: Iterable<string>, anchor = '') {
@@ -70,10 +93,14 @@ export const useViewStore = defineStore('view', () => {
     selectedPaths,
     lastSelectedPath,
     activeBulkMenu,
+    dashboardSectionFilter,
     prepareBoard,
+    syncBoardProfile,
     setView,
     setSortKey,
     setListFilter,
+    setDashboardSectionFilter,
+    clearDashboardSectionFilter,
     setSelection,
     clearSelection,
     toggleBulkMenu,

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "order": [
+    "005-build-score-gate-and-dash-ESD78.md",
+    "001-transition-kickoff-first--QXdDk.md",
+    "001-decide-v2-card-contract-h-SBv6H.md",
+    "002-define-per-board-project--nld8c.md",
+    "003-choose-migration-and-comp-Fi3H2.md",
+    "004-specify-v2-score-and-gate-xqjng.md",
+    "005-decide-whether-planner-re-fY6gT.md",
+    "006-v2-ui-contract-dashboard--9sBID.md",
+    "007-define-v2-workspace-navig-NmVmL.md",
+    "008-define-the-v2-dashboard-i-BDXq7.md",
+    "001-add-an-optional-v2-board--qRqaw.md",
+    "012-implement-v2-score-gate-evaluator--r7Kp2.md",
+    "002-extend-the-batched-board--h1gn2.md",
+    "003-create-the-first-v2-dashb-fUM4E.md",
+    "006-keep-the-internal-migrati-g97ko.md",
+    "007-add-a-compact-v2-work-sig-vdZRa.md",
+    "008-add-a-progressive-disclos-yvr2D.md",
+    "009-add-a-board-level-project-LDnX3.md",
+    "010-keep-add-card-and-quick-a-BNlCv.md",
+    "011-add-ui-fixtures-for-v2-de-sOJug.md",
+    "004-expose-v2-metadata-throug-maHSR.md"
+  ]
+}

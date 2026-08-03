@@ -2,8 +2,9 @@
 import { computed, nextTick, onUpdated, ref } from 'vue'
 import Modal from '../../lib/components/Modal.vue'
 import FeatherIcon from '../FeatherIcon.vue'
+import V2ProjectSettingsPanel from './V2ProjectSettingsPanel.vue'
 import { useSortable, type SortableEventLike } from '../../composables/useSortable'
-import { COLOR_SCHEMES, SETTINGS_NAVIGATION, useSettingsStore, type SettingsPanel } from '../../stores/useSettingsStore'
+import { COLOR_SCHEMES, SETTINGS_NAVIGATION, V2_DASHBOARD_SECTION_OPTIONS, V2_STAGE_OPTIONS, useSettingsStore, type SettingsPanel } from '../../stores/useSettingsStore'
 import { SMART_CARD_ACTION_TARGETS, normalizeSmartCardActionTarget } from '../../../lib/appSettingsSchema.js'
 import type { SmartCardAction } from '../../types'
 
@@ -11,6 +12,8 @@ const settings = useSettingsStore()
 const actionList = ref<HTMLElement | null>(null)
 const labelDrafts = ref<Record<string, string>>({})
 const currentScheme = computed(() => COLOR_SCHEMES.find((scheme) => scheme.id === settings.boardSettings?.colorScheme) || COLOR_SCHEMES[0]!)
+const v2Sections = computed(() => Array.isArray(settings.v2Profile.dashboard?.sections) ? settings.v2Profile.dashboard.sections : V2_DASHBOARD_SECTION_OPTIONS.map((section) => section.id))
+const v2CardDisplay = computed(() => settings.v2Profile.cardDisplay || {})
 const groupedNavigation = computed(() => SETTINGS_NAVIGATION.reduce<Array<{ group: string; items: typeof SETTINGS_NAVIGATION[number][] }>>((groups, item) => { const group = groups.find((candidate) => candidate.group === item.group); if (group) group.items.push(item); else groups.push({ group: item.group, items: [item] }); return groups }, []))
 
 const sortable = useSortable(actionList, { kind: 'settings', draggable: '.board-settings-ai-action[data-action-id]', group: 'smart-actions', onEnd: reorderActions })
@@ -42,6 +45,23 @@ async function duplicateBoard() { const input = document.getElementById('boardSe
 function labelColor(label: { id: string; colorLight?: string }, event: Event) { void settings.updateLabel(label.id, { colorLight: (event.target as HTMLInputElement).value, colorDark: (event.target as HTMLInputElement).value }) }
 function actionValue(action: SmartCardAction, field: 'label' | 'target' | 'prompt', event: Event) { const value = (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value; void settings.updateAction(action.id, { [field]: value }) }
 function workflowChecked(listName: string) { return settings.isCompletedList(listName) }
+function v2SectionEnabled(id: string) { return v2Sections.value.includes(id) }
+async function toggleV2Section(id: string, enabled: boolean) {
+  const next = enabled ? [...v2Sections.value, id] : v2Sections.value.filter((section) => section !== id)
+  await settings.setV2DashboardSections(next)
+}
+async function moveV2Section(id: string, direction: -1 | 1) {
+  const current = [...v2Sections.value]
+  const index = current.indexOf(id)
+  const target = index + direction
+  if (index < 0 || target < 0 || target >= current.length) return
+  const [section] = current.splice(index, 1)
+  if (section) current.splice(target, 0, section)
+  await settings.setV2DashboardSections(current)
+}
+function v2StageList(stage: string) { const value = settings.v2Profile.stages?.[stage] ; return Array.isArray(value) ? String(value[0] || '') : '' }
+function v2StageLabel(stage: string) { return V2_STAGE_OPTIONS.find((option) => option.id === stage)?.label || stage }
+function v2SectionLabel(id: string) { return V2_DASHBOARD_SECTION_OPTIONS.find((option) => option.id === id)?.label || id }
 function copyCalendarUrl() { if (settings.externalCalendarStatus.url) void window.electronAPI.copyTextToClipboard?.(settings.externalCalendarStatus.url) }
 function renameBoardFromInput() { const input = document.getElementById('boardSettingsBoardNameInput') as HTMLInputElement | null; if (input) void settings.renameBoard(input.value) }
 </script>
@@ -59,6 +79,7 @@ function renameBoardFromInput() { const input = document.getElementById('boardSe
       </nav>
 
       <div class="board-settings-panels">
+        <V2ProjectSettingsPanel />
         <section id="boardSettingsPanelApp" class="boardSettingsSection board-settings-panel" :class="{ 'is-active': settings.activePanel === 'app' }" role="tabpanel" :aria-hidden="settings.activePanel === 'app' ? 'false' : 'true'" aria-labelledby="boardSettingsNavApp" data-settings-panel="app">
           <h3>General</h3>
           <div class="board-settings-group"><div class="board-settings-toggle-row"><div><p class="boardSettingsHint boardSettingsHintTight">Tooltips</p><p class="boardSettingsHint">Show button and control hints throughout Signboard.</p></div><label class="board-settings-switch" for="boardSettingsTooltipsToggle" title="Enable tooltips"><input id="boardSettingsTooltipsToggle" type="checkbox" role="switch" aria-label="Enable tooltips" :checked="settings.appSettings.tooltipsEnabled" @change="settings.setTooltipsEnabled(($event.target as HTMLInputElement).checked)"><span class="board-settings-switch-track" aria-hidden="true" /></label></div></div>

@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
+import { useBoardDataStore } from '../../stores/useBoardDataStore'
+import { useViewStore } from '../../stores/useViewStore'
 import Modal from '../../lib/components/Modal.vue'
 import CardTitleField from './CardTitleField.vue'
 import CardNotesEditor from './CardNotesEditor.vue'
 import CardTimestamps from './CardTimestamps.vue'
 import CardEditorActions from './CardEditorActions.vue'
+import V2WorkDetails from './V2WorkDetails.vue'
 import FeatherIcon from '../FeatherIcon.vue'
 
 const editor = useEditorStore()
+const boardData = useBoardDataStore()
+const view = useViewStore()
+const v2Enabled = computed(() => boardData.snapshot?.v2?.profile?.enabled === true)
 const listPaths = ref<string[]>([])
 const status = ref('')
 const notes = ref<InstanceType<typeof CardNotesEditor> | null>(null)
@@ -53,6 +59,12 @@ async function moveAdjacent(direction: -1 | 1) {
 
 async function archiveActive() { await archive() }
 
+async function openDashboardSection(section: string) {
+  await close()
+  view.setDashboardSectionFilter(section)
+  view.setView('table')
+}
+
 async function handleDrop(event: DragEvent) {
   const files = event.dataTransfer?.files
   if (!files?.length || !editor.cardPath || !window.chooser.linkDroppedObjects) return
@@ -73,15 +85,16 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
 </script>
 
 <template>
-  <Modal :is-open="editor.isOpen" :on-close="close" positioning="fixed" :show-chrome="false" labelled-by="cardEditorTitle" :initial-focus="editor.focusNotes ? '#cardEditorNotes, #cardEditorOverType .overtype-input' : '#cardEditorTitle'">
+  <Modal :is-open="editor.isOpen" :on-close="close" positioning="fixed" :overflow="true" :show-chrome="false" labelled-by="cardEditorTitle" :initial-focus="editor.focusNotes ? '#cardEditorNotes' : '#cardEditorTitle'">
     <div class="cardEditorHeader">
       <CardTitleField :value="editor.title" :on-change="editor.setTitle" />
       <div class="cardEditorHeaderActions">
-        <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
+      <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
         <button id="cardEditorClose" type="button" title="Close" aria-label="Close card editor" aria-keyshortcuts="Escape" @click="close"><FeatherIcon name="x" /></button>
       </div>
     </div>
     <div class="card-editor-modal-content" @dragover.prevent @drop.prevent="void handleDrop($event)">
+      <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" :on-open-dashboard="openDashboardSection" />
       <CardNotesEditor ref="notes" />
       <CardTimestamps :timestamps="editor.timestamps" />
       <input id="cardEditorCardPath" type="hidden" :value="editor.cardPath" />

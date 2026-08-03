@@ -125,6 +125,9 @@ async function openBoard( dir ) {
         ]);
 
         await window.board.createCard( boardPath + 'To-do/000-hello-stock.md', buildStarterCardContent() );
+        if (typeof window.board.initializeNewBoard === 'function') {
+            await window.board.initializeNewBoard(boardPath);
+        }
     }
 
     window.boardRoot = boardPath;

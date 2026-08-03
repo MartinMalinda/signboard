@@ -23,6 +23,20 @@ export interface CardSnapshot {
   incompleteTaskDueDates: string[]
   timestamps?: { createdAt?: string; updatedAt?: string }
   taskItems?: Array<Record<string, unknown>>
+  v2?: V2CardProjection
+}
+
+export interface V2CardProjection {
+  score_version: number
+  normalized: Record<string, unknown>
+  metadata: Record<string, unknown>
+  scores: Record<string, number | null>
+  eligibility: Record<string, unknown>
+  classes: Record<string, string | null>
+  sections: Array<Record<string, unknown>>
+  missing_fields: string[]
+  defaults_applied: Record<string, unknown>
+  warnings: string[]
 }
 
 export interface CardRead {
@@ -37,10 +51,43 @@ export interface BoardListSnapshot {
   cards: CardSnapshot[]
 }
 
+export type V2StageKey = 'inbox' | 'shaping' | 'ready' | 'active' | 'review' | 'blocked' | 'done' | 'dropped'
+
+export interface V2BoardProfile {
+  enabled?: boolean
+  profileId?: string
+  version?: number
+  title?: string
+  description?: string
+  stages?: Partial<Record<V2StageKey, string[]>> & Record<string, unknown>
+  dashboard?: {
+    sections?: string[]
+    title?: string
+    description?: string
+    [key: string]: unknown
+  }
+  cardDisplay?: {
+    showSignals?: boolean
+    showDerivedBadges?: boolean
+    density?: 'compact' | 'standard' | string
+    [key: string]: unknown
+  }
+  cardDefaults?: {
+    kind?: string
+    workType?: string
+    priorityClass?: string
+    [key: string]: unknown
+  }
+  validationPolicy?: string
+  retainPlanner?: boolean
+  [key: string]: unknown
+}
+
 export interface BoardSettings {
   labels?: BoardLabel[]
   colorScheme?: string
   workflow?: { autoDetectCompletedLists?: boolean; completedListNames?: string[]; ignoredCompletedListNames?: string[] }
+  v2?: V2BoardProfile
   [key: string]: unknown
 }
 
@@ -163,6 +210,12 @@ export interface BoardSnapshot {
   boardSettings: BoardSettings | null
   lists: BoardListSnapshot[]
   errors: Array<{ path: string; code: string; message: string }>
+  v2?: BoardV2Snapshot
+}
+
+export interface BoardV2Snapshot {
+  profile: V2BoardProfile
+  cards: Array<V2CardProjection & { listName: string; cardName: string; cardPath: string }>
 }
 
 export interface DirectorySelection {
@@ -177,6 +230,7 @@ export interface BoardBridge {
   syncOpenBoardsState(state: { openBoardPaths: string[]; activeBoardPath: string }): Promise<unknown>
   clearActiveBoardRoot(): Promise<unknown>
   listDirectories(root: string): Promise<string[]>
+  initializeNewBoard?(root: string): Promise<unknown>
   listLists?(root: string): Promise<string[]>
   listCards?(listPath: string): Promise<string[]>
   readBoardSnapshot(root: string, options?: Record<string, unknown>): Promise<BoardSnapshot>

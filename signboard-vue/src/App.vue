@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import BoardTabs from './components/BoardTabs.vue'
 import WorkspaceViewDock from './components/WorkspaceViewDock.vue'
+import DashboardView from './components/DashboardView.vue'
 import KanbanBoard from './components/board/KanbanBoard.vue'
 import TableView from './components/board/TableView.vue'
 import PlannerOverlay from './components/planner/PlannerOverlay.vue'
@@ -130,12 +131,18 @@ async function switchBoard(path: string) {
 
 async function switchView(nextView: WorkspaceView) {
   if (editorModal.value) await editorModal.value.closeCard()
+  if (nextView !== 'table') view.clearDashboardSectionFilter()
   if (nextView === 'planner') {
     planner.setView('calendar')
     planner.setScope('all')
     await planner.load()
   }
   view.setView(nextView)
+}
+
+function openDashboardSection(section: string) {
+  view.setDashboardSectionFilter(section)
+  void switchView('table')
 }
 
 async function moveEditorAdjacent(direction: -1 | 1) {
@@ -192,14 +199,15 @@ onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisp
 
 <template>
   <AppHeader :on-quick-add="openQuickAdd" :on-open-settings="() => settings.open()" :on-open-archive="openArchive" :on-open-sponsor="() => staticModals.openSponsor()"><BoardTabs :on-open="openBoard" :on-open-switcher="openBoardSwitcher" /></AppHeader>
-  <main id="board" :class="{ 'board-view-kanban': Boolean(boards.activeBoardPath) && view.activeView === 'kanban', 'board-view-table': Boolean(boards.activeBoardPath) && view.activeView === 'table' }">
+  <main id="board" :class="{ 'board-view-dashboard': Boolean(boards.activeBoardPath) && view.activeView === 'dashboard', 'board-view-kanban': Boolean(boards.activeBoardPath) && view.activeView === 'kanban', 'board-view-table': Boolean(boards.activeBoardPath) && view.activeView === 'table' }">
     <template v-if="!boards.activeBoardPath"><EmptyBoardCta :on-open="openBoard" /></template>
     <MissingBoardAlert v-else-if="data.error" :board-path="boards.activeBoardPath" :on-locate="locateBoard" :on-remove="removeBoard" />
+    <DashboardView v-else-if="view.activeView === 'dashboard' && data.snapshot?.v2" :on-open="openCard" :on-view-all="openDashboardSection" />
     <KanbanBoard v-else-if="view.activeView === 'kanban'" :on-open="openCard" :on-add-card="openAddCard" :on-add-list="openAddList" :on-archive-card="archiveCard" :on-duplicate-card="duplicateCard" :on-labels-changed="() => data.reconcileAfterMutation(boards.activeBoardPath)" />
     <TableView v-else-if="view.activeView === 'table'" :on-open="openCard" />
     <div v-else aria-hidden="true"></div>
   </main>
-  <WorkspaceViewDock :active-view="view.activeView" :on-change="switchView" />
+  <WorkspaceViewDock :active-view="view.activeView" :dashboard-enabled="Boolean(data.snapshot?.v2)" :on-change="switchView" />
   <PlannerOverlay :is-open="view.activeView === 'planner'" :on-close="() => switchView('kanban')" :on-open-card="openCard" />
   <EditCardModal ref="editorModal" />
   <AddCardModal :is-open="addCardOpen" :list-path="addCardListPath" :labels="data.snapshot?.boardSettings?.labels || []" :on-close="closeCreationModals" :on-created="createdCard" />

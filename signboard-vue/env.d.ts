@@ -9,7 +9,6 @@ declare global {
     board: BoardBridge
     chooser: ChooserBridge
     electronAPI: ElectronApiBridge
-    OverType?: any
     FDatepicker?: any
     Sortable?: any
   }

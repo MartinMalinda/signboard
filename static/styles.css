@@ -4610,12 +4610,38 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #modalEditCard .card-editor-modal-content {
-  display: grid;
+  display: flex;
   flex: 1 1 auto;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  flex-direction: column;
   min-height: 0;
   padding-top: 4px;
   overflow: hidden;
+}
+
+/* Let Modal.vue own vertical scrolling when the editor grows beyond the viewport. */
+#modalEditCard.modal.overflow .card-editor-modal-content {
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+#modalEditCard.modal.overflow .card-editor-notes-implementation {
+  flex: 0 0 auto;
+  min-height: 320px;
+  overflow: visible;
+}
+
+#modalEditCard .card-editor-modal-content > .v2-editor-work-details {
+  flex: 0 0 auto;
+}
+
+#modalEditCard .card-editor-modal-content > .card-editor-notes-implementation {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#modalEditCard .card-editor-modal-content > .cardEditorTimestampMetadata {
+  flex: 0 0 auto;
 }
 
 #modalEditCard .card-editor-notes-implementation {
@@ -5932,6 +5958,9 @@ body:not(.board-empty) #labelFilterButton,
   min-width: 0;
   padding-left: var(--card-editor-body-inset);
 }
+#modalEditCard .v2-editor-stage-field .cardEditorListControl {
+  padding-left: 0;
+}
 #modalEditCard .cardEditorHeaderActions {
   display: flex;
   align-items: center;
@@ -7109,6 +7138,35 @@ select:disabled {
     width: 100%;
   }
 }
+
+.creation-work-details-toggle {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--bg-card) 95%, var(--border));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.creation-work-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.creation-work-details legend { grid-column: 1 / -1; padding: 0 4px; color: var(--text); font-weight: 650; }
+.creation-work-details legend span { color: var(--muted); font-size: var(--font-sm); font-weight: 400; }
+.creation-work-details label { display: grid; gap: 4px; color: var(--muted); font-size: var(--font-sm); }
+.creation-work-details select, .creation-work-details input { min-height: 32px; padding: 5px 7px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); color: var(--text); font: inherit; }
+
+@media (max-width: 520px) { .creation-work-details { grid-template-columns: 1fr; } }
 
 /* 11) Print – simple, text-first */
 @media print {

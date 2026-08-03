@@ -26,4 +26,16 @@ describe('workspace view store', () => {
     store.toggleBulkMenu('move')
     expect(store.activeBulkMenu).toBe('')
   })
+
+  it('defaults opted-in boards to Dashboard and falls back when the profile is disabled', () => {
+    const store = useViewStore()
+    store.prepareBoard('/v2/')
+    store.syncBoardProfile('/v2/', true)
+    expect(store.activeView).toBe('dashboard')
+    store.prepareBoard('/other/')
+    store.prepareBoard('/v2/')
+    expect(store.activeView).toBe('dashboard')
+    store.syncBoardProfile('/v2/', false)
+    expect(store.activeView).toBe('kanban')
+  })
 })

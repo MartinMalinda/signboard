@@ -484,6 +484,10 @@ async function runForTransport(transportMode, fixture) {
   if (createBoardOutput.cardFile !== '000-hello-stock.md') {
     throw new Error(`create_board did not seed starter card (${transportMode}): ${JSON.stringify(createBoardOutput)}`);
   }
+  const createdBoardManifest = JSON.parse(await fs.readFile(path.join(createdBoardRoot, '.board.json'), 'utf8'));
+  if (createdBoardManifest.settings?.v2?.enabled !== true || createdBoardManifest.settings?.v2?.profileId !== 'default-product') {
+    throw new Error(`create_board did not enable the default V2 profile (${transportMode}): ${JSON.stringify(createdBoardManifest)}`);
+  }
 
   send({
     jsonrpc: '2.0',
@@ -810,7 +814,7 @@ async function runForTransport(transportMode, fixture) {
   }
 
   const boardEntriesAfterTrello = await fs.readdir(fixture.boardRoot, { withFileTypes: true });
-  const trelloImportedList = boardEntriesAfterTrello.find((entry) => entry.isDirectory() && /-Trello MCP-/.test(entry.name));
+  const trelloImportedList = boardEntriesAfterTrello.find((entry) => entry.isDirectory() && entry.name === 'Trello MCP');
   if (!trelloImportedList) {
     throw new Error(`import_trello did not create the expected list (${transportMode}).`);
   }
@@ -853,7 +857,7 @@ async function runForTransport(transportMode, fixture) {
   }
 
   const boardEntriesAfterObsidian = await fs.readdir(fixture.boardRoot, { withFileTypes: true });
-  const obsidianImportedList = boardEntriesAfterObsidian.find((entry) => entry.isDirectory() && /-Inbox-/.test(entry.name));
+  const obsidianImportedList = boardEntriesAfterObsidian.find((entry) => entry.isDirectory() && entry.name === 'Inbox');
   if (!obsidianImportedList) {
     throw new Error(`import_obsidian did not create the expected Inbox list (${transportMode}).`);
   }
@@ -896,7 +900,7 @@ async function runForTransport(transportMode, fixture) {
   }
 
   const boardEntriesAfterTasksMd = await fs.readdir(fixture.boardRoot, { withFileTypes: true });
-  const tasksMdImportedList = boardEntriesAfterTasksMd.find((entry) => entry.isDirectory() && /-Tasks Inbox-/.test(entry.name));
+  const tasksMdImportedList = boardEntriesAfterTasksMd.find((entry) => entry.isDirectory() && entry.name === 'Tasks Inbox');
   if (!tasksMdImportedList) {
     throw new Error(`import_tasksmd did not create the expected Tasks Inbox list (${transportMode}).`);
   }
@@ -922,6 +926,12 @@ async function runForTransport(transportMode, fixture) {
         themeOverrides: {
           light: { boardBackground: '#dfe4f2' },
         },
+        v2: {
+          enabled: true,
+          profileId: 'mcp-settings-test',
+          stages: { ready: ['Ready'] },
+          customProfileKey: { preserved: true },
+        },
       },
     },
   });
@@ -934,6 +944,10 @@ async function runForTransport(transportMode, fixture) {
   const updatedTheme = settingsResponse.result?.structuredContent?.settings?.themeOverrides || {};
   if (!updatedTheme.light || updatedTheme.light.boardBackground !== '#dfe4f2') {
     throw new Error(`update_board_settings did not persist theme overrides (${transportMode}): ${JSON.stringify(updatedTheme)}`);
+  }
+  const updatedV2 = settingsResponse.result?.structuredContent?.settings?.v2 || {};
+  if (updatedV2.enabled !== true || updatedV2.profileId !== 'mcp-settings-test' || updatedV2.customProfileKey?.preserved !== true) {
+    throw new Error(`update_board_settings did not persist V2 profile (${transportMode}): ${JSON.stringify(updatedV2)}`);
   }
 
   const boardToRename = path.join(fixture.allowedRoot, `RenameMove-${transportMode}`);

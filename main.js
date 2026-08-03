@@ -34,6 +34,7 @@ const { listOllamaModels, runSmartCardActionWithOllama, suggestCardTasksWithOlla
 const { buildExternalPublishedCalendarFeed } = require('./lib/externalPublishedCalendar');
 const { importTrello, importObsidian, importTasksMd } = require('./lib/importers');
 const { duplicateBoard } = require('./lib/boardDuplication');
+const { initializeNewBoard } = require('./lib/boardCreation');
 const { duplicateCard } = require('./lib/cliBoard');
 const obsidianIntegration = require('./lib/obsidianIntegration');
 const { startSignboardMcpServer } = require('./lib/mcpServer');
@@ -4233,6 +4234,11 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     case 'listDirectories': {
       const boardRoot = requireReadableBoardRoot(event.sender, args[0]);
       return listBoardDirectories(boardRoot, { includeArchive: true });
+    }
+
+    case 'initializeNewBoard': {
+      const boardRoot = requireWritableBoardRoot(event.sender, args[0]);
+      return initializeNewBoard(boardRoot);
     }
 
     case 'readBoardSnapshot': {

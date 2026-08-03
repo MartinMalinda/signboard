@@ -32,8 +32,9 @@ the same PR. When a task lands, tick its boxes and list newly passing specs.
 
 Task 03 implementation is present in the Vue side-build (`Modal`, editor
 store/save queue, controlled notes wrapper, dates/timestamps, move/actions/Open
-With, and checklist editing). Tiptap is now the default notes engine;
-OverType remains available as a temporary fallback for rollback/testing.
+With, and checklist editing). Tiptap is now the only notes engine in the
+canonical Vue renderer; the temporary OverType fallback and Vue feature
+switch have been removed.
 Unit/build/type verification passes;
 the Vue Playwright suite was attempted but is not currently green, so no E2E
 rows are recorded as passing here. The focused legacy tests remain green except
@@ -266,7 +267,7 @@ theme test pass; `git diff --check` passes.
 - [x] Tiptap Markdown round-trip preserving start/scheduled/due markers without
       per-task date controls
 - [x] Raw URL decoration/open behavior, link editing, theme/accessibility hooks,
-      and temporary OverType fallback switch
+      and Tiptap-only notes integration
 
 Task 15 is implemented in `signboard-vue/src/lib/components/RichTextEditor.vue`
 behind the existing `CardNotesEditor.vue` boundary. Focused Task 15 unit tests,

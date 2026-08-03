@@ -78,7 +78,7 @@ function normalizeBoardSnapshot(boardRoot, snapshot = {}) {
     ? source.lists.map((listEntry) => normalizeBoardSnapshotList(boardRoot, listEntry)).filter((listEntry) => listEntry.listName)
     : [];
 
-  return {
+  const normalized = {
     ok: source.ok !== false,
     boardRoot: String(source.boardRoot || boardRoot || '').trim(),
     boardName: String(source.boardName || '').trim(),
@@ -88,6 +88,12 @@ function normalizeBoardSnapshot(boardRoot, snapshot = {}) {
     lists,
     errors: Array.isArray(source.errors) ? source.errors : [],
   };
+  if (Object.prototype.hasOwnProperty.call(source, 'v2')) {
+    normalized.v2 = source.v2 && typeof source.v2 === 'object' && !Array.isArray(source.v2)
+      ? source.v2
+      : null;
+  }
+  return normalized;
 }
 
 async function readBoardSnapshotForRender(boardRoot, options = {}) {

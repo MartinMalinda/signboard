@@ -73,7 +73,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `signboard-vue/src/lib/components/` - Shared Button, Tooltip, Dropdown, Modal, Close, and Muuri grid primitives; component smoke tests live beside them.
 - `signboard-vue/src/lib/components/RichTextEditor.vue` - Controlled Tiptap Markdown card-notes editor with native nested task checkboxes, link editing, raw URL decorations, Shiki-backed fenced-code highlighting, and external-body refresh support.
 - `signboard-vue/src/lib/codeHighlight.ts` - ProseMirror highlight plugin wiring for the Vue Tiptap editor, using fine-grained Shiki language/theme bundles and preserving Markdown code-block language attributes.
-- `signboard-vue/src/components/editor/CardNotesEditor.vue` - Card-editor notes integration boundary with the Tiptap default and temporary OverType fallback switch.
+- `signboard-vue/src/components/editor/CardNotesEditor.vue` - Card-editor notes integration boundary for the Tiptap-only notes surface.
 - `signboard-vue/src/styles/_tokens.scss` - Sass compatibility tokens for shared primitives; active theme values remain CSS custom properties in `static/styles.css`.
 - `signboard-vue/vite.config.ts` - Vue/Vite aliases, relative Electron build base, and Sass preprocessing.
 - `signboard-vue/lib/` - Framework-free ESM pure modules used by the canonical Vue renderer and covered by unit tests.

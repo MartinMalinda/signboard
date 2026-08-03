@@ -101,8 +101,8 @@ maintainability over framework idioms or abstraction-heavy design.
   names it (e.g. `components/board/CardItem.vue`, not
   `components/board/BoardCardItem.vue`).
 - Imperative-library integration happens in exactly one place each:
-  SortableJS in `useSortable()`, FDatepicker in `useDatepicker()`, OverType
-  in its wrapper component, Feather in `FeatherIcon.vue`. Never call
+  SortableJS in `useSortable()`, FDatepicker in `useDatepicker()`, Feather in
+  `FeatherIcon.vue`. Never call
   `feather.replace()` or `new Sortable(...)` from a feature component.
 
 ## 7. Signboard invariants (carry over from CODEX.md)

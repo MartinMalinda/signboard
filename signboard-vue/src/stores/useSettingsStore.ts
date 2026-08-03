@@ -12,12 +12,12 @@ import { useBoardDataStore } from './useBoardDataStore'
 import { useStaticModalStore } from './useStaticModalStore'
 import { useBoardsStore, normalizeBoardPath } from './useBoardsStore'
 import { useUiStore } from './useUiStore'
-import type { AppSettings, BoardLabel, BoardSettings, DirectorySelection, ExternalCalendarStatus, GlobalShortcutStatus, OllamaStatus, SmartCardAction } from '../types'
+import type { AppSettings, BoardLabel, BoardSettings, DirectorySelection, ExternalCalendarStatus, GlobalShortcutStatus, OllamaStatus, SmartCardAction, V2BoardProfile, V2StageKey } from '../types'
 import { applyBoardThemeToElement, COLOR_SCHEMES } from '../../lib/boardTheme.js'
 
 export { COLOR_SCHEMES } from '../../lib/boardTheme.js'
 
-export const SETTINGS_PANELS = Object.freeze(['app', 'notifications', 'smart-actions', 'general', 'labels', 'colors', 'workflow', 'obsidian', 'import'] as const)
+export const SETTINGS_PANELS = Object.freeze(['app', 'notifications', 'smart-actions', 'general', 'project', 'labels', 'colors', 'workflow', 'obsidian', 'import'] as const)
 export type SettingsPanel = typeof SETTINGS_PANELS[number]
 
 export const SETTINGS_NAVIGATION = Object.freeze([
@@ -25,11 +25,31 @@ export const SETTINGS_NAVIGATION = Object.freeze([
   { id: 'notifications', label: 'Notifications', group: 'App Settings' },
   { id: 'smart-actions', label: 'Smart Actions', group: 'App Settings' },
   { id: 'general', label: 'General', group: 'Current Board' },
+  { id: 'project', label: 'Project', group: 'Current Board' },
   { id: 'labels', label: 'Labels', group: 'Current Board' },
   { id: 'colors', label: 'Appearance', group: 'Current Board' },
   { id: 'workflow', label: 'Workflow', group: 'Current Board' },
   { id: 'obsidian', label: 'Obsidian', group: 'Current Board' },
   { id: 'import', label: 'Import', group: 'Current Board' },
+] as const)
+
+export const V2_DASHBOARD_SECTION_OPTIONS = Object.freeze([
+  { id: 'critical', label: 'Critical', description: 'P0/P1 and high-risk work.' },
+  { id: 'next_best_work', label: 'Next best work', description: 'Ranked work with enough shape to act on.' },
+  { id: 'low_hanging_fruit', label: 'Low-hanging fruit', description: 'Small, bounded, reversible work.' },
+  { id: 'agent_loops', label: 'Agent loops', description: 'Ready P2 work that passes autonomous policy.' },
+  { id: 'blocked', label: 'Blocked', description: 'Work waiting on a dependency.' },
+] as const)
+
+export const V2_STAGE_OPTIONS = Object.freeze([
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'shaping', label: 'Shaping' },
+  { id: 'ready', label: 'Ready' },
+  { id: 'active', label: 'Active' },
+  { id: 'review', label: 'Review' },
+  { id: 'blocked', label: 'Blocked' },
+  { id: 'done', label: 'Done' },
+  { id: 'dropped', label: 'Dropped' },
 ] as const)
 
 const LABEL_COLORS = ['#f59e0b', '#a855f7', '#14b8a6', '#ec4899', '#84cc16', '#f97316']
@@ -97,6 +117,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const boardName = computed(() => data.boardName || boards.activeBoardName)
     const boardPath = computed(() => boardRoot.value.replace(/\/+$/, ''))
     const actions = computed(() => appSettings.value.ai.smartCardActions)
+    const v2Profile = computed(() => (boardSettings.value?.v2 || {}) as V2BoardProfile)
 
     function enqueue(task: () => Promise<void>) {
       saveQueue = saveQueue.then(task).catch((nextError) => { console.error('Settings save failed.', nextError); error.value = String(nextError instanceof Error ? nextError.message : nextError) })
@@ -242,6 +263,15 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     async function applyColorToOpenBoards() { for (const root of boards.openBoardPaths) await window.board.updateBoardSettings?.(root, { colorScheme: boardSettings.value?.colorScheme || 'default', themeOverrides: boardSettings.value?.themeOverrides || { light: {}, dark: {} } }); ui.announceStatus('Applied board colors to open boards.') }
     async function setWorkflow(partial: Record<string, unknown>) { await saveBoard({ workflow: { ...workflow.value, ...partial } }) }
+    async function setV2(partial: Partial<V2BoardProfile>) { await saveBoard({ v2: { ...v2Profile.value, ...partial } }) }
+    async function setV2DashboardSections(sections: string[]) { await setV2({ dashboard: { ...(v2Profile.value.dashboard || {}), sections } }) }
+    async function setV2CardDisplay(partial: Record<string, unknown>) { await setV2({ cardDisplay: { ...(v2Profile.value.cardDisplay || {}), ...partial } }) }
+    async function setV2Defaults(partial: Record<string, unknown>) { await setV2({ cardDefaults: { ...(v2Profile.value.cardDefaults || {}), ...partial } }) }
+    async function setV2Stage(stage: V2StageKey, listName: string) {
+      const stages = { ...(v2Profile.value.stages || {}) }
+      stages[stage] = listName ? [listName] : []
+      await setV2({ stages })
+    }
     const boardCalendarIncluded = computed(() => (boardSettings.value?.externalPublishedCalendar as { include?: boolean } | undefined)?.include !== false)
     async function setExternalCalendarInclude(include: boolean) { await saveBoard({ externalPublishedCalendar: { ...(boardSettings.value?.externalPublishedCalendar as Record<string, unknown> || { include: true }), include } }) }
     async function setWorkflowList(listName: string, checked: boolean) {
@@ -269,5 +299,5 @@ export const useSettingsStore = defineStore('settings', () => {
       } catch (nextError) { error.value = String(nextError instanceof Error ? nextError.message : nextError) } finally { importInProgress.value = '' }
     }
 
-    return { isOpen, activePanel, appSettings, boardSettings, boardRoot, boardPath, boardName, listNames, labels, workflow, actions, loading, saving, error, boardStatus, duplicateStatus, obsidianStatus, importInProgress, importSummary, importWarnings, ollamaStatus, externalCalendarStatus, globalShortcutStatus, expandedActionIds, boardCalendarIncluded, hasBoard, summaryText, open, load, close, selectPanel, setTooltipsEnabled, setNotifications, setQuickAddShortcut, setExternalCalendar, setAi, setOllamaUrl, setOllamaModel, refreshOllamaModels, toggleActionExpanded, updateAction, moveAction, addAction, resetAction, removeAction, reorderActions, addLabel, updateLabel, deleteLabel, setColorScheme, cycleColorScheme, applyColorToOpenBoards, setWorkflow, setExternalCalendarInclude, setWorkflowList, isCompletedList, renameBoard, moveBoard, duplicateBoard, generateBase, openBase, importBoard, applyTheme }
+    return { isOpen, activePanel, appSettings, boardSettings, boardRoot, boardPath, boardName, listNames, labels, workflow, actions, v2Profile, loading, saving, error, boardStatus, duplicateStatus, obsidianStatus, importInProgress, importSummary, importWarnings, ollamaStatus, externalCalendarStatus, globalShortcutStatus, expandedActionIds, boardCalendarIncluded, hasBoard, summaryText, open, load, close, selectPanel, setTooltipsEnabled, setNotifications, setQuickAddShortcut, setExternalCalendar, setAi, setOllamaUrl, setOllamaModel, refreshOllamaModels, toggleActionExpanded, updateAction, moveAction, addAction, resetAction, removeAction, reorderActions, addLabel, updateLabel, deleteLabel, setColorScheme, cycleColorScheme, applyColorToOpenBoards, setWorkflow, setV2, setV2DashboardSections, setV2CardDisplay, setV2Defaults, setV2Stage, setExternalCalendarInclude, setWorkflowList, isCompletedList, renameBoard, moveBoard, duplicateBoard, generateBase, openBase, importBoard, applyTheme }
 })
