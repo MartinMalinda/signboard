@@ -10,8 +10,7 @@ This guide covers the desktop app and the core workflow for managing a project i
 - [Work with Cards](#work-with-cards)
 - [Start Dates, Due Dates, Labels, and Checklists](#start-dates-due-dates-labels-and-checklists)
 - [Search, Filters, and Open Boards](#search-filters-and-open-boards)
-- [Board and Planner Views](#board-and-planner-views)
-- [Planner](#planner)
+- [Board Views](#board-views)
 - [Archive and Restore](#archive-and-restore)
 - [Settings](#settings)
 - [Accessibility](#accessibility)
@@ -47,7 +46,7 @@ It also creates a starter card that explains the basics and includes a few upcom
 
 You can switch between multiple projects using the board tabs across the top of the window. Signboard does not cap the number of open boards; when they no longer fit, the tab strip shows an `N more` control that opens the quick board switcher.
 
-Press `Cmd/Ctrl + K` from any screen to open the quick board switcher, then type an open board name and press `Enter`. You can also close open boards from the switcher result list.
+Press `Cmd/Ctrl + K` from any screen to open the quick board switcher, then type an open board name and press `Enter`. The same field searches card titles and body text in the current board; select a card result and press `Enter` to open it. You can also close open boards from the switcher result list.
 
 ## Work with Lists
 
@@ -152,19 +151,21 @@ The same paperclip menu can link local files, folders, web URLs, app deep links,
 
 Linked objects appear in the card editor as removable chips. Click the object name to open it, or click its remove control to unlink it from the card without deleting the underlying file, folder, or note. If a linked Obsidian note cannot be found, Signboard keeps the link, marks the chip as missing, and offers controls to recreate the note, relink it to another Markdown note, or remove the link. Cards with linked objects also show a small paperclip count in Kanban and Table views.
 
+Links to other Signboard cards in card notes render as compact card links. Hover over one for 300ms to show its clamped title and Edit/Open actions. Clicking the chip opens the related card immediately on top of the current editor, so closing it returns to the previous card. Canonical `signboard://open-card` links and relative Markdown card links are supported.
+
 New or edited cards include flat Obsidian-friendly properties such as `title`, `signboard_board`, `signboard_list`, `status`, `signboard_uri`, and `related`, plus structured `linked_objects` when the card has linked files, folders, URLs, app links, or Obsidian notes. Canonical Signboard-generated filenames also include `signboard_id`; existing Markdown files with ad-hoc names do not need a custom ID and use a relative-path Signboard link instead. When a board is inside a vault, Signboard automatically creates `Signboard Board.base` for Obsidian Bases and keeps it current while it is still Signboard-managed. If you customize the Base in Obsidian, Signboard leaves it alone until you choose `Settings > Obsidian > Generate Base` again.
 
 Signboard also includes an optional desktop-only Obsidian companion plugin in `obsidian-plugin/`. Copy or symlink that folder into your vault as `.obsidian/plugins/signboard-companion` and enable it from Obsidian's Community plugins settings. The plugin can open and copy Signboard links, attach the active Obsidian note to a Signboard card, open cards by `obsidian://signboard?cardId=...`, and add a folder context-menu action named `Create Signboard`. That action asks first, then adds board metadata/list folders, treats existing child folders as lists, moves top-level Markdown notes into a To-do list, and opens the board in Signboard. When you delete an Obsidian note that is linked from Signboard cards, the plugin asks before removing those linked objects from the cards.
 
 ## Start Dates, Due Dates, Labels, and Checklists
 
-These features are what make cards show up in Planner and filters.
+These features make card dates visible and available to date-aware integrations.
 
 ### Card start dates
 
 Every card can have a start date in addition to a due date. Use a start date when work is scheduled to begin or become actionable before it is due.
 
-Start dates appear on cards, in Table's `Start` column, in Planner date views, and in date-aware filters. On Kanban cards and in the card editor, start and due dates share one compact `Dates` control. Click the calendar icon or date range to open both fields.
+Start dates appear on cards and in date-aware integrations. On Kanban cards and in the card editor, start and due dates share one compact `Dates` control. Click the calendar icon or date range to open both fields.
 
 ### Card due dates
 
@@ -173,8 +174,7 @@ Every card can have a due date.
 Once a card has a due date, it becomes visible in:
 
 - date displays on the card
-- due-date-aware filters
-- Planner
+- due-date-aware integrations
 - daily due notifications if enabled in app settings
 
 ### Task list items with start and due dates
@@ -191,7 +191,7 @@ Example:
 - [x] Review copy
 ```
 
-Task dates are separate from the card’s main start and due dates. Open checklist item start/due dates are included in Planner, so a card can surface because one of its unchecked checklist items is dated even if the card itself has no top-level date. Once that checklist item is checked off, its date stays in the Markdown but no longer keeps the card in date-based views. CLI due filters expose `--task-status open|any` when you need to choose whether checked task due markers count.
+Task dates are separate from the card’s main start and due dates. Unchecked checklist item dates remain available in Markdown and CLI metadata even when a card has no top-level date. Once that checklist item is checked off, its date stays in the Markdown but is not treated as actionable by default. CLI due filters expose `--task-status open|any` when you need to choose whether checked task due markers count.
 
 ### Labels
 
@@ -213,21 +213,19 @@ If a card contains checklist items, Signboard shows progress based on completed 
 
 ### Search
 
-Use the search field in the header. Reminder: `Cmd/Ctrl + F` to focus the search field.
+Use the `Search cards` control in the header. It opens the quick switcher and transfers focus to the switcher's search field. Reminder: `Cmd/Ctrl + F` opens it from the board workspace.
 
-Search matches card title and body text.
-
-From the search field, press `Enter` or `Arrow Down` to focus the first visible matching card. While a card title is focused, use arrow keys to move between visible matches, `Enter` or `Space` to open the card, and `Esc` to return to the search field. Press `Esc` again from the search field to clear the search.
+Type to search open boards and card title/body text in the current board. Use the arrow keys to move through matches and `Enter` to switch boards or open the selected card. Press `Esc` to close the switcher.
 
 ### Label filters
 
-Use the filter button in the header to narrow the visible cards by your board labels. When filters are active, Signboard shows a compact summary chip beside search; click it to clear the active filters. Use Planner for date-based views and filters.
+Use the filter button in the header to narrow the visible cards by your board labels. When filters are active, Signboard shows a compact summary chip beside search; click it to clear the active filters.
 
 When a filter popover is open, use arrow keys, `Home`, and `End` to move through its controls. Press `Esc` to close the popover and return focus to the button that opened it.
 
-## Board and Planner Views
+## Board Views
 
-Board context can be Kanban or Table. Dated planning happens in Planner.
+Board context can be Kanban or Table.
 
 ### Kanban
 
@@ -235,77 +233,15 @@ Kanban is the board view. Use it for day-to-day drag-and-drop organization. Card
 
 ### Table
 
-Table is an active-board view for scanning and bulk-managing cards in board/list order. It uses the same board search, label filters, date filters, task progress badges, linked-object counts, and completed-list workflow rules as Kanban.
+Table is an active-board view for scanning and bulk-managing cards in board/list order. It uses the same label filters, task progress badges, linked-object counts, and completed-list workflow rules as Kanban. Use the header search control for quick-switcher card search.
 
 Use the bottom view dock to switch to Table. Click a card title or row to open the normal card editor. Use the row's list dropdown to move a card to another list; moved cards land at the top of the destination list.
 
-Table includes `Start`, `Due`, `Updated`, and `Created` columns plus list filtering and sorting. Filter to one list, all completed lists, or all lists. Sort by `Updated, oldest first` to find cards you have not touched in a while, or by `Created, oldest first` to find your oldest cards. Search and filters apply first, then the Table sort orders the visible cards.
+Table columns are ordered `Card`, `List`, `Tasks`, `Labels`, `Links`, `Depends on`, `Blocked By`, then the V2 score columns when available. Card and V2 score headers support PrimeVue sorting; the dashboard's `Dashboard priority` preset uses the same tie-break order as the Dashboard and can be cleared back to board order. Filter to one list, all completed lists, or all lists. Label and dashboard section filters apply before the table sort.
+The Dashboard's Priority queue may show explainable `High Risk`, `High Damage`, `Wide Impact`, and `Tail Risk` markers. These are informational signals; risk and security value contribute to Priority ordering. The Impact view sorts all unfinished work by positive opportunity, engineering, enablement, and discovery value, with effort weighted lightly; cards without enough positive-value signal fall lower rather than being filtered out.
+Impact is a broad dashboard view, not a label repeated on every Kanban or Dashboard card; derived chips are reserved for more specific states such as Blocked, Agent-ready, and Quick win.
 
 Use the row checkboxes to select visible cards for bulk actions. After selecting one card, hold `Shift` while checking another row to select the range between them. The header checkbox selects the currently visible rows only. Bulk actions can archive selected cards, move them to another list, add or remove labels, set or clear start dates, and set or clear due dates.
-
-### Dated Views
-
-Planner Calendar, This Week, Day, and Agenda place cards and dated task items on dates across your open boards. Calendar and This Week use Monday-first weeks.
-
-Use it when you want to answer questions like:
-
-- What is due this month?
-- Which days are overloaded?
-- Which cards have dated checklist items?
-- What dates do I have open?
-
-### Switch views
-
-- Use the bottom view dock to switch between Planner, Kanban, and Table. Kanban is centered in the dock as the default board view.
-- `Cmd/Ctrl + 1`: Kanban, closing Planner if it is open
-- `Cmd/Ctrl + Option/Alt + 1`: Table, closing Planner if it is open
-- `Cmd/Ctrl + 2`: Planner Calendar for all open boards
-- `Cmd/Ctrl + 3`: Planner This Week for all open boards
-- `Cmd/Ctrl + 4`: Planner Day for all open boards
-- `Cmd/Ctrl + 5`: Planner Agenda for all open boards
-- `Cmd/Ctrl + Option/Alt + 2`: Planner Calendar for the current board
-- `Cmd/Ctrl + Option/Alt + 3`: Planner This Week for the current board
-- `Cmd/Ctrl + Option/Alt + 4`: Planner Day for the current board
-- `Cmd/Ctrl + Option/Alt + 5`: Planner Agenda for the current board
-
-## Planner
-
-Planner is a workspace-level view for dated work across your currently open boards. It is the left-most item in the bottom view dock when at least one board is open.
-
-Open Planner from the bottom view dock or press `Cmd/Ctrl + Shift + P`. Planner slides over the board tabs and board content, so it is clear you are no longer looking at a single board.
-
-Planner includes:
-
-- Calendar
-- This Week
-- Day
-- Agenda
-
-Planner cards show their source as `Board · List`, with that source pill tinted from the source board's color scheme. Clicking a Planner card opens the normal card editor and switches the active board behind Planner when needed, so labels and list moves stay tied to the card’s real board.
-
-Planner defaults to all open boards. Use the scope toggle to narrow to the current board, or use the filter menu to choose a custom set of open boards.
-
-Planner search matches card title, body, board name, and list name. Planner filters can narrow by date (`Today`, `Overdue`, `Next 7 days`, `Next 14 days`, or `Next 30 days`), completed-card visibility, and open board. When Planner is scoped to the current board only, the filter menu also includes that board's labels.
-
-From Planner search, press `Enter` or `Arrow Down` to focus the first visible Planner card. Arrow keys move through the visible Planner cards, `Enter` or `Space` opens the focused card, and `Esc` returns focus to Planner search.
-
-Planner hides cards from completed lists by default. Each board can auto-detect lists named `Done`, `Completed`, `Complete`, `Closed`, `Finished`, `Resolved`, or `Shipped`, and you can override those choices in Settings. Use the Planner filter menu when you want completed dated cards shown for historical review.
-
-Planner uses your light/dark mode but keeps the default Signboard color palette instead of inheriting the active board color scheme.
-
-### Planner shortcuts
-
-- `Cmd/Ctrl + Shift + P`: open or close Planner
-- `Cmd/Ctrl + 2`: Calendar for all open boards
-- `Cmd/Ctrl + 3`: This Week for all open boards
-- `Cmd/Ctrl + 4`: Day for all open boards
-- `Cmd/Ctrl + 5`: Agenda for all open boards
-- `Cmd/Ctrl + Option/Alt + 2`: Calendar for the current board
-- `Cmd/Ctrl + Option/Alt + 3`: This Week for the current board
-- `Cmd/Ctrl + Option/Alt + 4`: Day for the current board
-- `Cmd/Ctrl + Option/Alt + 5`: Agenda for the current board
-
-Inside Planner, `Cmd/Ctrl + 1` switches directly to Kanban. `Cmd/Ctrl + Option/Alt + 1` switches directly to Table. The bottom dock always shows the active workspace view.
 
 ## Archive and Restore
 
@@ -408,7 +344,7 @@ You can also apply the color scheme to all currently open boards.
 
 The `Workflow` section controls which lists count as completed work for the current board.
 
-Completed-list cards and checked-off task date markers keep their dates, but Planner date views, Planner date filters, and daily due reminders hide them by default so finished work does not look actionable.
+Completed-list cards and checked-off task date markers keep their dates, but daily due reminders hide them by default so finished work does not look actionable.
 
 Auto-detection is enabled by default. You can turn it off, manually choose completed lists, or uncheck an auto-detected list.
 
@@ -452,17 +388,8 @@ On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 - `Cmd/Ctrl + K`: switch between currently open boards
 - `Cmd/Ctrl + N`: quick add a card to any open board
 - `Cmd/Ctrl + Shift + N`: create a list
-- `Cmd/Ctrl + 1`: return to Kanban and close Planner
-- `Cmd/Ctrl + Option/Alt + 1`: switch to Table and close Planner
-- `Cmd/Ctrl + 2`: open Planner Calendar for all open boards
-- `Cmd/Ctrl + 3`: open Planner This Week for all open boards
-- `Cmd/Ctrl + Shift + P`: open or close Planner
-- `Cmd/Ctrl + 4`: open Planner Day for all open boards
-- `Cmd/Ctrl + 5`: open Planner Agenda for all open boards
-- `Cmd/Ctrl + Option/Alt + 2`: open Planner Calendar for the current board
-- `Cmd/Ctrl + Option/Alt + 3`: open Planner This Week for the current board
-- `Cmd/Ctrl + Option/Alt + 4`: open Planner Day for the current board
-- `Cmd/Ctrl + Option/Alt + 5`: open Planner Agenda for the current board
+- `Cmd/Ctrl + 1`: return to Kanban
+- `Cmd/Ctrl + Option/Alt + 1`: switch to Table
 - `Cmd/Ctrl + ,`: open Settings
 - `Cmd/Ctrl + Shift + D`: toggle light and dark mode
 - `Cmd + Control + Shift + C` on macOS, `Ctrl + Alt + Shift + C` elsewhere: cycle board color schemes
@@ -470,16 +397,16 @@ On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 - `Cmd/Ctrl + Shift + ]`: move the open card to the next list
 - `Cmd/Ctrl + Option/Alt + Shift + Backspace`: archive the open card
 - `Cmd/Ctrl + Shift + A`: open Archive
-- `Cmd/Ctrl + F`: focus board search or Planner search
+- `Cmd/Ctrl + F`: open the quick switcher from the board search control
 - `Esc`: close open modals
 
-In board search, Planner search, and archive search, `Enter` or `Arrow Down` moves from the search field to the first visible result, arrow keys move between visible results, and `Enter` or `Space` opens or selects the focused result.
+The header's `Search cards` control opens the quick switcher and transfers focus to its search field. Type to search open boards and cards in the current board; `Enter` opens the selected card or switches to the selected board.
 
 In board tabs, use arrow keys, `Home`, and `End` to move across visible tabs. Press `Enter` or `Space` to switch boards, or `Delete` / `Backspace` to close the focused board tab.
 
 In list actions, label/filter popovers, and Settings sections, use arrow keys, `Home`, and `End` to move through options. `Esc` closes popovers and restores focus to the opener.
 
-When a card is open, workspace-level shortcuts such as create, board switcher, Planner/view switching, Settings, Archive, and search close the card first. Card-specific shortcuts such as moving or archiving the open card still act on that card.
+When a card is open, workspace-level shortcuts such as create, board switcher, view switching, Settings, Archive, and search close the card first. Card-specific shortcuts such as moving or archiving the open card still act on that card.
 
 You can also open the shortcut helper from `Help > Keyboard Shortcuts`.
 

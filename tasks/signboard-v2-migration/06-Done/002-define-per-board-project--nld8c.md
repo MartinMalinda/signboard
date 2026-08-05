@@ -1,5 +1,6 @@
 ---
 title: Define per-board project profile and dashboard contract
+historical: true
 labels:
   - discovery
   - dashboard

@@ -35,8 +35,8 @@ execution:
   boundedness: 3
   isolation: 2
   coordination_complexity: 3
-  autonomous_execution_blocked: true
-  do_not_autorun: true
+  ceiling: supervised_implementation
+  background_selection: false
 framework_status: active
 framework_version: 1
 kind: epic
@@ -73,8 +73,8 @@ signboard_v2:
     boundedness: 3
     isolation: 2
     coordination_complexity: 3
-    autonomous_execution_blocked: true
-    do_not_autorun: true
+    ceiling: supervised_implementation
+    background_selection: false
   eligibility:
     readiness: true
     dependencies: true

@@ -1,5 +1,6 @@
 ---
 title: Add a board-level Project settings panel for V2 profile and display defaults
+historical: true
 labels:
   - ux
   - dashboard

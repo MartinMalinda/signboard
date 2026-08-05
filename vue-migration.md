@@ -25,7 +25,7 @@ explicit `SIGNBOARD_RENDERER=legacy` rollback/testing boundary.
 | Area | Size | Notes |
 |---|---|---|
 | Renderer source (`app/**`) | ~26,500 lines, 36 modules | Concatenated into `app/signboard.js` |
-| Static shell (`index.html`) | 752 lines | Modals, popovers, dock, Planner overlay markup |
+| Static shell (`index.html`) | 752 lines | Modals, popovers, and dock markup |
 | Styles (`static/styles.css`) | 6,402 lines | Reused as-is by the Vue renderer |
 | DOM-building call sites | ~700 | `createElement` / `innerHTML` / `appendChild` / `replaceChildren` |
 | Direct DOM lookups | 403 | `getElementById` / `querySelector` |
@@ -36,10 +36,9 @@ explicit `SIGNBOARD_RENDERER=legacy` rollback/testing boundary.
 
 1. `app/modals/toggleEditCardModal.js` — 5.4k lines, 271 DOM calls
 2. `app/board/boardLabels.js` — 4.1k lines
-3. `app/board/plannerView.js` — 2.1k lines
-4. `app/board/boardViews.js` — 1.7k lines
-5. `app/board/tableView.js` — 1.5k lines
-6. `app/board/archiveBrowser.js` — 1.5k lines
+3. `app/board/boardViews.js` — workspace view wiring
+4. `app/board/tableView.js` — 1.5k lines
+5. `app/board/archiveBrowser.js` — 1.5k lines
 
 ### Legacy architecture (what we're replacing)
 
@@ -161,23 +160,14 @@ in `signboard-vue/src/`; the right column shows the legacy module each replaces.
 | `BoardView.vue` | `app/board/renderBoard.js` (dispatch, missing-board) |
 | `KanbanBoard.vue` | Kanban branch of `renderBoard.js` |
 | `ListColumn.vue` / `ListColumnHeader.vue` | `app/lists/createListElement.js` |
-| `CardItem.vue` | `app/cards/createCardElement.js` (shared Kanban/Table/Planner) |
+| `CardItem.vue` | `app/cards/createCardElement.js` (shared Kanban/Table) |
 | `CardBadges.vue` | `app/utilities/taskList.js` + `linkedObjects.js` badges |
 | `CardDatesControl.vue` | Compact start/due control in `createCardElement.js` |
 | `LabelChips.vue` | Label chip rendering |
 | `AddListPhantom.vue` / `EmptyBoardCta.vue` / `MissingBoardAlert.vue` | `renderBoard.js` |
 | `TableView.vue` / `TableRow.vue` / `TableBulkActions.vue` / `TableSortControls.vue` | `app/board/tableView.js` |
 
-### 5.3 Planner
-
-| Component | Replaces / source |
-|---|---|
-| `PlannerOverlay.vue` / `PlannerHeader.vue` | `#plannerOverlay` + `app/board/plannerView.js` |
-| `PlannerCalendar.vue` / `PlannerWeek.vue` / `PlannerDay.vue` / `PlannerAgenda.vue` | `plannerView.js` + `boardViews.js` helpers |
-| `PlannerFilterPopover.vue` | `#plannerFilterPopover` |
-| `TemporalCard.vue` | Temporal cards in `boardViews.js` |
-
-### 5.4 Card editor (decomposition of `toggleEditCardModal.js`)
+### 5.3 Card editor (decomposition of `toggleEditCardModal.js`)
 
 `EditCardModal.vue` (lifecycle, save orchestration) · `CardTitleField.vue` ·
 `CardNotesEditor.vue` (OverType wrapper) · `CardDatesPopover.vue` ·
@@ -218,7 +208,6 @@ revisit as a directive later.
 | `useLabelsStore` | `__boardLabelState`, filter state, workflow settings |
 | `useSearchStore` | `__boardSearchState` |
 | `useViewStore` | `__boardViewState`, dock state |
-| `usePlannerStore` | `__plannerViewState` |
 | `useTableStore` | `__boardTableState` |
 | `useAppSettingsStore` | `__signboardAppSettingsState` |
 | `useEditorStore` | Open-card editor state, dirty/clean tracking |
@@ -247,8 +236,7 @@ Executed tasks: **[tasks/01–05](./tasks/)** cover the spine:
 Follow-on tasks (files to be created when 01–05 land):
 
 6. Table view (+ bulk actions) and board view switching.
-7. Planner overlay: Calendar/This Week/Day/Agenda, scopes, Planner filters.
-8. Settings: app panels (General/Notifications/Smart Actions) + board panels
+7. Settings: app panels (General/Notifications/Smart Actions) + board panels
    (General/Labels/Appearance/Workflow/Obsidian/Import).
 9. Archive browser + board switcher + About/Sponsor/shortcuts/vault modals.
 10. Editor extras: linked objects (incl. file-drop), Smart Card Actions (AI),
@@ -270,7 +258,6 @@ Summary groups:
   Quick Add
 - [ ] Search/labels/filters parity (visible-card matrix)
 - [ ] Table view + bulk actions
-- [ ] Planner (4 views, scopes, filters, card opening)
 - [ ] Settings (all 9 panels) + imports UI
 - [ ] Archive browser, board switcher, static modals
 - [ ] Editor extras: linked objects, Smart Actions, URL marking
@@ -302,7 +289,7 @@ Summary groups:
 
 - **Total:** ~4–8 weeks single-developer equivalent to full parity + cutover.
 - **Distribution:** scaffold ~5%, shell/board data ~10%, editor core ~20%,
-  Kanban interactions ~10%, search/labels/filters ~10%, Table/Planner ~15%,
+  Kanban interactions ~10%, search/labels/filters ~10%, Table ~8%,
   Settings ~8%, editor extras ~10%, remaining surfaces + cutover ~12%.
 - **Biggest risks:** editor fidelity (Task 03 + extras) and behavior hidden
   in legacy implicit wiring.

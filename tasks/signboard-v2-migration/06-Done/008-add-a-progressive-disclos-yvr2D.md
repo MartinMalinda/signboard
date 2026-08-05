@@ -1,5 +1,6 @@
 ---
 title: Add a progressive-disclosure Work details section to the card editor
+historical: true
 labels:
   - ux
   - renderer

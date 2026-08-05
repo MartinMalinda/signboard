@@ -46,9 +46,8 @@ popover reach parity with legacy `app/board/boardLabels.js` +
 
 ## Out of scope
 
-- Labels settings panel editing (Settings task), Planner-local search/filters
-  (Planner task), Table-view filtering (Table task — design `cardFilters.js`
-  so it serves all three).
+- Labels settings panel editing (Settings task), Table-view filtering (Table
+  task — design `cardFilters.js` so it serves all board views).
 - Workflow settings editing (read-only use here).
 
 ## Steps

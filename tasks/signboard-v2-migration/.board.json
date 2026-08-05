@@ -120,8 +120,7 @@
         "workType": "product",
         "priorityClass": "P2"
       },
-      "validationPolicy": "framework_v1",
-      "retainPlanner": true
+      "validationPolicy": "framework_v1"
     }
   }
 }

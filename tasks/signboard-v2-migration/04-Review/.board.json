@@ -1,4 +1,16 @@
 {
   "version": 1,
-  "order": []
+  "order": [
+    "015-update-execution-policy-d-PNELU.md",
+    "016-remove-final-planner-help-V3fM6.md",
+    "014-route-boardtabs-through-t-txy9R.md",
+    "014-implement-direct-executio-PcJcc.md",
+    "015-resolve-new-execution-pol-y8Utu.md",
+    "014-complete-residual-planner-H59Zg.md",
+    "014-implement-owner-approved--BO8MQ.md",
+    "015-verify-approved-table-sea-mR4jl.md",
+    "011-implement-consistent-impa-vzVcG.md",
+    "003-share-one-v2-dashboard-se-Of9Aq.md",
+    "002-use-evaluator-owned-struc-dOrmu.md"
+  ]
 }

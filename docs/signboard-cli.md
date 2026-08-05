@@ -513,4 +513,4 @@ Checklist items may also contain start and due dates in the body:
 - [x] (due: 2026-04-01) Draft release notes
 ```
 
-Task due dates participate in CLI due-date filtering. Start/scheduled task dates are returned in JSON metadata for agents and used by the desktop Planner/date-filter views. Use `--task-status open` to limit task due matches to unchecked items, or `--task-status any` to include checked task due markers when you want historical matches.
+Task due dates participate in CLI due-date filtering. Start/scheduled task dates are returned in JSON metadata for agents and integrations. Use `--task-status open` to limit task due matches to unchecked items, or `--task-status any` to include checked task due markers when you want historical matches.

@@ -1,5 +1,6 @@
 ---
 title: Decide whether Planner remains a V2 surface or is retired
+historical: true
 labels:
   - discovery
   - dashboard

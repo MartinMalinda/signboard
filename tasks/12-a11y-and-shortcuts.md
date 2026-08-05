@@ -18,7 +18,7 @@ accessibility and shortcut contracts:
   reduced-motion/forced-colors CSS behavior applicable to Vue-rendered DOM.
   Status announcements continue through the shared `#signboardStatusRegion`.
 - `useShortcuts` now uses strict OS-aware primary modifiers, handles native
-  theme/view events, workspace view and Planner shortcuts, Quick Add/settings/
+  theme/view events, supported workspace view shortcuts, Quick Add/settings/
   archive/help, color-scheme cycling, and editor-scoped move/archive actions.
   `#modalKeyboardShortcuts` keeps the same action IDs and adds labelled section
   relationships for assistive technology.
@@ -35,12 +35,6 @@ accessibility and shortcut contracts:
 | Settings | Cmd+, | Ctrl+, | Settings modal |
 | Kanban | Cmd+1 | Ctrl+1 | Workspace dock |
 | Table | Cmd+Option+1 | Ctrl+Alt+1 | Workspace dock |
-| Planner Calendar | Cmd+2 | Ctrl+2 | Planner, all boards |
-| Planner This Week | Cmd+3 | Ctrl+3 | Planner, all boards |
-| Planner Day | Cmd+4 | Ctrl+4 | Planner, all boards |
-| Planner Agenda | Cmd+5 | Ctrl+5 | Planner, all boards |
-| Current-board Planner Calendar/Week/Day/Agenda | Cmd+Option+2/3/4/5 | Ctrl+Alt+2/3/4/5 | Planner current-board scope |
-| Toggle Planner | Cmd+Shift+P | Ctrl+Shift+P | Workspace dock/Planner |
 | Toggle theme | Cmd+Shift+D | Ctrl+Shift+D | Board menu/native View menu |
 | Cycle color scheme | Cmd+Ctrl+Shift+C | Ctrl+Alt+Shift+C | Board settings/theme state |
 | Move card left/right | Cmd+Shift+[/] | Ctrl+Shift+[/] | Open card editor |

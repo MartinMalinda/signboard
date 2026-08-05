@@ -1,5 +1,6 @@
 ---
 title: Define the V2 dashboard information hierarchy and first sections
+historical: true
 labels:
   - discovery
   - ux

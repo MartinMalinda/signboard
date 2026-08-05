@@ -90,7 +90,7 @@ suite remains blocked by SIGABRT during Electron launch.
 - [x] Existing search/date/label filters plus table list scopes
 - [x] Accessible row selection, shift ranges, select-all, and pruning
 - [x] Bulk archive, move, labels, and dates with snapshot reconciliation
-- [x] Planner/Kanban/Table dock switching and documented Vue shortcuts
+- [x] Kanban/Table dock switching and documented Vue shortcuts
 
 Task 06 implementation is present in the Vue side-build: `useViewStore`,
 `TableView`, the framework-free table model, snapshot-based rows, table bulk
@@ -101,24 +101,12 @@ switching. The known `test-board-views` baseline still stops at
 assertion in `app/lists/listActionsPopover.js`; Vue Electron Playwright still
 aborts with SIGABRT before page interaction.
 
-## Planner (Task 07)
+## Dated-work support
 
-- [x] Planner overlay/header with Calendar, This Week, Day, and Agenda views
-- [x] All-open-board, current-board, and selected-board scopes
-- [x] Planner search, Today/Overdue/Next 7/14/30 filters, label filters, and completed visibility
-- [x] Incomplete task/card temporal dates, completed-list exclusion, and source board/list context
-- [x] Source board color treatment and cross-board card opening
-- [x] Workspace dock and Planner keyboard shortcuts
-
-Task 07 implementation is present in the Vue side-build: snapshot-backed Planner
-records, pure date bucketing/filtering, scoped board selection, source context,
-date drag persistence, cross-board editor opening, and the four Planner views
-are wired. Focused unit coverage passes for date bucketing, filter composition,
-and cross-board opening. Vue type-check/build/unit verification passes. The
-known `test-board-views` baseline still stops at `scripts/test-board-views.js:638`
-on the existing add-list shortcut-hint assertion in
-`app/lists/listActionsPopover.js`; Vue Electron Playwright remains blocked by
-SIGABRT during Electron launch.
+Dated work remains available through card start/due fields, incomplete task
+date metadata, Kanban/Table rendering, due notifications, and the external
+published calendar. No retired workspace surface, dock action, or shortcut is
+part of the supported product.
 
 ## Settings (Task 08)
 
@@ -249,12 +237,12 @@ points remain blocked by Electron launch `SIGABRT` at
 
 - [x] Active-board color scheme application on Vue Kanban and Table surfaces
 - [x] Legacy light/dark palette set and runtime variable semantics
-- [x] Scoped board styling that leaves Planner on its default palette
+- [x] Scoped board styling for active Kanban/Table board surfaces
 - [x] Board-switch/theme-toggle reapplication and forced-colors compatibility
 
 Task 14 centralizes the legacy nine-scheme palette in
 `signboard-vue/lib/boardTheme.js`, applies the active light/dark variables to
-`#board`, and keeps Planner's existing self-contained palette unchanged.
+`#board` without changing document-level theme behavior.
 Focused coverage passes for scheme selection, light/dark application, scope,
 and cleanup. Vue type-check/build/unit tests and the focused legacy board-label
 theme test pass; `git diff --check` passes.

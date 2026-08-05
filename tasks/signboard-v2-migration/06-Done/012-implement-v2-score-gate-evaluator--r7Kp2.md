@@ -1,5 +1,6 @@
 ---
 title: Implement the pure V2 score and gate evaluator
+historical: true
 labels:
   - data-model
   - testing

@@ -507,9 +507,8 @@ execution:
   boundedness: 4
   isolation: 4
 
-  autonomous_execution_blocked: false
-  agent_execution_blocked: false
-  do_not_autorun: false
+  ceiling: supervised_implementation
+  background_selection: false
 
   required_reviews: []
 
@@ -1706,7 +1705,23 @@ A4 should be opt-in rather than the default.
 
 ---
 
-# 30. Autonomous-execution hard gates
+# 30. Execution-policy contract
+
+V2 uses one execution ceiling and one independent background-selection control:
+
+```yaml
+execution:
+  ceiling: human_only
+  background_selection: false
+```
+
+Supported ceilings are `human_only`, `analysis_planning`, `supervised_implementation`, `autonomous_pull_request`, and `autonomous_merge` (policy-permitted), from most restrictive to least restrictive. Background selection controls whether an otherwise eligible card may be selected automatically; it never raises the ceiling.
+
+Missing or invalid `execution.ceiling` defaults to `human_only`. Missing or invalid `execution.background_selection` defaults to `false`. Defaults must remain visible in evaluator warnings/defaults.
+
+Signboard records this policy for planning and eligibility only. It has no real agent runner, unattended execution loop, pull-request executor, or merge executor. Selecting an autonomous ceiling does not start work.
+
+## 30.1 Autonomous-execution hard gates
 
 The following normally cap execution at A2, regardless of the calculated score:
 
@@ -1730,21 +1745,7 @@ The following normally cap execution at A2, regardless of the calculated score:
 
 An agent can still investigate or prepare a patch, but it cannot run unattended through completion.
 
-Use:
-
-```yaml
-execution:
-  autonomous_execution_blocked: true
-```
-
-For circumstances where no agent implementation is permitted:
-
-```yaml
-execution:
-  agent_execution_blocked: true
-```
-
-A manual override may tighten restrictions freely. Loosening a restriction requires a written reason and should have an expiration date.
+P0 and P1 cards are always capped at A2. A ceiling below `autonomous_pull_request` caps the computed autonomy class accordingly; `autonomous_merge` remains subject to all A4 requirements above. A manual policy decision may lower the ceiling, but no card or agent may raise it implicitly.
 
 ---
 
@@ -1868,8 +1869,8 @@ Filter:
 status = ready
 priority_class = P2
 Autonomy Class in [A3, A4]
-autonomous_execution_blocked = false
-do_not_autorun = false
+execution.ceiling in [autonomous_pull_request, autonomous_merge]
+execution.background_selection = true
 unblocked
 ```
 
@@ -2199,7 +2200,8 @@ status = ready
 not blocked
 not_before is null or in the past
 priority_class = P2
-do_not_autorun = false
+execution.ceiling in [autonomous_pull_request, autonomous_merge]
+execution.background_selection = true
 ```
 
 ## 37.2 Apply policy gates
@@ -2320,7 +2322,7 @@ Recommended rules:
    - Direct incident evidence, or
    - Human ratification.
 4. A4 authorization requires human or repository policy approval.
-5. An agent cannot remove a human-set `do_not_autorun`.
+5. An agent cannot raise `execution.ceiling` or enable `execution.background_selection` without authorization.
 6. An agent can tighten execution restrictions without approval.
 7. An agent should not inflate the score of its own follow-up card merely to continue working.
 8. Newly discovered optional work must not silently expand the active card.
@@ -2521,7 +2523,8 @@ delivery:
   data_sensitivity: 5
 
 execution:
-  autonomous_execution_blocked: true
+  ceiling: supervised_implementation
+  background_selection: false
 ```
 
 Interpretation:
@@ -2945,7 +2948,14 @@ function geometricMean(values) {
 }
 
 function autonomyScore(card) {
-  if (card.execution.agent_execution_blocked) return 0;
+  const ceilingCap = {
+    human_only: 0,
+    analysis_planning: 54,
+    supervised_implementation: 74,
+    autonomous_pull_request: 89,
+    autonomous_merge: 100,
+  }[card.execution.ceiling] ?? 0;
+  if (ceilingCap === 0) return 0;
 
   const base =
     100 *
@@ -2968,11 +2978,8 @@ function autonomyScore(card) {
     Math.min(100, base - penalty),
   );
 
-  if (card.execution.autonomous_execution_blocked) {
-    return Math.min(calculated, 74);
-  }
-
-  return calculated;
+  const hardGate = card.priority_class === 'P0' || card.priority_class === 'P1';
+  return Math.min(calculated, hardGate ? Math.min(ceilingCap, 74) : ceilingCap);
 }
 
 function agentPickIndex(priority, autonomy, health) {

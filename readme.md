@@ -19,11 +19,9 @@ Signboard is free for personal use. If you are using Signboard for your work, it
 - 🌙 Light and dark mode variants for all color schemes
 - 🏷 Custom labels per board
 - 🗓 Compact calendar controls for card start/due dates, with task-level date markers supported in Markdown
-- 📋 Bottom view dock for Planner, Kanban, and Table, including card age columns, sorting, list filtering, and bulk actions in Table
-- 🗂 Planner workspace view for actionable dated work across open boards
+- 📋 Bottom view dock for Kanban and Table, including card age columns, sorting, list filtering, and bulk actions in Table
 - 📆 Optional local External Published Calendar feed for calendar app subscriptions
 - 🔮 Obsidian-friendly properties, Bases generation, linked objects, linked-object counts, and `signboard://` card links
-- 🎨 Board-colored source pills in Planner date views
 - ✅ Completed-list workflow settings that preserve due-date history
 - ✅ Progress counters on cards
 - 🔎 Live search
@@ -70,20 +68,11 @@ Vue `dist` output, shared styles, and vendored renderer libraries.
 On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 
 - `Cmd/Ctrl + /`: open keyboard shortcuts
-- `Cmd/Ctrl + K`: switch between currently open boards
+- `Cmd/Ctrl + K`: switch between currently open boards or search and open a card in the current board
 - `Cmd/Ctrl + N`: quick add a card to any open board
 - `Cmd/Ctrl + Shift + N`: create a list
-- `Cmd/Ctrl + 1`: return to Kanban and close Planner
-- `Cmd/Ctrl + Option/Alt + 1`: switch to Table and close Planner
-- `Cmd/Ctrl + 2`: open Planner Calendar for all open boards
-- `Cmd/Ctrl + 3`: open Planner This Week for all open boards
-- `Cmd/Ctrl + Shift + P`: open or close Planner
-- `Cmd/Ctrl + 4`: open Planner Day for all open boards
-- `Cmd/Ctrl + 5`: open Planner Agenda for all open boards
-- `Cmd/Ctrl + Option/Alt + 2`: open Planner Calendar for the current board
-- `Cmd/Ctrl + Option/Alt + 3`: open Planner This Week for the current board
-- `Cmd/Ctrl + Option/Alt + 4`: open Planner Day for the current board
-- `Cmd/Ctrl + Option/Alt + 5`: open Planner Agenda for the current board
+- `Cmd/Ctrl + 1`: return to Kanban
+- `Cmd/Ctrl + Option/Alt + 1`: switch to Table
 - `Cmd/Ctrl + ,`: open Settings
 - `Cmd/Ctrl + Shift + D`: toggle light and dark mode
 - `Cmd + Control + Shift + C` on macOS, `Ctrl + Alt + Shift + C` elsewhere: cycle board color schemes
@@ -91,14 +80,14 @@ On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 - `Cmd/Ctrl + Shift + ]`: move the open card to the next list
 - `Cmd/Ctrl + Option/Alt + Shift + Backspace`: archive the open card
 - `Cmd/Ctrl + Shift + A`: open Archive
-- `Cmd/Ctrl + F`: focus board search or Planner search
+- `Cmd/Ctrl + F`: open the quick switcher from the board search control
 - `Esc`: close open modals
 
-In board search, Planner search, and archive search, `Enter` or `Arrow Down` moves from the search field to the first visible result, arrow keys move between visible results, and `Enter` or `Space` opens or selects the focused result.
+The header's `Search cards` control opens the quick switcher and transfers focus to its search field. Type to search open boards and cards in the current board; `Enter` opens the selected card or switches to the selected board.
 
 Board tabs, list actions, label/filter popovers, and Settings sections support arrow-key navigation. `Home` and `End` jump to the edges, `Esc` closes popovers, and `Delete` / `Backspace` closes a focused board tab.
 
-When a card is open, workspace-level shortcuts such as create, board switcher, Planner/view switching, Settings, Archive, and search close the card first. Card-specific shortcuts such as moving or archiving the open card still act on that card.
+When a card is open, workspace-level shortcuts such as create, board switcher, view switching, Settings, Archive, and search close the card first. Card-specific shortcuts such as moving or archiving the open card still act on that card.
 Use a Kanban list header’s plus button to open Add Card directly for that list, or use the header `Card` button / `Cmd/Ctrl + N` to open Quick Add. In the Quick Add card modal, choose the board and list before creating the card. `Shift + Enter` creates the card, opens it immediately, and focuses the notes field. App Settings can also register an optional global Quick Add shortcut that works while Signboard is open.
 
 You can also open the shortcut helper from `Help > Keyboard Shortcuts`.

@@ -20,8 +20,8 @@ checks the packaged-file contract without producing an installer.
 
 Meaningful pure behavior from the legacy VM suites was migrated into the
 `signboard-vue/lib/` modules and Vue unit coverage across task parsing, date
-filters, snapshots, Table/Planner bucketing, metadata, accessibility, and
-shortcut models. The legacy VM suites were not deleted because they still
+filters, snapshots, Table metadata, accessibility, and shortcut models. The
+legacy VM suites were not deleted because they still
 provide rollback-renderer coverage. `scripts/test-board-views.js` remains
 blocked at its existing `scripts/test-board-views.js:638` add-list shortcut-hint
 assertion in the previously modified `app/lists/listActionsPopover.js`.

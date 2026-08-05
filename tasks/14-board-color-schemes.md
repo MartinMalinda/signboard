@@ -11,10 +11,8 @@ are installed so the existing app theme toggle switches modes without losing
 the selected board scheme. Board snapshot restore, board switching, settings
 changes, and theme toggles all reapply the active scheme.
 
-The variables are scoped to `#board`; the document root and Planner overlay are
-not changed. Planner therefore retains its default palette, with its existing
-per-board source pills still using source-theme colors. Existing forced-colors
-rules continue to override board borders, focus outlines, and selected rows.
+The variables are scoped to `#board`; existing forced-colors rules continue to
+override board borders, focus outlines, and selected rows.
 
 ## Verification
 

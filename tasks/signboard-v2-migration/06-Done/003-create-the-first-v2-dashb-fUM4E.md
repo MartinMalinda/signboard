@@ -1,5 +1,6 @@
 ---
 title: Create the first V2 dashboard surface beside Kanban and Table
+historical: true
 labels:
   - dashboard
   - renderer

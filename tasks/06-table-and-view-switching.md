@@ -5,9 +5,9 @@ legacy table DOM vocabulary and use the existing transactional bridge APIs.
 
 ## Scope
 
-- Add a per-board workspace view store and accessible Planner placeholder,
-  Kanban, and Table dock controls. Keep Cmd/Ctrl+1, Cmd/Ctrl+Option/Alt+1,
-  and Cmd/Ctrl+Shift+P aligned with the documented view shortcuts.
+- Add a per-board workspace view store and accessible Kanban and Table dock
+  controls. Keep Cmd/Ctrl+1 and Cmd/Ctrl+Option/Alt+1 aligned with the
+  documented view shortcuts.
 - Render Table rows from `readBoardSnapshot` data, with the legacy columns,
   board-order/timestamp/due/title sorts, existing search/date/label filters,
   list scope filters, timestamps, task/link metadata, and row/list controls.
@@ -26,7 +26,7 @@ legacy table DOM vocabulary and use the existing transactional bridge APIs.
   remain combined with the table list scope.
 - Selection and bulk actions are explicit, deterministic, and reconciled after
   every successful mutation; no renderer-side filesystem reorder loop is added.
-- Planner remains a clearly identified placeholder until the Planner task.
+- The workspace dock exposes only supported Kanban and Table views.
 
 ## Verification
 
@@ -43,4 +43,3 @@ legacy table DOM vocabulary and use the existing transactional bridge APIs.
 - `npm run test:playwright:vue` — not green in this environment because
   Electron aborts with SIGABRT during launch before page interaction; no Vue
   E2E rows are claimed.
-

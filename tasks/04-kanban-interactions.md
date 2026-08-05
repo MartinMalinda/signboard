@@ -46,7 +46,7 @@ actions popover, and Quick Add across open boards.
 ## Out of scope
 
 - Board tab drag-reorder (lands with tab-strip work in a later task).
-- Table/Planner drag behaviors.
+- Table drag behaviors.
 - Board search/filter (Task 05).
 
 ## Steps

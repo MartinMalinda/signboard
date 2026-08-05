@@ -223,9 +223,7 @@ Spacing follows a compact 4/8/12/16px rhythm. Board and calendar grids use 16px 
 
 Header controls should remain compact and tool-like: icon buttons are 40px minimum, search is pill-shaped, board tabs sit flush against the board edge, and popovers open near their triggering controls.
 
-Planner Calendar, This Week, Day, and Agenda keep the same card language as Kanban, but compress cards into small temporal summaries with board/list context and task progress.
-
-Planner is a workspace-level overlay, not a board color-scheme surface. Its rail and full-screen panel should use the default Signboard light/dark palette so it does not appear to belong to the active board. Planner cards must preserve source context with board and list text because they gather work from multiple boards.
+Kanban and Table keep the same card language while supporting compact date metadata, task progress, labels, and linked-object counts.
 
 ## Elevation & Depth
 
@@ -278,5 +276,5 @@ Motion should respect `prefers-reduced-motion`: drag tilt, hover lift, animated 
 - Don't introduce broad gradients, decorative background shapes, or saturated page sections.
 - Don't make cards visually heavier than columns or modals.
 - Don't use multiple competing accent colors for core actions.
-- Don't hide essential file-first context such as list names, labels, due dates, or source list labels in temporal views.
+- Don't hide essential file-first context such as list names, labels, due dates, or source list labels in date-aware displays.
 - Don't use negative letter spacing or viewport-scaled type.

@@ -1,4 +1,4 @@
 interface:
   display_name: "Signboard Board Files"
-  short_description: "Manage Signboard Markdown boards safely"
-  default_prompt: "Use $signboard-board-management to inspect and update this Signboard board safely."
+  short_description: "Manage Signboard boards and V2 metadata safely"
+  default_prompt: "Use $signboard-board-management to inspect this Signboard board's V2 profile and update its cards safely."

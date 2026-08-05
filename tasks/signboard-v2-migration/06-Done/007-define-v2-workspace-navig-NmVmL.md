@@ -1,5 +1,6 @@
 ---
 title: 'Define V2 workspace navigation: Dashboard, Kanban, Table, and Planner boundary'
+historical: true
 labels:
   - discovery
   - ux

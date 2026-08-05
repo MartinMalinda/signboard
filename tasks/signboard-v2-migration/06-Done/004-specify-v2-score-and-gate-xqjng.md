@@ -1,5 +1,6 @@
 ---
 title: Specify V2 score and gate evaluator as pure domain logic
+historical: true
 labels:
   - discovery
   - data-model

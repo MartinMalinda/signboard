@@ -1,5 +1,6 @@
 ---
 title: 'V2 UI contract: dashboard, Kanban signals, and editor details'
+historical: true
 labels:
   - epic
   - ux

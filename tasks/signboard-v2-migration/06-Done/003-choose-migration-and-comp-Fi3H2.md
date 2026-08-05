@@ -1,5 +1,6 @@
 ---
 title: Choose migration and compatibility strategy for existing boards and cards
+historical: true
 labels:
   - discovery
   - migration

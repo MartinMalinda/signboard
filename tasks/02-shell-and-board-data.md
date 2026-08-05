@@ -56,7 +56,7 @@ Signboard.
 ## Out of scope
 
 - Any card/list mutation, drag/drop, popovers (except the minimal board menu),
-  search/filter behavior, card editor, Planner/Table.
+  search/filter behavior, card editor, or Table view.
 - `feather.replace()`-style global scans (Vue renders icons directly).
 - Board color-scheme application beyond reading settings if trivial (full
   Appearance settings come later).

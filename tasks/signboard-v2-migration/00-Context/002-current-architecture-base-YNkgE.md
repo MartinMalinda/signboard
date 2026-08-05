@@ -29,7 +29,6 @@ evidence:
   - lib/cardLifecycle.js
   - lib/boardSnapshot.js
   - signboard-vue/src/stores/useBoardDataStore.ts
-  - app/board/plannerView.js
   - app/board/tableView.js
 execution:
   specification_clarity: 5
@@ -108,8 +107,7 @@ signboard_v2:
 
 - Kanban renders cards by list.
 - Table provides dense scanning, sorting, bulk actions, and metadata columns.
-- Planner currently derives temporal placements across open boards, but it is an existing surface rather than a V2 requirement.
-- V2 may retire or absorb Planner; date/task metadata should remain reusable independently.
+- The retired Planner surface no longer participates in the view path; date/task metadata remains reusable independently.
 - Kanban, Table, and the future V2 dashboard are the preferred shared-projection consumers.
 
 ## Agent paths
@@ -123,7 +121,7 @@ Capture the current persistence, snapshot, renderer, and agent-path architecture
 # Acceptance criteria
 
 - [x] Persistence, read, view, and mutation seams are identified with source evidence.
-- [x] Existing Planner/date-task behavior is distinguished from V2 requirements.
+- [x] Existing date/task behavior is distinguished from V2 requirements.
 - [x] Compatibility constraints are available to the shaping and ready cards.
 
 # Verification

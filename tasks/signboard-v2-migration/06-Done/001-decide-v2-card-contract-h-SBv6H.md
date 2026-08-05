@@ -1,5 +1,6 @@
 ---
 title: 'Decide V2 card contract: hardcoded attributes versus generic fields'
+historical: true
 labels:
   - discovery
   - data-model

@@ -1,6 +1,6 @@
 ---
 name: signboard-board-management
-description: Manage Signboard boards stored as folders of Markdown cards, including discovery, card/frontmatter edits, labels, list/card ordering, archives, dates, and safe CLI/MCP or direct-filesystem workflows. Use when working in a project that contains a Signboard board or when an agent needs to inspect or update Signboard Markdown efficiently.
+description: Manage Signboard boards stored as folders of Markdown cards, including discovery, V2 project profiles and metadata, card/frontmatter edits, labels, list/card ordering, archives, dates, and safe CLI/MCP or direct-filesystem workflows. Use when working in a project that contains a Signboard board or when an agent needs to inspect or update Signboard Markdown efficiently.
 ---
 
 # Signboard Board Management
@@ -29,7 +29,7 @@ The important shape is:
 
 ```text
 Board/
-  .board.json                 # root list order + settings.labels and other board settings
+  .board.json                 # root list order + settings, including optional settings.v2
   To-do/
     .board.json               # order of card filenames in this list
     Plan-release-ab123.md     # card Markdown
@@ -116,7 +116,38 @@ Use these conventions:
 - Unknown/custom frontmatter keys are valid. Do not rebuild frontmatter from a small allowlist and accidentally discard project-specific metadata.
 - Legacy frontmatter formats and alternate keys may still be readable. If editing an existing card, preserve its meaning and prefer Signboard’s parser/CLI for normalization.
 - Checklist date markers are task-level metadata, not card frontmatter. Recognized prefixes include `(start: YYYY-MM-DD)`, `(scheduled: YYYY-MM-DD)`, and `(due: YYYY-MM-DD)`.
-- Completed task date markers and cards in completed workflow lists are normally non-actionable in Planner/date filters. Do not infer active work solely from the presence of a date.
+- Completed task date markers and cards in completed workflow lists are normally non-actionable. Do not infer active work solely from the presence of a date.
+
+## V2 project boards and cards
+
+Check the root `.board.json` before applying V2 semantics. A V2-enabled board has a `settings.v2` profile with `enabled: true`; newly created boards use the `default-product` profile by default, while older boards may be legacy-only. Do not add V2 metadata to a legacy card merely because a field name appears in arbitrary frontmatter.
+
+V2 card metadata is additive and namespaced under `signboard_v2`:
+
+```yaml
+signboard_v2:
+  contract_version: 1
+  kind: task                 # task, discovery, epic, or incident
+  work_type: product         # profile-supported work category
+  priority_class: P2        # P0, P1, P2, or P3
+  estimate:
+    effort_points: 3
+  depends_on: []             # related card titles
+  blocked_by: []             # related card titles
+  objective: ""
+  scope: ""
+  acceptance_criteria: []
+  verification: ""
+  parent: null
+  status_summary: ""
+  next_action: ""
+```
+
+The scoring/evaluator surface may also contain optional `opportunity`, `risk_prevented`, `delivery`, `modifiers`, and `execution` groups. Preserve these and any unknown V2 keys when editing. V2 relations currently use card titles as strings; preserve the existing spelling and do not silently convert them to IDs.
+
+V2 stage/status remains list-derived. Move a card between list directories with the normal move operation; do not invent or overwrite a separate status field in `signboard_v2`. When editing an existing card, preserve both legacy frontmatter and its `signboard_v2` namespace unless the requested migration explicitly changes them. V2 fields remain optional, and incomplete or legacy cards must stay readable.
+
+For the complete V2 operating model—card shaping, scoring, priority gates, delivery risk, QA, autonomy classes, specialized views, agent selection, and governance—read [references/v2-framework.md](references/v2-framework.md) before ranking or claiming work.
 
 ## Choose the safest mutation path
 
@@ -125,6 +156,8 @@ Use this order of preference:
 1. Signboard MCP tools, if connected and allowed. Read configuration/board state first, honor read-only mode and allowed roots, then use the purpose-built card/list/settings/archive operation.
 2. Signboard CLI, if installed. Use `--json` for reads and `--dry-run --json` before consequential writes.
 3. Direct Markdown/JSON edits only when the CLI/MCP is unavailable or the requested operation is not exposed.
+
+For V2 writes, prefer the V2-aware create/settings arguments exposed by the CLI or MCP. If a V2 metadata patch is not exposed by the selected tool, use the desktop editor or an atomic Markdown edit rather than putting V2 keys into an unrelated legacy field.
 
 Useful CLI patterns:
 
