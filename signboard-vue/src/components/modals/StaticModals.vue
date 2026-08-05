@@ -14,8 +14,7 @@ const TIP_URL = 'https://donate.stripe.com/14A3cw1ircpgeWGf928N206'
 const modifierLabel = isMacPlatform() ? 'Command' : 'Control'
 const shortcutRows: Array<{ section: string; items: Array<[string, string]> }> = [
   { section: 'Create', items: [['Quick add card', 'addCard'], ['Add list', 'addList']] },
-  { section: 'Switch Views', items: [['Kanban board', 'kanbanView'], ['Table board', 'tableView'], ['Planner Calendar, all boards', 'calendarView'], ['Planner This Week, all boards', 'thisWeekView']] },
-  { section: 'Planner', items: [['Open or close Planner', 'plannerToggle'], ['Calendar, all boards', 'calendarView'], ['This Week, all boards', 'thisWeekView'], ['Day, all boards', 'plannerDayView'], ['Agenda, all boards', 'plannerAgendaView'], ['Calendar, current board', 'calendarCurrentBoardView'], ['This Week, current board', 'thisWeekCurrentBoardView'], ['Day, current board', 'plannerDayCurrentBoardView'], ['Agenda, current board', 'plannerAgendaCurrentBoardView']] },
+  { section: 'Switch Views', items: [['Kanban board', 'kanbanView'], ['Table board', 'tableView']] },
   { section: 'Board', items: [['Switch board', 'switchBoard'], ['Settings', 'boardSettings'], ['Toggle light/dark mode', 'toggleTheme'], ['Cycle color scheme', 'cycleColorScheme'], ['Open archive', 'archiveBrowser']] },
   { section: 'Card', items: [['Move card left', 'moveCardLeft'], ['Move card right', 'moveCardRight'], ['Archive card', 'archiveCard']] },
   { section: 'Search', items: [['Focus search', 'focusSearch']] },

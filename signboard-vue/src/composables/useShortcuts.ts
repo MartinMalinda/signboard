@@ -1,8 +1,7 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import { isMacPlatform } from '../../lib/shortcutLabels.js'
 
-export type ShortcutView = 'planner' | 'kanban' | 'table'
-export type PlannerShortcutView = 'calendar' | 'this-week' | 'day' | 'agenda' | 'toggle'
+export type ShortcutView = 'kanban' | 'table'
 
 export interface ShortcutOptions {
   onQuickAdd: () => void | Promise<void>
@@ -13,7 +12,6 @@ export interface ShortcutOptions {
   onKeyboardShortcuts?: () => void | Promise<void>
   onArchive?: () => void | Promise<void>
   onView?: (view: ShortcutView) => void | Promise<void>
-  onPlanner?: (view: PlannerShortcutView, scope: 'all' | 'current') => void | Promise<void>
   onToggleTheme?: () => void | Promise<void>
   onCycleColorScheme?: () => void | Promise<void>
   onMoveCardLeft?: () => void | Promise<void>
@@ -64,7 +62,6 @@ export function createShortcutHandler(options: ShortcutOptions) {
       event.preventDefault(); void options.onSettings?.(); return
     }
     if (hasPrimaryOnly(event) && keyIs(event, 'k', 'KeyK')) {
-      if (editable) return
       event.preventDefault(); void options.onBoardSwitcher?.(); return
     }
     if (hasPrimaryOnly(event) && keyIs(event, '/', 'Slash')) {
@@ -74,10 +71,6 @@ export function createShortcutHandler(options: ShortcutOptions) {
     if (hasPrimaryOnly(event, { shift: true }) && keyIs(event, 'a', 'KeyA')) {
       if (editable) return
       event.preventDefault(); void options.onArchive?.(); return
-    }
-    if (hasPrimaryOnly(event, { shift: true }) && keyIs(event, 'p', 'KeyP')) {
-      if (editable) return
-      event.preventDefault(); void options.onPlanner?.('toggle', 'all'); return
     }
     if (hasPrimaryOnly(event, { shift: true }) && keyIs(event, 'd', 'KeyD')) {
       if (editable) return
@@ -104,17 +97,12 @@ export function createShortcutHandler(options: ShortcutOptions) {
     }
 
     if (editable) return
-    if (!hasPrimaryModifier(event) || event.shiftKey && !['1', '2', '3', '4', '5'].includes(event.key)) return
+    if (!hasPrimaryModifier(event) || event.shiftKey) return
 
     if (keyIs(event, '1', 'Digit1')) {
       if (event.altKey) { event.preventDefault(); void options.onView?.('table') }
       else if (!event.altKey) { event.preventDefault(); void options.onView?.('kanban') }
       return
-    }
-    const plannerViews = { '2': 'calendar', '3': 'this-week', '4': 'day', '5': 'agenda' } as const
-    const plannerView = plannerViews[event.key as keyof typeof plannerViews]
-    if (plannerView && !event.shiftKey) {
-      event.preventDefault(); void options.onPlanner?.(plannerView, event.altKey ? 'current' : 'all')
     }
   }
 }

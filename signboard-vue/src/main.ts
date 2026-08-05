@@ -5,6 +5,7 @@ import '@vendor/fdatepicker-3.0.24.min.css'
 import 'floating-vue/dist/style.css'
 
 import FloatingVue from 'floating-vue'
+import PrimeVue from 'primevue/config'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
@@ -22,6 +23,7 @@ loadVendorGlobals()
     const app = createApp(App)
     app.use(createPinia())
     app.use(FloatingVue)
+    app.use(PrimeVue, { unstyled: true })
     app.mount('#app')
   })
   .catch((error) => {

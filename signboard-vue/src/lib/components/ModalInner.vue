@@ -88,15 +88,31 @@ const overlayClass = computed(() => {
 });
 
 const clampPosition = (top: number, left: number) => {
-  const mH = modalContentRef.value?.offsetHeight || 0;
-  const mW = modalContentRef.value?.offsetWidth || 0;
   const vh = window.innerHeight;
   const vw = window.innerWidth;
   const gap = 8;
 
+  const element = modalContentRef.value;
+  const rect = element?.getBoundingClientRect();
+  const mH = rect?.height || element?.offsetHeight || 0;
+  const mW = rect?.width || element?.offsetWidth || 0;
+  // Clamp the rendered box. Small modals can have a CSS transform (and the
+  // enter transition briefly scales them), so offsetWidth/offsetHeight alone
+  // can leave the visible dialog outside the window.
+  const computedStyle = element ? window.getComputedStyle(element) : null;
+  const logicalLeft = Number.parseFloat(computedStyle?.left || '');
+  const logicalTop = Number.parseFloat(computedStyle?.top || '');
+  const renderedOffsetX = rect && Number.isFinite(logicalLeft) ? rect.left - logicalLeft : 0;
+  const renderedOffsetY = rect && Number.isFinite(logicalTop) ? rect.top - logicalTop : 0;
+
+  const minTop = gap - renderedOffsetY;
+  const maxTop = vh - mH - gap - renderedOffsetY;
+  const minLeft = gap - renderedOffsetX;
+  const maxLeft = vw - mW - gap - renderedOffsetX;
+
   return {
-    top: Math.max(gap, Math.min(top, vh - mH - gap)),
-    left: Math.max(gap, Math.min(left, vw - mW - gap)),
+    top: Math.max(minTop, Math.min(top, maxTop)),
+    left: Math.max(minLeft, Math.min(left, maxLeft)),
   };
 };
 
@@ -397,9 +413,10 @@ $spacing-y: $space * 3;
 .modal {
   position: relative;
   z-index: 2;
-  max-width: calc(100% - 16px);
-  max-height: 100%;
-  max-width: 100%;
+  box-sizing: border-box;
+  max-width: min(100%, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  min-width: 0;
   box-shadow:
     0 24px 60px color-mix(in oklab, var(--text) 18%, transparent),
     0 2px 8px color-mix(in oklab, var(--text) 10%, transparent);
@@ -412,7 +429,7 @@ $spacing-y: $space * 3;
   padding: 0;
 
   &.small {
-    min-width: 300px;
+    min-width: min(300px, calc(100vw - 16px));
   }
 
   &.large {
@@ -446,9 +463,11 @@ $spacing-y: $space * 3;
 }
 
 .modal-content {
+  box-sizing: border-box;
   width: 100%;
   height: auto;
   max-height: 100vh;
+  min-width: 0;
   position: relative;
   z-index: 12;
 }

@@ -38,10 +38,11 @@ describe('Task 12 accessibility and shortcut parity', () => {
   })
 
   it('matches OS-aware workspace shortcuts and preserves editor-scoped actions', () => {
-    const actions = { quickAdd: vi.fn(), addList: vi.fn(), table: vi.fn(), moveLeft: vi.fn(), archive: vi.fn() }
+    const actions = { quickAdd: vi.fn(), addList: vi.fn(), table: vi.fn(), switcher: vi.fn(), moveLeft: vi.fn(), archive: vi.fn() }
     const handler = createShortcutHandler({
       onQuickAdd: actions.quickAdd,
       onAddList: actions.addList,
+      onBoardSwitcher: actions.switcher,
       onView: (view) => { if (view === 'table') actions.table() },
       onMoveCardLeft: actions.moveLeft,
       onArchiveCard: actions.archive,
@@ -62,6 +63,11 @@ describe('Task 12 accessibility and shortcut parity', () => {
     Object.defineProperty(moveEvent, 'target', { configurable: true, value: notes })
     handler(moveEvent)
     expect(actions.moveLeft).toHaveBeenCalledTimes(1)
+
+    const switcherEvent = new KeyboardEvent('keydown', { key: 'k', code: 'KeyK', ctrlKey: true, bubbles: true })
+    Object.defineProperty(switcherEvent, 'target', { configurable: true, value: notes })
+    handler(switcherEvent)
+    expect(actions.switcher).toHaveBeenCalledTimes(1)
   })
 
   it('supports popover arrow/Home/End navigation and opener restoration', async () => {
@@ -87,5 +93,63 @@ describe('Task 12 accessibility and shortcut parity', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(document.activeElement).toBe(opener)
     wrapper.unmount()
+  })
+
+  it('repositions an open teleported popover after captured scroll and resize', async () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    let rect = { right: 220, bottom: 120 }
+    vi.spyOn(opener, 'getBoundingClientRect').mockImplementation(() => ({
+      ...rect,
+      left: rect.right - 40,
+      top: rect.bottom - 24,
+      width: 40,
+      height: 24,
+    }) as DOMRect)
+
+    const wrapper = mount(AppPopover, {
+      attachTo: document.body,
+      props: { isOpen: true, opener, onClose: vi.fn(), id: 'geometryPopover' },
+      slots: { default: '<div>Popover content</div>' },
+    })
+    await wrapper.vm.$nextTick()
+
+    const popover = document.querySelector('#geometryPopover') as HTMLElement
+    Object.defineProperties(popover, {
+      offsetWidth: { configurable: true, value: 200 },
+      offsetHeight: { configurable: true, value: 100 },
+    })
+    const scrollSource = document.createElement('div')
+    document.body.append(scrollSource)
+
+    scrollSource.dispatchEvent(new Event('scroll'))
+    expect(popover.style.left).toBe('20px')
+    expect(popover.style.top).toBe('126px')
+
+    rect = { right: 420, bottom: 220 }
+    window.dispatchEvent(new Event('resize'))
+    expect(popover.style.left).toBe('220px')
+    expect(popover.style.top).toBe('226px')
+
+    wrapper.unmount()
+  })
+
+  it('removes viewport positioning listeners when the popover unmounts', async () => {
+    const removeDocumentListener = vi.spyOn(document, 'removeEventListener')
+    const removeWindowListener = vi.spyOn(window, 'removeEventListener')
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    const wrapper = mount(AppPopover, {
+      attachTo: document.body,
+      props: { isOpen: true, opener, onClose: vi.fn() },
+    })
+
+    await wrapper.vm.$nextTick()
+    wrapper.unmount()
+
+    expect(removeDocumentListener.mock.calls.some(([type, , capture]) => type === 'scroll' && capture === true)).toBe(true)
+    expect(removeWindowListener.mock.calls.some(([type]) => type === 'resize')).toBe(true)
+    removeDocumentListener.mockRestore()
+    removeWindowListener.mockRestore()
   })
 })

@@ -6,7 +6,6 @@ import WorkspaceViewDock from './components/WorkspaceViewDock.vue'
 import DashboardView from './components/DashboardView.vue'
 import KanbanBoard from './components/board/KanbanBoard.vue'
 import TableView from './components/board/TableView.vue'
-import PlannerOverlay from './components/planner/PlannerOverlay.vue'
 import EmptyBoardCta from './components/board/EmptyBoardCta.vue'
 import MissingBoardAlert from './components/board/MissingBoardAlert.vue'
 import EditCardModal from './components/editor/EditCardModal.vue'
@@ -20,8 +19,7 @@ import { useShortcuts } from './composables/useShortcuts'
 import { useBoardsStore } from './stores/useBoardsStore'
 import { useBoardDataStore } from './stores/useBoardDataStore'
 import { useUiStore } from './stores/useUiStore'
-import { useViewStore, type WorkspaceView } from './stores/useViewStore'
-import { usePlannerStore, type PlannerView } from './stores/usePlannerStore'
+import { DASHBOARD_IMPACT_SORT_KEY, DASHBOARD_PRIORITY_SORT_KEY, useViewStore, type WorkspaceView } from './stores/useViewStore'
 import SettingsModal from './components/settings/SettingsModal.vue'
 import { useSettingsStore } from './stores/useSettingsStore'
 import { useArchiveStore } from './stores/useArchiveStore'
@@ -37,7 +35,6 @@ const boards = useBoardsStore()
 const data = useBoardDataStore()
 const ui = useUiStore()
 const view = useViewStore()
-const planner = usePlannerStore()
 const settings = useSettingsStore()
 const archive = useArchiveStore()
 const switcher = useBoardSwitcherStore()
@@ -53,6 +50,7 @@ let aboutDisposer: (() => void) | undefined
 let keyboardDisposer: (() => void) | undefined
 let nativeViewDisposer: (() => void) | undefined
 let themeDisposer: (() => void) | undefined
+let signboardCardLinkDisposer: (() => void) | undefined
 
 useAccessibility()
 
@@ -93,8 +91,8 @@ async function removeBoard() {
   syncBodyState()
 }
 
-async function openCard(cardPath: string) {
-  await editorModal.value?.openCard(cardPath)
+async function openCard(cardPath: string, options: { focusNotes?: boolean; stack?: boolean } = {}) {
+  await editorModal.value?.openCard(cardPath, options)
 }
 
 function openQuickAdd() { quickAddOpen.value = true }
@@ -125,23 +123,22 @@ async function duplicateCard(path: string) {
 function openArchive() { void archive.open() }
 function openBoardSwitcher() { switcher.open() }
 async function switchBoard(path: string) {
+  console.error('[App switchBoard start]', path, boards.activeBoardPath)
   if (editorModal.value) await editorModal.value.closeCard()
-  return boards.activateBoard(path)
+  const result = await boards.activateBoard(path)
+  console.error('[App switchBoard result]', path, result, boards.activeBoardPath)
+  return result
 }
 
 async function switchView(nextView: WorkspaceView) {
   if (editorModal.value) await editorModal.value.closeCard()
   if (nextView !== 'table') view.clearDashboardSectionFilter()
-  if (nextView === 'planner') {
-    planner.setView('calendar')
-    planner.setScope('all')
-    await planner.load()
-  }
   view.setView(nextView)
 }
 
 function openDashboardSection(section: string) {
   view.setDashboardSectionFilter(section)
+  view.setSortKey(section === 'impact' ? DASHBOARD_IMPACT_SORT_KEY : DASHBOARD_PRIORITY_SORT_KEY)
   void switchView('table')
 }
 
@@ -158,23 +155,17 @@ async function cycleColorScheme() {
   await settings.cycleColorScheme()
 }
 
-async function handlePlannerShortcut(nextView: PlannerView | 'toggle', scope: 'all' | 'current') {
-  if (!boards.activeBoardPath) return
-  if (nextView === 'toggle' && view.activeView === 'planner') { await switchView('kanban'); return }
-  if (editorModal.value) await editorModal.value.closeCard()
-  planner.setView(nextView === 'toggle' ? 'calendar' : nextView)
-  planner.setScope(scope)
-  await planner.load()
-  view.setView('planner')
-}
-
-useShortcuts({ onQuickAdd: openQuickAdd, onAddList: () => openAddList(), onFocusSearch: () => document.getElementById('boardSearchInput')?.focus(), onSettings: () => settings.open(), onBoardSwitcher: openBoardSwitcher, onKeyboardShortcuts: () => staticModals.openKeyboardShortcuts(), onArchive: openArchive, onView: switchView, onPlanner: handlePlannerShortcut, onToggleTheme: () => ui.toggleTheme(), onCycleColorScheme: cycleColorScheme, onMoveCardLeft: () => moveEditorAdjacent(-1), onMoveCardRight: () => moveEditorAdjacent(1), onArchiveCard: archiveEditorCard })
+useShortcuts({ onQuickAdd: openQuickAdd, onAddList: () => openAddList(), onFocusSearch: () => document.getElementById('boardSearchInput')?.focus(), onSettings: () => settings.open(), onBoardSwitcher: openBoardSwitcher, onKeyboardShortcuts: () => staticModals.openKeyboardShortcuts(), onArchive: openArchive, onView: switchView, onToggleTheme: () => ui.toggleTheme(), onCycleColorScheme: cycleColorScheme, onMoveCardLeft: () => moveEditorAdjacent(-1), onMoveCardRight: () => moveEditorAdjacent(1), onArchiveCard: archiveEditorCard })
 
 onMounted(async () => {
   ui.restoreTheme()
   syncBodyState()
   syncBoardTheme()
   themeDisposer = window.electronAPI.onToggleThemeMode?.(() => ui.toggleTheme())
+  signboardCardLinkDisposer = window.electronAPI.onOpenSignboardCardLink?.((payload) => {
+    const cardPath = String(payload?.cardPath || '')
+    if (cardPath) void openCard(cardPath, { stack: true })
+  })
   nativeViewDisposer = window.electronAPI.onSwitchBoardView?.((nextView) => { void switchView(nextView === 'table' ? 'table' : 'kanban') })
   if (window.electronAPI.onOpenQuickAddCard) quickAddDisposer = window.electronAPI.onOpenQuickAddCard(openQuickAdd)
   settingsDisposer = window.electronAPI.onOpenBoardSettings?.(() => { void settings.open() })
@@ -194,11 +185,11 @@ onMounted(async () => {
     isBlocked: () => Boolean(document.querySelector('[role="dialog"]:not([hidden]):not([aria-hidden="true"]), .app-popover:not(.hidden)')),
   })
 })
-onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisposer?.(); aboutDisposer?.(); keyboardDisposer?.(); nativeViewDisposer?.(); themeDisposer?.(); dueNotifications.stop(); externalSync.stop(); clearBoardThemeFromElement(document.getElementById('board')) })
+onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisposer?.(); aboutDisposer?.(); keyboardDisposer?.(); nativeViewDisposer?.(); themeDisposer?.(); signboardCardLinkDisposer?.(); dueNotifications.stop(); externalSync.stop(); clearBoardThemeFromElement(document.getElementById('board')) })
 </script>
 
 <template>
-  <AppHeader :on-quick-add="openQuickAdd" :on-open-settings="() => settings.open()" :on-open-archive="openArchive" :on-open-sponsor="() => staticModals.openSponsor()"><BoardTabs :on-open="openBoard" :on-open-switcher="openBoardSwitcher" /></AppHeader>
+  <AppHeader :on-quick-add="openQuickAdd" :on-open-settings="() => settings.open()" :on-open-archive="openArchive" :on-open-sponsor="() => staticModals.openSponsor()" :on-open-board-switcher="openBoardSwitcher"><BoardTabs :on-open="openBoard" :on-switch="switchBoard" :on-open-switcher="openBoardSwitcher" /></AppHeader>
   <main id="board" :class="{ 'board-view-dashboard': Boolean(boards.activeBoardPath) && view.activeView === 'dashboard', 'board-view-kanban': Boolean(boards.activeBoardPath) && view.activeView === 'kanban', 'board-view-table': Boolean(boards.activeBoardPath) && view.activeView === 'table' }">
     <template v-if="!boards.activeBoardPath"><EmptyBoardCta :on-open="openBoard" /></template>
     <MissingBoardAlert v-else-if="data.error" :board-path="boards.activeBoardPath" :on-locate="locateBoard" :on-remove="removeBoard" />
@@ -208,14 +199,13 @@ onBeforeUnmount(() => { quickAddDisposer?.(); settingsDisposer?.(); switcherDisp
     <div v-else aria-hidden="true"></div>
   </main>
   <WorkspaceViewDock :active-view="view.activeView" :dashboard-enabled="Boolean(data.snapshot?.v2)" :on-change="switchView" />
-  <PlannerOverlay :is-open="view.activeView === 'planner'" :on-close="() => switchView('kanban')" :on-open-card="openCard" />
   <EditCardModal ref="editorModal" />
   <AddCardModal :is-open="addCardOpen" :list-path="addCardListPath" :labels="data.snapshot?.boardSettings?.labels || []" :on-close="closeCreationModals" :on-created="createdCard" />
   <QuickAddCardModal :is-open="quickAddOpen" :on-close="closeCreationModals" :on-created="createdCard" />
   <AddListModal :is-open="addListOpen" :after-path="addListAfterPath" :on-close="closeCreationModals" :on-created="() => { addListOpen = false }" />
   <SettingsModal />
   <ArchiveBrowserModal />
-  <BoardSwitcherModal :on-switch="switchBoard" />
+  <BoardSwitcherModal :on-switch="switchBoard" :on-open-card="openCard" />
   <StaticModals />
   <div id="signboardStatusRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ ui.statusMessage }}</div>
 </template>

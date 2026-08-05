@@ -22,7 +22,7 @@
           <input id="boardPath" type="text" class="hidden" readonly>
         </div>
         <div id="boardControls">
-          <input id="boardSearchInput" type="search" placeholder="Search cards" aria-label="Search cards">
+          <input id="boardSearchInput" type="search" placeholder="Search cards" aria-label="Search cards" readonly aria-haspopup="dialog">
           <button id="quickAddHeaderButton" type="button" title="Quick add card" aria-label="Quick add card">
             <i data-feather="plus"></i>
             <span>Card</span>
@@ -42,32 +42,6 @@
       <div id="boardTabs" role="tablist" aria-label="Open Boards"></div>
     </div>
   </header>
-
-  <section id="plannerOverlay" class="planner-overlay hidden" aria-hidden="true" aria-labelledby="plannerTitle">
-    <div class="planner-panel">
-      <div class="planner-header">
-        <div class="planner-header-left">
-          <h2 id="plannerTitle">Planner</h2>
-          <div id="plannerViewTabs" class="planner-view-tabs" role="group" aria-label="Planner views"></div>
-          <div id="plannerScopeToggle" class="planner-scope-toggle" role="group" aria-label="Planner board scope"></div>
-          <span id="plannerScopeLabel" class="planner-scope-label" aria-live="polite"></span>
-        </div>
-        <div class="planner-header-controls">
-          <input id="plannerSearchInput" type="search" placeholder="Search planner" aria-label="Search planner">
-          <div class="planner-toolbar-group">
-            <button id="plannerFilterButton" type="button" title="Planner filters" aria-label="Planner filters">
-              <i data-feather="filter"></i>
-            </button>
-            <div id="plannerFilterPopover" class="label-popover planner-filter-popover hidden" aria-hidden="true"></div>
-          </div>
-          <button id="plannerCloseButton" class="planner-close-button" type="button" title="Close Planner" aria-label="Close Planner">
-            <i data-feather="x"></i>
-          </button>
-        </div>
-      </div>
-      <div id="plannerBody" class="planner-body"></div>
-    </div>
-  </section>
 
   <main id="board">
     <button id="emptyBoardCallToAction" class="empty-board-cta" type="button" title="Select a directory to create a board" aria-label="Select a directory to create a board">
@@ -119,10 +93,6 @@
   </div>
 
   <nav id="workspaceViewDock" class="workspace-view-dock" aria-label="Workspace views">
-    <button id="workspaceViewPlanner" class="workspace-view-dock-button" type="button" data-workspace-view="planner" title="Open Planner" aria-label="Open Planner">
-      <i data-feather="calendar"></i>
-      <span>Planner</span>
-    </button>
     <button id="workspaceViewKanban" class="workspace-view-dock-button is-active is-primary" type="button" data-workspace-view="kanban" title="Show Kanban view" aria-label="Show Kanban view">
       <i data-feather="columns"></i>
       <span>Kanban</span>
@@ -229,55 +199,6 @@
           <li>
             <span>Table board</span>
             <kbd data-shortcut-action="tableView">⌘ + ⌥ + 1</kbd>
-          </li>
-          <li>
-            <span>Planner Calendar, all boards</span>
-            <kbd data-shortcut-action="calendarView">⌘ + 2</kbd>
-          </li>
-          <li>
-            <span>Planner This Week, all boards</span>
-            <kbd data-shortcut-action="thisWeekView">⌘ + 3</kbd>
-          </li>
-        </ul>
-      </section>
-      <section class="keyboard-shortcuts-section" aria-labelledby="keyboard-shortcuts-section-planner">
-        <h3 id="keyboard-shortcuts-section-planner">Planner</h3>
-        <ul class="keyboard-shortcuts-list">
-          <li>
-            <span>Open or close Planner</span>
-            <kbd data-shortcut-action="plannerToggle">⌘ + ⇧ + P</kbd>
-          </li>
-          <li>
-            <span>Calendar, all boards</span>
-            <kbd data-shortcut-action="calendarView">⌘ + 2</kbd>
-          </li>
-          <li>
-            <span>This Week, all boards</span>
-            <kbd data-shortcut-action="thisWeekView">⌘ + 3</kbd>
-          </li>
-          <li>
-            <span>Day, all boards</span>
-            <kbd data-shortcut-action="plannerDayView">⌘ + 4</kbd>
-          </li>
-          <li>
-            <span>Agenda, all boards</span>
-            <kbd data-shortcut-action="plannerAgendaView">⌘ + 5</kbd>
-          </li>
-          <li>
-            <span>Calendar, current board</span>
-            <kbd data-shortcut-action="calendarCurrentBoardView">⌘ + ⌥ + 2</kbd>
-          </li>
-          <li>
-            <span>This Week, current board</span>
-            <kbd data-shortcut-action="thisWeekCurrentBoardView">⌘ + ⌥ + 3</kbd>
-          </li>
-          <li>
-            <span>Day, current board</span>
-            <kbd data-shortcut-action="plannerDayCurrentBoardView">⌘ + ⌥ + 4</kbd>
-          </li>
-          <li>
-            <span>Agenda, current board</span>
-            <kbd data-shortcut-action="plannerAgendaCurrentBoardView">⌘ + ⌥ + 5</kbd>
           </li>
         </ul>
       </section>
@@ -630,7 +551,7 @@
 
         <section id="boardSettingsPanelWorkflow" class="boardSettingsSection board-settings-panel" role="tabpanel" aria-hidden="true" aria-labelledby="boardSettingsNavWorkflow" data-settings-panel="workflow">
           <h3>Workflow</h3>
-          <p class="boardSettingsHint">Completed lists are hidden from Planner date views unless completed cards are shown in Planner filters.</p>
+          <p class="boardSettingsHint">Completed lists are tracked for workflow and due-date behavior.</p>
           <div class="board-settings-group">
             <div class="board-settings-toggle-row">
               <div>

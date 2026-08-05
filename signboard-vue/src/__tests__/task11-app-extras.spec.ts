@@ -69,6 +69,26 @@ describe('Task 11 app extras', () => {
     await editor.close()
   })
 
+  it('stacks related card editors and restores the previous draft when the top card closes', async () => {
+    window.board.readCard = vi.fn(async (path) => String(path).includes('second')
+      ? { frontmatter: { title: 'Second card' }, body: 'Second body' }
+      : { frontmatter: { title: 'First card' }, body: 'First body' })
+    const editor = useEditorStore()
+    await editor.open('/boards/demo/001-Doing-stock/first-card.md')
+    editor.setBody('First draft')
+
+    await editor.openStacked('/boards/demo/001-Doing-stock/second-card.md')
+    expect(editor.title).toBe('Second card')
+    expect(editor.stackDepth).toBe(1)
+
+    await editor.close()
+    expect(editor.title).toBe('First card')
+    expect(editor.body).toBe('First draft')
+    expect(editor.stackDepth).toBe(0)
+    await editor.close()
+    expect(editor.isOpen).toBe(false)
+  })
+
   it('reconciles a changed watch token through the snapshot store', async () => {
     vi.useFakeTimers()
     const boards = useBoardsStore(); boards.activeBoardPath = '/boards/demo/'

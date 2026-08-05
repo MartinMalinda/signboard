@@ -9,6 +9,17 @@ import { useLabelsStore } from './useLabelsStore'
 import { useSettingsStore } from './useSettingsStore'
 
 type Frontmatter = Record<string, unknown>
+type EditorOpenOptions = { focusNotes?: boolean; stack?: boolean }
+type EditorSnapshot = {
+  cardPath: string
+  title: string
+  body: string
+  frontmatter: Frontmatter
+  timestamps?: CardRead['timestamps']
+  diskKey: string
+  saveError: unknown
+  focusNotes: boolean
+}
 
 function cloneFrontmatter(value: Frontmatter) {
   return JSON.parse(JSON.stringify(value || {})) as Frontmatter
@@ -47,6 +58,7 @@ export const useEditorStore = defineStore('editor', () => {
   const saveError = ref<unknown>(null)
   const focusNotes = ref(false)
   const saveGeneration = ref(0)
+  const editorStack = ref<EditorSnapshot[]>([])
   const saveQueue = createSerializedSaveQueue({
     delay: 300,
     save: async (payload: { generation: number; path: string; title: string; body: string; frontmatter: Frontmatter }) => {
@@ -74,10 +86,22 @@ export const useEditorStore = defineStore('editor', () => {
     saveQueue.enqueue(currentPayload())
   }
 
-  async function open(path: string, options: { focusNotes?: boolean } = {}) {
+  function snapshot(): EditorSnapshot {
+    return {
+      cardPath: cardPath.value,
+      title: title.value,
+      body: body.value,
+      frontmatter: cloneFrontmatter(frontmatter.value),
+      timestamps: timestamps.value,
+      diskKey: diskKey.value,
+      saveError: saveError.value,
+      focusNotes: focusNotes.value,
+    }
+  }
+
+  async function load(path: string, options: EditorOpenOptions = {}) {
     const nextPath = String(path || '').trim()
     if (!nextPath) return false
-    if (isOpen.value) await close()
     loading.value = true
     saveGeneration.value += 1
     try {
@@ -98,6 +122,25 @@ export const useEditorStore = defineStore('editor', () => {
     } finally { loading.value = false }
   }
 
+  async function open(path: string, options: EditorOpenOptions = {}) {
+    if (isOpen.value) await closeAll()
+    editorStack.value = []
+    return load(path, options)
+  }
+
+  async function openStacked(path: string, options: EditorOpenOptions = {}) {
+    const nextPath = String(path || '').trim()
+    if (!nextPath) return false
+    if (!isOpen.value) return load(nextPath, options)
+    if (nextPath === cardPath.value) return true
+    await flush()
+    saveQueue.cancel()
+    editorStack.value.push(snapshot())
+    const opened = await load(nextPath, options)
+    if (!opened) editorStack.value.pop()
+    return opened
+  }
+
   async function flush() { await saveQueue.flush() }
 
   async function close() {
@@ -105,6 +148,29 @@ export const useEditorStore = defineStore('editor', () => {
     await flush()
     saveQueue.cancel()
     saveGeneration.value += 1
+    const previous = editorStack.value.pop()
+    if (previous) {
+      cardPath.value = previous.cardPath
+      title.value = previous.title
+      body.value = previous.body
+      frontmatter.value = cloneFrontmatter(previous.frontmatter)
+      timestamps.value = previous.timestamps
+      diskKey.value = previous.diskKey
+      saveError.value = previous.saveError
+      focusNotes.value = previous.focusNotes
+      return
+    }
+    isOpen.value = false
+    cardPath.value = ''
+    focusNotes.value = false
+  }
+
+  async function closeAll() {
+    if (!isOpen.value) return
+    await flush()
+    saveQueue.cancel()
+    saveGeneration.value += 1
+    editorStack.value = []
     isOpen.value = false
     cardPath.value = ''
     focusNotes.value = false
@@ -279,7 +345,8 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   return { isOpen, loading, cardPath, title, body, frontmatter, timestamps, focusNotes, isDirty, isSaving, saveError, linkedObjects,
-    listPathForCard, boardPathForCard, open, close, flush, setTitle, setBody, setDate, setLabels,
+    stackDepth: computed(() => editorStack.value.length),
+    listPathForCard, boardPathForCard, open, openStacked, close, closeAll, flush, setTitle, setBody, setDate, setLabels,
     refreshFromDiskIfClean, moveToList, archive, duplicate, openWith, queueSave,
     addLinkedObject, removeLinkedObject, openLinkedObject, recreateLinkedNote, relinkLinkedNote, createLinkedNote, runSmartAction, applySmartAction }
 })

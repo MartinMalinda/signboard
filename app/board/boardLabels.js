@@ -68,15 +68,6 @@ const SHORTCUT_ACTION_DEFINITIONS = Object.freeze({
   addList: Object.freeze({ key: 'N', usesPrimaryModifier: true, shiftKey: true }),
   kanbanView: Object.freeze({ key: '1', usesPrimaryModifier: true }),
   tableView: Object.freeze({ key: '1', usesPrimaryModifier: true, altKey: true }),
-  calendarView: Object.freeze({ key: '2', usesPrimaryModifier: true }),
-  thisWeekView: Object.freeze({ key: '3', usesPrimaryModifier: true }),
-  plannerDayView: Object.freeze({ key: '4', usesPrimaryModifier: true }),
-  plannerAgendaView: Object.freeze({ key: '5', usesPrimaryModifier: true }),
-  calendarCurrentBoardView: Object.freeze({ key: '2', usesPrimaryModifier: true, altKey: true }),
-  thisWeekCurrentBoardView: Object.freeze({ key: '3', usesPrimaryModifier: true, altKey: true }),
-  plannerDayCurrentBoardView: Object.freeze({ key: '4', usesPrimaryModifier: true, altKey: true }),
-  plannerAgendaCurrentBoardView: Object.freeze({ key: '5', usesPrimaryModifier: true, altKey: true }),
-  plannerToggle: Object.freeze({ key: 'P', usesPrimaryModifier: true, shiftKey: true }),
   focusSearch: Object.freeze({ key: 'F', usesPrimaryModifier: true }),
   switchBoard: Object.freeze({ key: 'K', usesPrimaryModifier: true }),
   boardSettings: Object.freeze({ key: ',', usesPrimaryModifier: true }),
@@ -799,52 +790,6 @@ function deriveThemePalette(themeMode, backgroundColor) {
   };
 }
 
-function getBoardThemePaletteFromSettings(boardSettings = {}, themeMode = 'light') {
-  const source = boardSettings && typeof boardSettings === 'object' ? boardSettings : {};
-  const mode = themeMode === 'dark' ? 'dark' : 'light';
-  const savedScheme = typeof source.colorScheme === 'string' ? getColorSchemeById(source.colorScheme) : null;
-  if (savedScheme && savedScheme[mode]) {
-    return { ...savedScheme[mode] };
-  }
-
-  const normalizedOverrides = normalizeThemeOverrides(source.themeOverrides);
-  const modeOverrides = normalizedOverrides[mode] || {};
-  const background = hasThemeModeOverride(modeOverrides)
-    ? modeOverrides.boardBackground
-    : DEFAULT_BOARD_THEME_BACKGROUNDS[mode];
-
-  return deriveThemePalette(mode, background);
-}
-
-function createBoardSourcePillThemeFromPalette(palette, themeMode = 'light') {
-  const mode = themeMode === 'dark' ? 'dark' : 'light';
-  const defaults = DEFAULT_BOARD_THEME_PALETTES[mode] || DEFAULT_BOARD_THEME_PALETTES.light;
-  const source = palette && typeof palette === 'object' ? palette : defaults;
-  const surface = normalizeHexColor(source.surface, defaults.surface);
-  const accent = normalizeHexColor(source.accent, defaults.accent);
-  const background = mixHexColors(accent, surface, mode === 'dark' ? 0.74 : 0.88);
-  const border = mixHexColors(accent, surface, mode === 'dark' ? 0.42 : 0.55);
-  const readableText = ensureMinContrast(accent, background, 4.5).color;
-
-  return {
-    background,
-    border,
-    color: readableText,
-    accent,
-  };
-}
-
-function getBoardTemporalSourceTheme(boardSettings = {}) {
-  const source = boardSettings && typeof boardSettings === 'object' ? boardSettings : {};
-  const colorScheme = typeof source.colorScheme === 'string' ? source.colorScheme : '';
-
-  return {
-    colorScheme,
-    light: createBoardSourcePillThemeFromPalette(getBoardThemePaletteFromSettings(source, 'light'), 'light'),
-    dark: createBoardSourcePillThemeFromPalette(getBoardThemePaletteFromSettings(source, 'dark'), 'dark'),
-  };
-}
-
 function normalizeThemeModeOverrides(rawModeOverrides) {
   const source = rawModeOverrides && typeof rawModeOverrides === 'object' ? rawModeOverrides : {};
   const boardBackground = normalizeHexColor(source.boardBackground, '');
@@ -917,6 +862,12 @@ function getBoardWorkflowListDisplayName(listName) {
   }
 
   return normalized;
+}
+
+// Keep the legacy Table renderer's display-name helper aligned with the
+// workflow/list naming helper while the rollback renderer remains supported.
+function getBoardListDisplayName(listName) {
+  return getBoardWorkflowListDisplayName(listName) || 'Untitled';
 }
 
 function normalizeBoardWorkflowListName(value) {
@@ -2535,9 +2486,6 @@ function persistBoardSettings(options = {}) {
       }
       if (shouldRenderBoard) {
         await renderBoard();
-        if (typeof isPlannerOpen === 'function' && isPlannerOpen() && typeof renderPlannerView === 'function') {
-          await renderPlannerView();
-        }
       }
     })
     .catch((error) => {

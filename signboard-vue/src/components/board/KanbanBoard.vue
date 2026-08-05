@@ -8,15 +8,13 @@ import ListColumn from './ListColumn.vue'
 import AddListPhantom from './AddListPhantom.vue'
 import { cardMatchesFilters } from '../../../lib/cardFilters.js'
 import { useLabelsStore } from '../../stores/useLabelsStore'
-import { useSearchStore } from '../../stores/useSearchStore'
 
 const data = useBoardDataStore()
 const boards = useBoardsStore()
 const ui = useUiStore()
 const labelsStore = useLabelsStore()
-const search = useSearchStore()
 const props = defineProps<{ onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onAddList?: (afterPath?: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void }>()
-const visibleCardPaths = computed(() => new Map(data.lists.map((list) => [list.listPath, new Set(list.cards.filter((card) => cardMatchesFilters(card, { query: search.query, selectedLabelIds: labelsStore.filterIds, dateFilter: labelsStore.dateFilter, isCompletedList: labelsStore.isCompletedList(list.listName) })).map((card) => card.cardPath))])))
+const visibleCardPaths = computed(() => new Map(data.lists.map((list) => [list.listPath, new Set(list.cards.filter((card) => cardMatchesFilters(card, { selectedLabelIds: labelsStore.filterIds, dateFilter: labelsStore.dateFilter, isCompletedList: labelsStore.isCompletedList(list.listName) })).map((card) => card.cardPath))])))
 
 useSortable(() => document.getElementById('board'), {
   kind: 'lists',

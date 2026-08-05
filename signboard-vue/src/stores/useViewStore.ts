@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type WorkspaceView = 'dashboard' | 'planner' | 'kanban' | 'table'
+export type WorkspaceView = 'dashboard' | 'kanban' | 'table'
 
-const VALID_VIEWS: WorkspaceView[] = ['dashboard', 'planner', 'kanban', 'table']
+export const DASHBOARD_PRIORITY_SORT_KEY = 'dashboard-priority'
+export const DASHBOARD_IMPACT_SORT_KEY = 'dashboard-impact'
+
+const VALID_VIEWS: WorkspaceView[] = ['dashboard', 'kanban', 'table']
 
 function normalizeView(value: unknown): WorkspaceView {
   const normalized = String(value || '').toLowerCase() as WorkspaceView

@@ -304,7 +304,6 @@ function createContext() {
   loadSource(context, 'app/board/boardSnapshot.js');
   loadSource(context, 'app/board/boardViews.js');
   loadSource(context, 'app/board/tableView.js');
-  loadSource(context, 'app/board/plannerView.js');
   loadSource(context, 'app/lists/listActionsPopover.js');
 
   const filterButton = new MockElement('button');
@@ -319,7 +318,7 @@ function createContext() {
   elements.set('workspaceViewDock', workspaceDock);
   elements.set('board', boardEl);
   elements.set('listActionsPopover', listActionsPopover);
-  for (const viewId of ['planner', 'kanban', 'table']) {
+  for (const viewId of ['kanban', 'table']) {
     const button = new MockElement('button');
     button.className = 'workspace-view-dock-button';
     button.dataset.workspaceView = viewId;
@@ -374,85 +373,6 @@ async function run() {
     completedListNames: ['002-Doing-abc12'],
     ignoredCompletedListNames: [],
   }), true);
-
-  const body = [
-    '- [ ] (due: 2026-03-10) Prep launch',
-    '- [ ] (due: 2026-03-10) Email team',
-    '- [ ] (due: 2026-03-12) Review launch notes',
-  ].join('\n');
-  const taskItems = context.parseTaskListItems(body);
-
-  const taskPlacement = context.createTemporalPlacementForDate({
-    cardPath: '/tmp/board-launch.md',
-    listName: '003-In Progress-abc12',
-    listDisplayName: 'In Progress',
-    title: 'Board launch',
-    due: '2026-03-10',
-    labels: [],
-    body,
-    taskSummary: { total: 3, completed: 0, remaining: 3 },
-    taskItems,
-    taskDueDates: context.getTaskListDueDates(body),
-  }, '2026-03-10');
-
-  assert(taskPlacement, 'expected task placement');
-  assert.strictEqual(taskPlacement.temporalReason, 'task');
-  assert.strictEqual(taskPlacement.temporalDisplayTitle, 'Prep launch +1 more');
-  assert.strictEqual(taskPlacement.temporalDisplaySubtitle, 'Board launch');
-  assert.strictEqual(taskPlacement.listDisplayName, 'In Progress');
-
-  const cardPlacement = context.createTemporalPlacementForDate({
-    cardPath: '/tmp/card-only.md',
-    listName: '001-Backlog-abc12',
-    listDisplayName: 'Backlog',
-    title: 'Card-only due date',
-    due: '2026-03-15',
-    labels: [],
-    body: 'Body',
-    taskSummary: { total: 0, completed: 0, remaining: 0 },
-    taskItems: [],
-    taskDueDates: [],
-  }, '2026-03-15');
-
-  assert(cardPlacement, 'expected card placement');
-  assert.strictEqual(cardPlacement.temporalReason, 'card');
-  assert.strictEqual(cardPlacement.temporalDisplayTitle, 'Card-only due date');
-  assert.strictEqual(cardPlacement.temporalDisplaySubtitle, '');
-  assert.strictEqual(cardPlacement.listDisplayName, 'Backlog');
-
-  const completedTaskOnCardDuePlacement = context.createTemporalPlacementForDate({
-    cardPath: '/tmp/card-due-completed-task.md',
-    listName: '001-Backlog-abc12',
-    listDisplayName: 'Backlog',
-    title: 'Card due with finished task',
-    due: '2026-03-10',
-    labels: [],
-    body: '- [x] (due: 2026-03-10) Finished prep',
-    taskSummary: { total: 1, completed: 1, remaining: 0 },
-    taskItems: context.parseTaskListItems('- [x] (due: 2026-03-10) Finished prep'),
-    taskDueDates: ['2026-03-10'],
-    incompleteTaskDueDates: [],
-  }, '2026-03-10');
-
-  assert(completedTaskOnCardDuePlacement, 'expected card placement when the card due date matches');
-  assert.strictEqual(completedTaskOnCardDuePlacement.temporalReason, 'card');
-  assert.strictEqual(completedTaskOnCardDuePlacement.temporalDisplayTitle, 'Card due with finished task');
-
-  const completedTaskOnlyPlacement = context.createTemporalPlacementForDate({
-    cardPath: '/tmp/completed-task-only.md',
-    listName: '001-Backlog-abc12',
-    listDisplayName: 'Backlog',
-    title: 'Finished task only',
-    due: '',
-    labels: [],
-    body: '- [x] (due: 2026-03-10) Finished prep',
-    taskSummary: { total: 1, completed: 1, remaining: 0 },
-    taskItems: context.parseTaskListItems('- [x] (due: 2026-03-10) Finished prep'),
-    taskDueDates: ['2026-03-10'],
-    incompleteTaskDueDates: [],
-  }, '2026-03-10');
-
-  assert.strictEqual(completedTaskOnlyPlacement, null, 'expected completed task due markers not to create temporal placements');
 
   const labels = [
     createLabel(1, 'Urgent'),
@@ -553,15 +473,12 @@ async function run() {
   assert.strictEqual(context.getShortcutKeycapText('kanbanView'), 'Ctrl + 1');
   assert.strictEqual(context.getShortcutKeycapText('tableView'), 'Ctrl + Alt + 1');
   assert.strictEqual(context.getShortcutHintText('tableView'), 'Ctrl+Alt+1');
-  assert.strictEqual(context.getShortcutKeycapText('plannerToggle'), 'Ctrl + Shift + P');
-  assert.strictEqual(context.getShortcutKeycapText('plannerDayView'), 'Ctrl + 4');
-  assert.strictEqual(context.getShortcutKeycapText('plannerAgendaView'), 'Ctrl + 5');
   assert.strictEqual(context.normalizeBoardViewId('table'), 'table');
 
   const tableHeader = context.createBoardTableHeader();
   assert.deepStrictEqual(
     toPlain(tableHeader.children[0].children.map((headerCell) => headerCell.textContent)),
-    ['', 'Start', 'Due', 'Updated', 'Created', 'Tasks', 'Links', 'Card', 'List', 'Labels'],
+    ['', 'Card', 'List', 'Tasks', 'Labels', 'Links', 'Depends on', 'Blocked By', 'Priority', 'Risk reduction', 'Impact', 'Autonomy', 'Quick win', 'Human leverage'],
     'expected table columns to keep the configured order',
   );
 
@@ -606,7 +523,6 @@ async function run() {
   context.window.boardRoot = '/tmp/client-a/';
   context.initializeBoardViewControls();
   assert.strictEqual(workspaceDock.getAttribute('aria-hidden'), 'false', 'expected workspace dock to be visible with an open board');
-  assert.strictEqual(workspaceButtonMap.get('planner').getAttribute('title'), 'Planner (Ctrl+Shift+P)');
   assert.strictEqual(workspaceButtonMap.get('kanban').getAttribute('title'), 'Kanban (Ctrl+1)');
   assert.strictEqual(workspaceButtonMap.get('table').getAttribute('title'), 'Table (Ctrl+Alt+1)');
   assert.strictEqual(workspaceButtonMap.get('kanban').getAttribute('aria-pressed'), 'true', 'expected Kanban to default active');
@@ -615,8 +531,6 @@ async function run() {
   context.setActiveBoardView('table', { render: false });
   assert.strictEqual(workspaceButtonMap.get('table').getAttribute('aria-pressed'), 'true', 'expected Table dock button to become active');
   assert.strictEqual(workspaceButtonMap.get('kanban').getAttribute('aria-pressed'), 'false', 'expected Kanban dock button to become inactive');
-  assert.strictEqual(context.getWorkspaceViewTransitionDirection('planner', 'kanban'), 'right', 'expected Kanban to sit right of Planner');
-  assert.strictEqual(context.getWorkspaceViewTransitionDirection('kanban', 'planner'), 'left', 'expected Planner to sit left of Kanban');
   assert.strictEqual(context.getWorkspaceViewTransitionDirection('kanban', 'table'), 'right', 'expected Table to sit right of Kanban');
   assert.strictEqual(context.getWorkspaceViewTransitionDirection('table', 'kanban'), 'left', 'expected Kanban to sit left of Table');
   context.setWorkspaceTransitionDirection('right');
@@ -625,7 +539,7 @@ async function run() {
   context.clearWorkspaceTransitionState();
   context.setWorkspaceTransitionDirection('left');
   context.playPendingWorkspaceBoardTransition();
-  assert.strictEqual(context.document.body.getAttribute('data-workspace-transition'), 'enter-left', 'expected Planner-side views to enter from the left');
+  assert.strictEqual(context.document.body.getAttribute('data-workspace-transition'), 'enter-left', 'expected Kanban-side views to enter from the left');
   context.clearWorkspaceTransitionState();
 
   const listActionsState = context.getListActionsPopoverState();
@@ -635,7 +549,6 @@ async function run() {
   listActionsState.cardCount = 3;
   context.renderListActionsPopover();
   assert(listActionsPopover.textContent.includes('Ctrl+N'), 'expected add-card shortcut hint in list actions popover');
-  assert(listActionsPopover.textContent.includes('Ctrl+Shift+N'), 'expected add-list shortcut hint in list actions popover');
 
   context.setBoardLabels(Array.from({ length: 11 }, (_, index) => createLabel(index + 1)));
   filterState.filterIds = ['label-1'];
@@ -651,145 +564,6 @@ async function run() {
   const clearButton = findFirstByClass(filterPopover, 'label-popover-clear');
   assert(clearButton, 'expected clear button');
   assert.strictEqual(clearButton.textContent, 'Clear filters');
-
-  const todayTaskBody = '- [ ] (due: 2026-03-10) Prep launch';
-  const todayTaskItems = context.parseTaskListItems(todayTaskBody);
-  const entries = [
-    {
-      cardPath: '/tmp/task-starts-soon.md',
-      listName: '003-In Progress-abc12',
-      listDisplayName: 'In Progress',
-      title: 'Task starts soon',
-      start: '',
-      due: '',
-      labels: [],
-      body: '- [ ] (start: 2026-03-12) Draft outline',
-      taskSummary: { total: 1, completed: 0, remaining: 1 },
-      taskItems: context.parseTaskListItems('- [ ] (start: 2026-03-12) Draft outline'),
-      taskStartDates: ['2026-03-12'],
-      incompleteTaskStartDates: ['2026-03-12'],
-      taskDueDates: [],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/card-starts-soon.md',
-      listName: '001-Backlog-abc12',
-      listDisplayName: 'Backlog',
-      title: 'Card starts soon',
-      start: '2026-03-12',
-      due: '',
-      labels: [],
-      body: 'Body',
-      taskSummary: { total: 0, completed: 0, remaining: 0 },
-      taskItems: [],
-      taskStartDates: [],
-      incompleteTaskStartDates: [],
-      taskDueDates: [],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/task-today.md',
-      listName: '003-In Progress-abc12',
-      listDisplayName: 'In Progress',
-      title: 'Task due today',
-      due: '',
-      labels: ['label-1'],
-      body: todayTaskBody,
-      taskSummary: { total: 1, completed: 0, remaining: 1 },
-      taskItems: todayTaskItems,
-      taskDueDates: context.getTaskListDueDates(todayTaskBody),
-      incompleteTaskDueDates: context.getIncompleteTaskListDueDates(todayTaskBody),
-    },
-    {
-      cardPath: '/tmp/card-overdue.md',
-      listName: '001-Backlog-abc12',
-      listDisplayName: 'Backlog',
-      title: 'Card overdue',
-      due: '2026-03-09',
-      labels: ['label-2'],
-      body: 'Body',
-      taskSummary: { total: 0, completed: 0, remaining: 0 },
-      taskItems: [],
-      taskDueDates: [],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/mixed-dates.md',
-      listName: '002-Doing-abc12',
-      listDisplayName: 'Doing',
-      title: 'Mixed due dates',
-      due: '2026-03-10',
-      labels: ['label-1'],
-      body: '- [ ] (due: 2026-03-09) Missed prep',
-      taskSummary: { total: 1, completed: 0, remaining: 1 },
-      taskItems: context.parseTaskListItems('- [ ] (due: 2026-03-09) Missed prep'),
-      taskDueDates: ['2026-03-09'],
-      incompleteTaskDueDates: ['2026-03-09'],
-    },
-    {
-      cardPath: '/tmp/completed-overdue-task.md',
-      listName: '002-Doing-abc12',
-      listDisplayName: 'Doing',
-      title: 'Completed overdue task',
-      due: '',
-      labels: ['label-1'],
-      body: '- [x] (due: 2026-03-09) Finished prep',
-      taskSummary: { total: 1, completed: 1, remaining: 0 },
-      taskItems: context.parseTaskListItems('- [x] (due: 2026-03-09) Finished prep'),
-      taskDueDates: ['2026-03-09'],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/completed-today-task.md',
-      listName: '002-Doing-abc12',
-      listDisplayName: 'Doing',
-      title: 'Completed today task',
-      due: '',
-      labels: ['label-1'],
-      body: '- [x] (due: 2026-03-10) Finished today',
-      taskSummary: { total: 1, completed: 1, remaining: 0 },
-      taskItems: context.parseTaskListItems('- [x] (due: 2026-03-10) Finished today'),
-      taskDueDates: ['2026-03-10'],
-      incompleteTaskDueDates: [],
-    },
-  ];
-
-  filterState.filterIds = ['label-1'];
-  filterState.activeDateFilter = 'today';
-  const todayCalendarBuckets = context.buildCalendarCardBuckets(entries, new context.Date(2026, 2, 1));
-  const todayCalendarEntries = todayCalendarBuckets.get('2026-03-10') || [];
-  assert.strictEqual(todayCalendarEntries.length, 2, 'expected only today placements that match active filters in calendar view');
-  assert.strictEqual(todayCalendarEntries[0].temporalReason, 'task');
-  assert.strictEqual(todayCalendarBuckets.has('2026-03-09'), false);
-
-  const todayWeekBuckets = context.buildWeekCardBuckets(entries, new context.Date(2026, 2, 9));
-  const todayWeekEntries = todayWeekBuckets.get('2026-03-10') || [];
-  assert.strictEqual(todayWeekEntries.length, 2, 'expected only today placements that match active filters in week view');
-  assert.strictEqual(todayWeekEntries[0].temporalReason, 'task');
-  assert.strictEqual(todayWeekBuckets.has('2026-03-09'), false);
-
-  filterState.filterIds = [];
-  filterState.activeDateFilter = 'overdue';
-  const overdueCalendarBuckets = context.buildCalendarCardBuckets(entries, new context.Date(2026, 2, 1));
-  const overdueCalendarEntries = overdueCalendarBuckets.get('2026-03-09') || [];
-  assert.strictEqual(overdueCalendarEntries.length, 2, 'expected overdue view to ignore completed overdue task placements in calendar view');
-  assert.strictEqual(overdueCalendarEntries[0].temporalReason, 'card');
-  assert.strictEqual(overdueCalendarBuckets.has('2026-03-10'), false);
-
-  const overdueWeekBuckets = context.buildWeekCardBuckets(entries, new context.Date(2026, 2, 9));
-  const overdueWeekEntries = overdueWeekBuckets.get('2026-03-09') || [];
-  assert.strictEqual(overdueWeekEntries.length, 2, 'expected overdue view to ignore completed overdue task placements in week view');
-  assert.strictEqual(overdueWeekEntries[0].temporalReason, 'card');
-  assert.strictEqual(overdueWeekBuckets.has('2026-03-10'), false);
-
-  filterState.activeDateFilter = 'next:7';
-  const nextCalendarBuckets = context.buildCalendarCardBuckets(entries, new context.Date(2026, 2, 1));
-  const nextStartEntries = nextCalendarBuckets.get('2026-03-12') || [];
-  assert.deepStrictEqual(
-    toPlain(nextStartEntries.map((entry) => entry.temporalReason).sort()),
-    ['card-start', 'task-start'],
-    'expected next-range calendar view to include card and task start placements',
-  );
 
   const tableLists = [
     {
@@ -906,8 +680,8 @@ async function run() {
   const searchTableState = await context.collectBoardTableCards('/tmp/board/', tableLists);
   assert.deepStrictEqual(
     toPlain(searchTableState.visibleCards.map((card) => card.title)),
-    ['Alpha task'],
-    'expected table view to reuse board search',
+    ['Alpha task', 'Beta overdue', 'Finished overdue'],
+    'expected legacy table view to ignore the obsolete board search query',
   );
 
   context.setBoardSearchQuery('');
@@ -919,131 +693,6 @@ async function run() {
   assert(tableLinksBadge, 'expected rendered table to show linked-object badge');
   assert.strictEqual(tableLinksBadge.textContent, '2');
 
-  const plannerState = context.getPlannerState();
-  plannerState.searchTokens = [];
-  plannerState.dateFilter = '';
-
-  const plannerEntries = [
-    {
-      cardPath: '/tmp/client-a/task-today.md',
-      boardRoot: '/tmp/client-a/',
-      boardDisplayName: 'Client A',
-      listName: '001-Next-abc12',
-      listDisplayName: 'Next',
-      isCompletedList: false,
-      title: 'Client task',
-      due: '',
-      labels: [],
-      body: '- [ ] (due: 2026-03-10) Send proposal',
-      taskSummary: { total: 1, completed: 0, remaining: 1 },
-      taskItems: context.parseTaskListItems('- [ ] (due: 2026-03-10) Send proposal'),
-      taskDueDates: ['2026-03-10'],
-      incompleteTaskDueDates: ['2026-03-10'],
-    },
-    {
-      cardPath: '/tmp/client-a/task-finished-today.md',
-      boardRoot: '/tmp/client-a/',
-      boardDisplayName: 'Client A',
-      listName: '001-Next-abc12',
-      listDisplayName: 'Next',
-      isCompletedList: false,
-      title: 'Finished client task',
-      due: '',
-      labels: [],
-      body: '- [x] (due: 2026-03-10) Send signed proposal',
-      taskSummary: { total: 1, completed: 1, remaining: 0 },
-      taskItems: context.parseTaskListItems('- [x] (due: 2026-03-10) Send signed proposal'),
-      taskDueDates: ['2026-03-10'],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/home/card-overdue.md',
-      boardRoot: '/tmp/home/',
-      boardDisplayName: 'Home',
-      listName: '002-Doing-abc12',
-      listDisplayName: 'Doing',
-      isCompletedList: false,
-      title: 'Pay bill',
-      due: '2026-03-09',
-      labels: [],
-      body: 'Body',
-      taskSummary: { total: 0, completed: 0, remaining: 0 },
-      taskItems: [],
-      taskDueDates: [],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/home/completed-overdue.md',
-      boardRoot: '/tmp/home/',
-      boardDisplayName: 'Home',
-      listName: '003-Done-abc12',
-      listDisplayName: 'Done',
-      isCompletedList: true,
-      title: 'Completed task',
-      due: '',
-      labels: [],
-      body: '- [x] (due: 2026-03-09) Finished',
-      taskSummary: { total: 1, completed: 1, remaining: 0 },
-      taskItems: context.parseTaskListItems('- [x] (due: 2026-03-09) Finished'),
-      taskDueDates: ['2026-03-09'],
-      incompleteTaskDueDates: [],
-    },
-    {
-      cardPath: '/tmp/home/completed-card-overdue.md',
-      boardRoot: '/tmp/home/',
-      boardDisplayName: 'Home',
-      listName: '003-Done-abc12',
-      listDisplayName: 'Done',
-      isCompletedList: true,
-      title: 'Completed card',
-      due: '2026-03-09',
-      labels: [],
-      body: 'Body',
-      taskSummary: { total: 0, completed: 0, remaining: 0 },
-      taskItems: [],
-      taskDueDates: [],
-      incompleteTaskDueDates: [],
-    },
-  ];
-
-  const plannerCalendarBuckets = context.buildPlannerCalendarCardBuckets(plannerEntries, new context.Date(2026, 2, 1));
-  assert.strictEqual((plannerCalendarBuckets.get('2026-03-10') || []).length, 1, 'expected Planner calendar to include task due dates');
-  assert.strictEqual((plannerCalendarBuckets.get('2026-03-10') || [])[0].boardDisplayName, 'Client A');
-  assert.strictEqual((plannerCalendarBuckets.get('2026-03-09') || []).length, 1, 'expected Planner calendar to hide completed-list cards by default');
-
-  plannerState.dateFilter = 'overdue';
-  const plannerOverdueBuckets = context.buildPlannerCalendarCardBuckets(plannerEntries, new context.Date(2026, 2, 1));
-  assert.strictEqual((plannerOverdueBuckets.get('2026-03-09') || []).length, 1, 'expected Planner overdue filter to ignore completed-list overdue cards by default');
-  assert.strictEqual((plannerOverdueBuckets.get('2026-03-09') || [])[0].title, 'Pay bill');
-
-  plannerState.showCompletedCards = true;
-  plannerState.dateFilter = '';
-  const plannerCompletedBuckets = context.buildPlannerCalendarCardBuckets(plannerEntries, new context.Date(2026, 2, 1));
-  assert.strictEqual((plannerCompletedBuckets.get('2026-03-09') || []).length, 2, 'expected Planner to show completed-list card due dates when requested without showing completed task due markers');
-  plannerState.dateFilter = 'overdue';
-  const plannerCompletedOverdueBuckets = context.buildPlannerCalendarCardBuckets(plannerEntries, new context.Date(2026, 2, 1));
-  assert.strictEqual((plannerCompletedOverdueBuckets.get('2026-03-09') || []).length, 2, 'expected Planner to include completed-list card due dates when completed cards are shown');
-
-  plannerState.dateFilter = '';
-  plannerState.showCompletedCards = false;
-  plannerState.searchTokens = ['client'];
-  const plannerSearchAgenda = context.buildPlannerAgendaPlacements(plannerEntries);
-  assert.strictEqual(plannerSearchAgenda.length, 1, 'expected Planner search to match board source text');
-  assert.strictEqual(plannerSearchAgenda[0].boardDisplayName, 'Client A');
-
-  context.window.boardRoot = '/tmp/client-a/';
-  context.setBoardLabels([createLabel(1, 'Urgent'), createLabel(2, 'Waiting')]);
-  plannerEntries[0].labels = ['label-1'];
-  plannerState.searchTokens = [];
-  plannerState.dateFilter = '';
-  plannerState.boardFilterTouched = true;
-  plannerState.selectedBoardRoots = new Set(['/tmp/client-a/']);
-  plannerState.selectedLabelIds = ['label-1'];
-  const plannerLabelAgenda = context.buildPlannerAgendaPlacements(plannerEntries);
-  assert.strictEqual(plannerLabelAgenda.length, 1, 'expected Planner label filter to apply when current board is the only selected board');
-  plannerState.selectedLabelIds = ['label-2'];
-  const plannerLabelEmptyAgenda = context.buildPlannerAgendaPlacements(plannerEntries);
-  assert.strictEqual(plannerLabelEmptyAgenda.length, 0, 'expected Planner label filter to hide non-matching labels');
 }
 
 run().catch((error) => {

@@ -2,7 +2,7 @@
 import FeatherIcon from './FeatherIcon.vue'
 import { getShortcutAriaKeyshortcuts } from '../../lib/shortcutLabels.js'
 
-type WorkspaceView = 'dashboard' | 'planner' | 'kanban' | 'table'
+type WorkspaceView = 'dashboard' | 'kanban' | 'table'
 
 const props = withDefaults(defineProps<{ activeView?: WorkspaceView; dashboardEnabled?: boolean; onChange?: (view: WorkspaceView) => void }>(), { dashboardEnabled: false })
 

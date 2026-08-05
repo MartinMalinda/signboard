@@ -64,29 +64,7 @@ function isEditableShortcutTarget(target) {
     return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]'));
 }
 
-async function openPlannerViewForShortcut(viewId, options = {}) {
-    if (typeof setPlannerActiveView === 'function') {
-        setPlannerActiveView(viewId, { render: false });
-    }
-
-    if (typeof switchWorkspaceView === 'function') {
-        return switchWorkspaceView('planner', {
-            plannerViewId: viewId,
-            scope: options.scope === 'current' ? 'current' : 'all',
-        });
-    }
-
-    if (typeof openPlannerView === 'function') {
-        return openPlannerView({
-            viewId,
-            scope: options.scope === 'current' ? 'current' : 'all',
-        });
-    }
-
-    return false;
-}
-
-function hasPlannerDateViewShortcutModifiers(event) {
+function hasBoardViewShortcutModifiers(event) {
     if (!event || !hasPrimaryShortcutModifier(event) || event.shiftKey) {
         return false;
     }
@@ -110,7 +88,7 @@ function isDigit1ShortcutEvent(event) {
 async function handleBoardViewShortcut(e, options = {}) {
     const ignoreEditableTarget = Boolean(options.ignoreEditableTarget);
 
-    if (!hasPlannerDateViewShortcutModifiers(e)) {
+    if (!hasBoardViewShortcutModifiers(e)) {
         return false;
     }
 
@@ -119,48 +97,24 @@ async function handleBoardViewShortcut(e, options = {}) {
         return false;
     }
 
-    const shortcutScope = e.altKey ? 'current' : 'all';
-
     switch (e.code) {
         case 'Digit1': {
             e.preventDefault();
             if (typeof switchWorkspaceView === 'function') {
                 await switchWorkspaceView(e.altKey ? 'table' : 'kanban');
             } else {
-                if (typeof closePlannerView === 'function' && typeof isPlannerOpen === 'function' && isPlannerOpen()) {
-                    closePlannerView();
-                }
                 if (typeof setActiveBoardView === 'function') {
                     setActiveBoardView(e.altKey ? 'table' : 'kanban');
                 }
             }
             return true;
         }
-        case 'Digit2':
-            e.preventDefault();
-            await openPlannerViewForShortcut('calendar', { scope: shortcutScope });
-            return true;
-        case 'Digit3':
-            e.preventDefault();
-            await openPlannerViewForShortcut('this-week', { scope: shortcutScope });
-            return true;
-        case 'Digit4':
-            e.preventDefault();
-            await openPlannerViewForShortcut('day', { scope: shortcutScope });
-            return true;
-        case 'Digit5':
-            e.preventDefault();
-            await openPlannerViewForShortcut('agenda', { scope: shortcutScope });
-            return true;
         default:
             if (isDigit1ShortcutEvent(e)) {
                 e.preventDefault();
                 if (typeof switchWorkspaceView === 'function') {
                     await switchWorkspaceView(e.altKey ? 'table' : 'kanban');
                 } else {
-                    if (typeof closePlannerView === 'function' && typeof isPlannerOpen === 'function' && isPlannerOpen()) {
-                        closePlannerView();
-                    }
                     if (typeof setActiveBoardView === 'function') {
                         setActiveBoardView(e.altKey ? 'table' : 'kanban');
                     }
@@ -272,15 +226,6 @@ function isArchiveBrowserShortcut(event) {
     return event.code === 'KeyA' || key === 'a';
 }
 
-function isPlannerToggleShortcut(event) {
-    if (!hasPrimaryShiftOnly(event)) {
-        return false;
-    }
-
-    const key = String(event.key || '').trim().toLowerCase();
-    return event.code === 'KeyP' || key === 'p';
-}
-
 function isMoveCardLeftShortcut(event) {
     if (!hasPrimaryShiftOnly(event)) {
         return false;
@@ -316,16 +261,11 @@ function isArchiveCardShortcut(event) {
 }
 
 function focusBoardSearchInput() {
-    const searchInput = document.getElementById('boardSearchInput');
-    if (!searchInput) {
+    if (typeof toggleBoardSwitcherFromShortcut !== 'function') {
         return false;
     }
 
-    searchInput.focus();
-    if (typeof searchInput.select === 'function') {
-        searchInput.select();
-    }
-
+    toggleBoardSwitcherFromShortcut();
     return true;
 }
 
@@ -393,10 +333,6 @@ async function switchBoardViewFromCommand(viewId) {
     if (typeof switchWorkspaceView === 'function') {
         await switchWorkspaceView(normalizedViewId);
         return true;
-    }
-
-    if (typeof closePlannerView === 'function' && typeof isPlannerOpen === 'function' && isPlannerOpen()) {
-        closePlannerView();
     }
 
     if (typeof setActiveBoardView === 'function') {
@@ -485,17 +421,12 @@ function isBoardSearchShortcut(event) {
 }
 
 function isWorkspaceViewShortcut(event) {
-    if (!hasPlannerDateViewShortcutModifiers(event)) {
+    if (!hasBoardViewShortcutModifiers(event)) {
         return false;
     }
 
     switch (event.code) {
         case 'Digit1':
-            return true;
-        case 'Digit2':
-        case 'Digit3':
-        case 'Digit4':
-        case 'Digit5':
             return true;
         default:
             return isDigit1ShortcutEvent(event);
@@ -519,7 +450,6 @@ function shouldCloseCardEditorForGlobalShortcut(event) {
 
     return (
         isBoardSwitcherShortcut(event) ||
-        isPlannerToggleShortcut(event) ||
         isBoardSettingsShortcut(event) ||
         isArchiveBrowserShortcut(event) ||
         isAddCardOrListShortcut(event) ||
@@ -541,12 +471,6 @@ async function closeCardEditorForGlobalShortcutIfNeeded(event) {
     return true;
 }
 
-function closePlannerBeforeBoardCreationShortcut() {
-    if (typeof isPlannerOpen === 'function' && isPlannerOpen() && typeof closePlannerView === 'function') {
-        closePlannerView();
-    }
-}
-
 function initializeHeaderQuickAddButton() {
     const button = document.getElementById('quickAddHeaderButton');
     if (!button || button.dataset.sbInitialized === 'true') {
@@ -566,8 +490,6 @@ function initializeHeaderQuickAddButton() {
 }
 
 async function openAddListFromShortcut() {
-    closePlannerBeforeBoardCreationShortcut();
-
     const listName = document.getElementById('userInputListName');
     toggleAddListModal((window.innerWidth / 2) - 200, (window.innerHeight / 2) - 100);
     listName.focus();
@@ -806,8 +728,6 @@ async function submitQuickAddCardModal(options = {}) {
 }
 
 async function openAddCardFromShortcut(options = {}) {
-    closePlannerBeforeBoardCreationShortcut();
-
     if (typeof resetCardCreationLabelSelection === 'function') {
         resetCardCreationLabelSelection('quick-add');
     }
@@ -925,18 +845,9 @@ window.addEventListener('keydown', async (e) => {
                 closeBoardSwitcher();
                 return;
             }
-            if (typeof isPlannerFilterPopoverOpen === 'function' && isPlannerFilterPopoverOpen()) {
-                e.preventDefault();
-                closePlannerFilterPopover();
-                return;
-            }
             const hadBlockingModal = isAnyShortcutBlockingModalOpen();
             hideShortcutHelpModal();
             await closeAllModals(e);
-            if (!hadBlockingModal && typeof isPlannerOpen === 'function' && isPlannerOpen() && typeof closePlannerView === 'function') {
-                e.preventDefault();
-                closePlannerView();
-            }
             return;
         }
 
@@ -997,15 +908,6 @@ window.addEventListener('keydown', async (e) => {
             return;
         }
 
-        if (isPlannerToggleShortcut(e)) {
-            e.preventDefault();
-            hideShortcutHelpModal();
-            if (typeof togglePlannerView === 'function') {
-                await togglePlannerView();
-            }
-            return;
-        }
-
         if (isKeyboardShortcutsShortcut(e)) {
             e.preventDefault();
             if (typeof closeBoardSwitcher === 'function') {
@@ -1018,50 +920,6 @@ window.addEventListener('keydown', async (e) => {
                 showShortcutHelpModal();
             }
             return;
-        }
-
-        if (typeof isPlannerOpen === 'function' && isPlannerOpen()) {
-            if (
-                typeof handlePlannerViewShortcut === 'function' &&
-                handlePlannerViewShortcut(e, { ignoreEditableTarget: closedCardEditorForShortcut })
-            ) {
-                hideShortcutHelpModal();
-                if (typeof closeBoardSwitcher === 'function') {
-                    closeBoardSwitcher();
-                }
-                return;
-            }
-
-            if (isBoardSearchShortcut(e) && (closedCardEditorForShortcut || !isEditableShortcutTarget(e.target))) {
-                if (typeof focusPlannerSearchInput === 'function' && focusPlannerSearchInput()) {
-                    e.preventDefault();
-                    hideShortcutHelpModal();
-                    if (typeof closeBoardSwitcher === 'function') {
-                        closeBoardSwitcher();
-                    }
-                }
-                return;
-            }
-
-            const shouldAllowAfterClosingEditor = closedCardEditorForShortcut && (
-                isArchiveBrowserShortcut(e) ||
-                isAddCardOrListShortcut(e)
-            );
-
-            if (
-                !shouldAllowAfterClosingEditor &&
-                (
-                    isColorSchemeCycleShortcut(e) ||
-                    isArchiveBrowserShortcut(e) ||
-                    isMoveCardLeftShortcut(e) ||
-                    isMoveCardRightShortcut(e) ||
-                    isArchiveCardShortcut(e) ||
-                    isAddCardOrListShortcut(e)
-                )
-            ) {
-                e.preventDefault();
-                return;
-            }
         }
 
         if (isBoardSettingsShortcut(e)) {

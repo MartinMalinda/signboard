@@ -40,13 +40,7 @@ function isBoardSearchActive() {
 }
 
 function cardMatchesBoardSearch(title, body) {
-  const tokens = getBoardSearchState().tokens;
-  if (tokens.length === 0) {
-    return true;
-  }
-
-  const haystack = `${String(title || '')}\n${String(body || '')}`.toLowerCase();
-  return tokens.every((token) => haystack.includes(token));
+  return true;
 }
 
 function scheduleBoardSearchRender() {
@@ -280,17 +274,17 @@ function initializeBoardSearchControls() {
     return;
   }
 
-  searchInput.value = getBoardSearchQuery();
-  initializeBoardSearchKeyboardNavigation();
-
   if (searchInput.dataset.sbBoardSearchInitialized === 'true') {
     return;
   }
 
-  searchInput.addEventListener('input', (event) => {
-    setBoardSearchQuery(event.target.value);
-    scheduleBoardSearchRender();
+  searchInput.readOnly = true;
+  searchInput.setAttribute('aria-haspopup', 'dialog');
+  searchInput.addEventListener('focus', () => {
+    searchInput.blur();
+    if (typeof toggleBoardSwitcherFromShortcut === 'function') {
+      toggleBoardSwitcherFromShortcut();
+    }
   });
-  searchInput.addEventListener('keydown', handleBoardSearchInputKeydown);
   searchInput.dataset.sbBoardSearchInitialized = 'true';
 }

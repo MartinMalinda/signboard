@@ -835,9 +835,6 @@ function renderBoardTabs() {
     if (openBoards.length === 0) {
         tabsWrapper.classList.add('hidden');
         initializeBoardTabsSortable(null, false);
-        if (typeof syncPlannerAvailability === 'function') {
-            syncPlannerAvailability();
-        }
         return;
     }
 
@@ -854,7 +851,4 @@ function renderBoardTabs() {
     initializeBoardTabsSortable(tabsEl, openBoards.length > 1);
     ensureBoardTabsResizeListener();
     scheduleBoardTabsOverflowUpdate();
-    if (typeof syncPlannerAvailability === 'function') {
-        syncPlannerAvailability();
-    }
 }

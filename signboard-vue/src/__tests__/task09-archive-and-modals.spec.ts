@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { filterArchiveEntries } from '../../lib/archiveBrowser.js'
 import { useArchiveStore } from '../stores/useArchiveStore'
 import { useBoardSwitcherStore } from '../stores/useBoardSwitcherStore'
+import { useBoardDataStore } from '../stores/useBoardDataStore'
 import { useBoardsStore } from '../stores/useBoardsStore'
 import { useStaticModalStore } from '../stores/useStaticModalStore'
 import BoardSwitcherModal from '../components/modals/BoardSwitcherModal.vue'
@@ -75,6 +76,110 @@ describe('Task 09 archive and static modal parity', () => {
     expect(switcher.selectedOption()?.path).toBe('/three/')
     switcher.move(-1)
     expect(switcher.selectedOption()?.path).toBe('/three/')
+  })
+
+  it('adds matching cards from the current board and opens the selected card', async () => {
+    const boards = useBoardsStore()
+    const data = useBoardDataStore()
+    boards.openBoardPaths = ['/one/']
+    boards.activeBoardPath = '/one/'
+    data.snapshot = {
+      ...boardSnapshot,
+      boardRoot: '/one/',
+      lists: [{
+        listName: '000-To-do-stock',
+        listPath: '/one/000-To-do-stock',
+        cards: [{ cardName: 'plan.md', cardPath: '/one/000-To-do-stock/plan.md', frontmatter: { title: 'Plan release' }, body: 'Ship the release', taskSummary: { total: 0, completed: 0, remaining: 0 }, taskStartDates: [], incompleteTaskStartDates: [], taskDueDates: [], incompleteTaskDueDates: [] }],
+      }],
+    }
+    const opened: string[] = []
+    const switcher = useBoardSwitcherStore()
+    switcher.open()
+    switcher.setQuery('release')
+    expect(switcher.filteredOptions).toHaveLength(1)
+    expect(switcher.selectedOption()?.kind).toBe('card')
+    await switcher.select(switcher.selectedOption()!, undefined, async (path) => { opened.push(path) })
+    expect(opened).toEqual(['/one/000-To-do-stock/plan.md'])
+  })
+
+  it('ranks title matches ahead of body-only matches and highlights card excerpts', async () => {
+    const boards = useBoardsStore()
+    const data = useBoardDataStore()
+    boards.openBoardPaths = ['/one/']
+    boards.activeBoardPath = '/one/'
+    data.snapshot = {
+      ...boardSnapshot,
+      boardRoot: '/one/',
+      lists: [{
+        listName: '000-To-do-stock',
+        listPath: '/one/000-To-do-stock',
+        cards: [
+          { cardName: 'body-match.md', cardPath: '/one/000-To-do-stock/body-match.md', frontmatter: { title: 'Airtable embedded interface' }, body: 'Authorization audit notes', taskSummary: { total: 0, completed: 0, remaining: 0 }, taskStartDates: [], incompleteTaskStartDates: [], taskDueDates: [], incompleteTaskDueDates: [] },
+          { cardName: 'title-match.md', cardPath: '/one/000-To-do-stock/title-match.md', frontmatter: { title: 'Destination authorization audit plan' }, body: '', taskSummary: { total: 0, completed: 0, remaining: 0 }, taskStartDates: [], incompleteTaskStartDates: [], taskDueDates: [], incompleteTaskDueDates: [] },
+        ],
+      }],
+    }
+    const switcher = useBoardSwitcherStore()
+    switcher.open()
+    switcher.setQuery('authorization audit')
+    expect(switcher.filteredOptions.map((option) => option.kind === 'card' ? option.label : option.label)).toEqual([
+      'Destination authorization audit plan',
+      'Airtable embedded interface',
+    ])
+    const wrapper = mount(BoardSwitcherModal, { attachTo: document.body })
+    await wrapper.vm.$nextTick()
+    expect(Array.from(document.querySelectorAll<HTMLElement>('.board-switcher-option-excerpt mark')).map((mark) => mark.textContent)).toContain('Authorization')
+    expect(Array.from(document.querySelectorAll<HTMLElement>('.board-switcher-option-excerpt')).some((excerpt) => excerpt.textContent?.includes('audit'))).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('opens a matching card when Enter is pressed in the switcher', async () => {
+    const boards = useBoardsStore()
+    const data = useBoardDataStore()
+    boards.openBoardPaths = ['/one/']
+    boards.activeBoardPath = '/one/'
+    data.snapshot = {
+      ...boardSnapshot,
+      boardRoot: '/one/',
+      lists: [{ listName: '000-To-do-stock', listPath: '/one/000-To-do-stock', cards: [{ cardName: 'plan.md', cardPath: '/one/000-To-do-stock/plan.md', frontmatter: { title: 'Plan release' }, body: '', taskSummary: { total: 0, completed: 0, remaining: 0 }, taskStartDates: [], incompleteTaskStartDates: [], taskDueDates: [], incompleteTaskDueDates: [] }] }],
+    }
+    const opened: string[] = []
+    const switcher = useBoardSwitcherStore()
+    switcher.open()
+    const wrapper = mount(BoardSwitcherModal, { attachTo: document.body, props: { onOpenCard: async (path) => { opened.push(path) } } })
+    await wrapper.vm.$nextTick()
+    const input = document.querySelector<HTMLInputElement>('#boardSwitcherInput')
+    expect(input).not.toBeNull()
+    input!.value = 'release'
+    input!.dispatchEvent(new Event('input', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushPromises()
+    expect(opened).toEqual(['/one/000-To-do-stock/plan.md'])
+    wrapper.unmount()
+  })
+
+  it('scrolls the highlighted option into view when arrow navigation moves it', async () => {
+    const boards = useBoardsStore()
+    boards.openBoardPaths = ['/one/', '/two/', '/three/', '/four/']
+    boards.activeBoardPath = '/one/'
+    const switcher = useBoardSwitcherStore()
+    switcher.open()
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView })
+    const wrapper = mount(BoardSwitcherModal, { attachTo: document.body })
+    await wrapper.vm.$nextTick()
+    scrollIntoView.mockClear()
+
+    const input = document.querySelector<HTMLInputElement>('#boardSwitcherInput')!
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await wrapper.vm.$nextTick()
+    await flushPromises()
+
+    expect(switcher.selectedOption()?.path).toBe('/three/')
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+    expect(scrollIntoView.mock.instances[0]).toBe(document.querySelector('#boardSwitcherOption-2'))
+    wrapper.unmount()
   })
 
   it('renders the switcher and static modal contracts with OS-aware shortcut labels', async () => {

@@ -21,14 +21,13 @@ describe('cardFilters', () => {
     expect(cardMatchesFilters(dated, { dateFilter: DATE_FILTERS.today, listName: '002-Done-stock', workflowSettings: { autoDetectCompletedLists: true }, today })).toBe(false)
   })
 
-  it('combines label OR with search and date predicates', () => {
+  it('combines label OR with date predicates without global text search', () => {
     const matching = card({ frontmatter: { title: 'Launch planning', due: today, labels: ['work', 'urgent'] } })
     const wrongLabel = card({ frontmatter: { title: 'Launch planning', due: today, labels: ['home'] } })
-    const wrongSearch = card({ frontmatter: { title: 'Budget', due: today, labels: ['work'] }, body: 'Unrelated content' })
-    const options = { selectedLabelIds: ['urgent', 'work'], query: 'launch notes', dateFilter: DATE_FILTERS.today, today }
+    const options = { selectedLabelIds: ['urgent', 'work'], dateFilter: DATE_FILTERS.today, today }
     expect(cardMatchesFilters(matching, options)).toBe(true)
     expect(cardMatchesFilters(wrongLabel, options)).toBe(false)
-    expect(cardMatchesFilters(wrongSearch, options)).toBe(false)
+    expect(cardMatchesFilters(card({ frontmatter: { title: 'Budget', due: today, labels: ['work'] }, body: 'Unrelated content' }), { ...options, query: 'launch notes' })).toBe(true)
   })
 
   it('matches card start dates and next-day windows', () => {

@@ -34,8 +34,8 @@ export const SETTINGS_NAVIGATION = Object.freeze([
 ] as const)
 
 export const V2_DASHBOARD_SECTION_OPTIONS = Object.freeze([
-  { id: 'critical', label: 'Critical', description: 'P0/P1 and high-risk work.' },
-  { id: 'next_best_work', label: 'Next best work', description: 'Ranked work with enough shape to act on.' },
+  { id: 'priority', label: 'Priority', description: 'Ranked work with enough shape to act on, including risk and security value.' },
+  { id: 'impact', label: 'Impact', description: 'Unfinished work sorted by positive value, with effort having a lighter effect on ranking.' },
   { id: 'low_hanging_fruit', label: 'Low-hanging fruit', description: 'Small, bounded, reversible work.' },
   { id: 'agent_loops', label: 'Agent loops', description: 'Ready P2 work that passes autonomous policy.' },
   { id: 'blocked', label: 'Blocked', description: 'Work waiting on a dependency.' },

@@ -26,7 +26,7 @@ function matchesDateFilter(card, dateFilter, options = {}) {
 }
 function matchesSearch(card, query) { const tokens = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean); if (!tokens.length) return true; const haystack = `${String(card?.frontmatter?.title || '')}\n${String(card?.body || '')}`.toLowerCase(); return tokens.every((token) => haystack.includes(token)); }
 function matchesLabels(card, selectedLabelIds) { const selected = (Array.isArray(selectedLabelIds) ? selectedLabelIds : []).map(String).filter(Boolean); return !selected.length || labelIdsForCard(card).some((id) => selected.includes(id)); }
-function cardMatchesFilters(card, options = {}) { const isCompletedList = options.isCompletedList === true || isCompletedListByWorkflow(options.listName, options.workflowSettings); return matchesSearch(card, options.query) && matchesLabels(card, options.selectedLabelIds) && matchesDateFilter(card, options.dateFilter, { ...options, isCompletedList }); }
+function cardMatchesFilters(card, options = {}) { const isCompletedList = options.isCompletedList === true || isCompletedListByWorkflow(options.listName, options.workflowSettings); return matchesLabels(card, options.selectedLabelIds) && matchesDateFilter(card, options.dateFilter, { ...options, isCompletedList }); }
 function getActiveFilterCount(options = {}) { return (normalizeDateFilter(options.dateFilter) ? 1 : 0) + (Array.isArray(options.selectedLabelIds) ? options.selectedLabelIds.length : 0); }
 
 export { DATE_FILTERS, DATE_FILTER_LABELS, normalizeDateFilter, normalizeIsoDate, todayIso, actionableTaskDates, cardDates, matchesDateFilter, matchesSearch, matchesLabels, cardMatchesFilters, getActiveFilterCount };

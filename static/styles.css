@@ -177,7 +177,6 @@ html, body { margin: 0; height: 100%; }
 }
 
 :root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .card > .card-drag-frame,
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-temporal-card-frame,
 :root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .card > .card-drag-frame {
   background: color-mix(in oklab, #ffe5d9 74%, #ffffff);
   border-color: color-mix(in oklab, #f4acb7 68%, #ffe5d9);
@@ -185,8 +184,6 @@ html, body { margin: 0; height: 100%; }
 }
 
 :root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .card:hover > .card-drag-frame,
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-calendar-card:hover .board-temporal-card-frame,
-:root[data-board-color-scheme="cozy-blush"]:not([data-theme="dark"]) .board-this-week-card:hover .board-temporal-card-frame,
 :root:not([data-theme="dark"]) #board[data-board-color-scheme="cozy-blush"] .card:hover > .card-drag-frame {
   border-color: color-mix(in oklab, #9d8189 45%, #f4acb7);
   box-shadow: 0 10px 22px rgba(157, 129, 137, 0.14);
@@ -420,7 +417,7 @@ body.sponsor-pill-dismissed .sponsor-signboard-pill {
   justify-content: center;
   gap: 6px;
   min-height: var(--workspace-view-dock-height);
-  padding: 5px 18px;
+  padding: 1.6667px 6px;
   border: 1px solid color-mix(in oklab, var(--border) 86%, var(--text));
   border-radius: 999px;
   background: color-mix(in oklab, var(--bg-card) 92%, transparent);
@@ -450,7 +447,7 @@ body.board-empty .workspace-view-dock {
   gap: 7px;
   min-width: 116px;
   min-height: 36px;
-  padding: 7px 13px;
+  padding: 2.3333px 4.3333px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -614,9 +611,9 @@ body:not(.board-empty) #boardSearchInput:focus-visible,
 body:not(.board-empty) #boardTabsWrapper,
 .app-header.has-active-board #boardTabsWrapper {
   grid-area: tabs;
-  width: auto;
+  width: 100%;
   min-width: 0;
-  justify-self: start;
+  justify-self: stretch;
 }
 
 #boardTabs {
@@ -652,7 +649,7 @@ body:not(.board-empty) .board-tab,
   display: flex;
   align-items: center;
   gap: 2px;
-  flex: 0 0 auto;
+  flex: 0 1 180px;
   max-width: 180px;
   min-width: 0;
   border: 0;
@@ -669,6 +666,7 @@ body:not(.board-empty) .board-tab,
 }
 
 .board-tab-label {
+  flex: 1 1 auto;
   border: 0;
   background: transparent;
   color: inherit;
@@ -682,6 +680,7 @@ body:not(.board-empty) .board-tab,
 }
 
 .board-tab-close {
+  flex: 0 0 18px;
   border: 0;
   background: transparent;
   color: color-mix(in oklab, var(--muted) 85%, var(--text));
@@ -742,6 +741,7 @@ body:not(.board-empty) .board-tab,
 
 .board-tab-more {
   cursor: default;
+  flex: 0 0 auto;
   max-width: none;
   padding-right: 12px;
 }
@@ -752,6 +752,7 @@ body:not(.board-empty) .board-tab,
 
 .board-tab-add {
   cursor: default;
+  flex: 0 0 auto;
   max-width: none;
   opacity: 1;
   padding-right: 12px;
@@ -773,121 +774,6 @@ body:not(.board-empty) .board-tab,
 
 .board-tab-add.is-disabled {
   opacity: .6;
-}
-
-/* Planner overlay */
-.planner-overlay {
-  --bg: #f7f8fa;
-  --bg-card: #ffffff;
-  --text: #0f172a;
-  --muted: #6b7280;
-  --border: #e6e8ec;
-  --shadow: rgba(15, 23, 42, .04);
-  --shadow-card: rgba(15, 23, 42, .06);
-  --accent: #0b5fff;
-  --accent-contrast: #ffffff;
-  --due-date-today-color: color-mix(in oklab, #d92d20 72%, var(--text));
-  --due-date-tomorrow-color: color-mix(in oklab, #15803d 78%, var(--text));
-  --task-progress-complete-color: color-mix(in oklab, #15803d 78%, var(--text));
-  position: fixed;
-  z-index: 45;
-  inset: 0;
-  background: var(--bg);
-  color: var(--text);
-  transform: translateX(-100%);
-  visibility: visible;
-  pointer-events: auto;
-  transition: transform .22s ease;
-}
-
-:root[data-theme="dark"] .planner-overlay {
-  --bg: #091102;
-  --bg-card: #12200a;
-  --text: #e8f0e5;
-  --muted: #a0b3a3;
-  --border: #1f2e17;
-  --shadow: rgba(0, 0, 0, 0.45);
-  --shadow-card: rgba(0, 0, 0, 0.55);
-  --accent: #6fcf97;
-  --accent-contrast: #07130c;
-  --due-date-today-color: color-mix(in oklab, #ff6b6b 80%, var(--text));
-  --due-date-tomorrow-color: color-mix(in oklab, #4ade80 80%, var(--text));
-  --task-progress-complete-color: color-mix(in oklab, #4ade80 84%, var(--text));
-}
-
-.planner-overlay.hidden {
-  display: block;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.planner-overlay.is-closing {
-  pointer-events: none;
-}
-
-/* Vue side-build placeholder keeps the shared planner identity without the legacy overlay transition. */
-.planner-overlay-vue {
-  position: relative;
-  inset: auto;
-  min-height: 320px;
-  padding: 48px 32px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--bg-card);
-  box-sizing: border-box;
-  transform: none;
-  text-align: center;
-}
-
-.planner-overlay-vue .planner-content {
-  max-width: 620px;
-  margin: 0 auto;
-}
-
-.planner-overlay-vue h2 {
-  margin: 0 0 10px;
-  color: var(--text);
-  font-size: var(--font-xl);
-}
-
-.planner-overlay-vue p {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--font-sm);
-}
-
-.planner-overlay.planner-overlay-vue {
-  position: fixed;
-  z-index: 45;
-  inset: 0;
-  display: block;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--bg);
-  transform: none;
-  visibility: visible;
-  pointer-events: auto;
-  text-align: left;
-}
-
-.planner-overlay.planner-overlay-vue.hidden {
-  display: block;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.planner-open .planner-overlay {
-  transform: translateX(0);
-}
-
-.planner-overlay[data-transition-direction="right"] {
-  transform: translateX(100%);
-}
-
-body.planner-open .planner-overlay[data-transition-direction="right"] {
-  transform: translateX(0);
 }
 
 body[data-workspace-transition="enter-right"] main#board {
@@ -950,404 +836,6 @@ body[data-workspace-transition="exit-right"] main#board {
   }
 }
 
-.planner-panel {
-  position: relative;
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  background: var(--bg);
-  color: var(--text);
-  overflow: hidden;
-}
-
-.planner-header {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 58px;
-  padding: 10px 14px 0;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklab, var(--bg) 88%, var(--border));
-  backdrop-filter: saturate(1.2) blur(6px);
-}
-
-.planner-header-left,
-.planner-header-controls {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.planner-header-left {
-  gap: 10px;
-  flex: 1 1 auto;
-}
-
-.planner-header-controls {
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.planner-header h2 {
-  margin: 0 4px 7px 0;
-  font-size: var(--font-lg);
-  line-height: 1;
-  font-weight: 650;
-}
-
-.planner-view-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: -1px;
-  border: 1px solid color-mix(in oklab, var(--border) 88%, var(--bg));
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--bg));
-  padding: 3px;
-}
-
-.planner-view-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  line-height: 1;
-  padding: 6px 11px;
-}
-
-.planner-view-tab:hover {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-  color: var(--text);
-}
-
-.planner-view-tab.is-active {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.planner-view-tab svg {
-  width: 15px;
-  height: 15px;
-}
-
-.planner-view-tab-icon,
-.planner-view-tab-label,
-.planner-scope-option-icon,
-.planner-scope-option-label {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.planner-scope-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-bottom: -1px;
-  border: 1px solid color-mix(in oklab, var(--border) 88%, var(--bg));
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--bg));
-  padding: 3px;
-}
-
-.planner-scope-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 30px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  font-size: var(--font-sm);
-  font-weight: 600;
-  line-height: 1;
-  padding: 5px 9px;
-}
-
-.planner-scope-option:hover {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-  color: var(--text);
-}
-
-.planner-scope-option.is-active {
-  background: color-mix(in oklab, var(--accent) 14%, var(--bg-card));
-  color: color-mix(in oklab, var(--accent) 86%, var(--text));
-}
-
-.planner-scope-option:disabled {
-  cursor: default;
-  opacity: .45;
-}
-
-.planner-scope-option svg {
-  width: 14px;
-  height: 14px;
-}
-
-.planner-scope-label {
-  color: var(--muted);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  white-space: nowrap;
-  margin-bottom: 2px;
-}
-
-#plannerSearchInput {
-  width: 230px;
-  max-width: 28vw;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
-  padding: 8px 12px;
-  font-size: var(--font-sm);
-}
-
-.planner-toolbar-group {
-  position: relative;
-}
-
-#plannerFilterButton,
-.planner-close-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
-}
-
-#plannerFilterButton.is-active {
-  background: color-mix(in oklab, var(--accent) 14%, var(--bg-card));
-  border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
-  color: color-mix(in oklab, var(--accent) 86%, var(--text));
-}
-
-#plannerFilterButton svg,
-.planner-close-button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.planner-filter-popover {
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 250px;
-  max-width: min(320px, calc(100vw - 24px));
-}
-
-.planner-filter-popover:not(.hidden) {
-  display: grid;
-  gap: 8px;
-}
-
-.planner-filter-section {
-  display: grid;
-  gap: 4px;
-}
-
-.planner-filter-section h3 {
-  margin: 2px 4px 4px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
-
-.planner-filter-row,
-.planner-filter-checkbox-row,
-.planner-filter-clear {
-  width: 100%;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text);
-  box-shadow: none;
-  font-size: var(--font-sm);
-  min-height: 34px;
-  padding: 8px 9px;
-}
-
-.planner-filter-row,
-.planner-filter-checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-align: left;
-}
-
-.planner-filter-row:hover,
-.planner-filter-checkbox-row:hover,
-.planner-filter-clear:hover {
-  background: color-mix(in oklab, var(--bg-card) 86%, var(--border));
-}
-
-.planner-filter-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.planner-filter-checkbox-row input {
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  accent-color: var(--accent);
-}
-
-.planner-filter-label-swatch {
-  width: 11px;
-  height: 11px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
-}
-
-.planner-filter-empty {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--font-sm);
-  padding: 4px 9px 8px;
-}
-
-.planner-filter-clear {
-  border-top: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
-  color: var(--muted);
-  text-align: left;
-}
-
-.planner-body {
-  position: relative;
-  z-index: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px 16px calc(var(--workspace-view-dock-height) + var(--workspace-view-dock-bottom) + 24px);
-  -webkit-overflow-scrolling: touch;
-}
-
-.planner-view {
-  height: 100%;
-}
-
-.planner-calendar,
-.planner-this-week {
-  min-height: 680px;
-}
-
-.planner-overlay .board-temporal-card-frame {
-  background: color-mix(in oklab, var(--bg-card) 92%, var(--bg));
-  border-color: color-mix(in oklab, var(--border) 84%, var(--bg-card));
-  box-shadow: 0 1px 6px var(--shadow-card);
-}
-
-.planner-overlay .board-calendar-card:hover .board-temporal-card-frame,
-.planner-overlay .board-this-week-card:hover .board-temporal-card-frame,
-.planner-list-card:hover .board-temporal-card-frame {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-}
-
-.board-temporal-card-source {
-  max-width: 100%;
-}
-
-.planner-day,
-.planner-agenda {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
-  min-width: 720px;
-}
-
-.planner-list-view,
-.planner-agenda-list {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  max-width: 860px;
-}
-
-.planner-list-card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-  font-size: var(--font-sm);
-  line-height: 1.25;
-  cursor: pointer;
-}
-
-.planner-list-card .board-temporal-card-frame {
-  padding: 10px 12px;
-}
-
-.planner-agenda-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 650;
-}
-
-.planner-agenda-date-section {
-  display: grid;
-  gap: 7px;
-}
-
-.planner-agenda-date-section h3 {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: var(--font-xs);
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.planner-agenda-date-section.is-overdue h3 {
-  color: var(--due-date-today-color);
-}
-
-.planner-agenda-date-cards {
-  display: grid;
-  gap: 7px;
-}
-
-.planner-empty-state,
-.planner-source-warning {
-  border: 1px dashed color-mix(in oklab, var(--border) 82%, var(--text));
-  border-radius: 12px;
-  color: var(--muted);
-  background: color-mix(in oklab, var(--bg-card) 78%, var(--bg));
-  font-size: var(--font-sm);
-  padding: 16px;
-}
-
-.planner-source-warning {
-  margin-bottom: 12px;
-  border-style: solid;
-  color: var(--due-date-today-color);
-}
 
 #boardMenuButton {
   display: inline-flex;
@@ -1780,6 +1268,124 @@ body:not(.board-empty) main#board.board-view-week {
   font-size: var(--font-sm);
 }
 
+.board-table-datatable {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+}
+
+.board-table-datatable .p-datatable-table-container {
+  min-width: 0;
+}
+
+.board-table-datatable .p-datatable-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0;
+  background: color-mix(in oklab, var(--bg-card) 88%, var(--bg));
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.board-table-datatable .p-datatable-thead > tr > th button {
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+}
+
+.board-table-datatable .p-datatable-column-header-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 10px 12px;
+  flex-flow: row nowrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.board-table-datatable .p-datatable-column-header-content > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.board-table-datatable .p-datatable-column-header-content > .p-datatable-column-title {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.board-table-datatable .p-datatable-column-sorter {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.board-table-datatable .p-datatable-sort-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.board-table-datatable .p-datatable-column-title {
+  white-space: nowrap;
+}
+
+.board-table-datatable .p-datatable-sort-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.board-table-datatable .p-datatable-tbody > tr {
+  cursor: pointer;
+}
+
+.board-table-datatable .p-datatable-tbody > tr > td {
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 78%, var(--bg-card));
+  vertical-align: middle;
+  transition: background .12s ease;
+}
+
+.board-table-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.board-table-datatable .p-datatable-tbody > tr:hover > td {
+  background: color-mix(in oklab, var(--bg-card) 88%, var(--bg));
+}
+
+.board-table-datatable .p-datatable-tbody > tr.p-datatable-row-selected > td,
+.board-table-datatable .p-datatable-tbody > tr.p-highlight > td {
+  background: color-mix(in oklab, var(--accent) 9%, var(--bg-card));
+}
+
+.board-table-datatable .p-datatable-tbody > tr.p-datatable-row-selected:hover > td,
+.board-table-datatable .p-datatable-tbody > tr.p-highlight:hover > td {
+  background: color-mix(in oklab, var(--accent) 13%, var(--bg-card));
+}
+
 .board-table-heading {
   position: sticky;
   top: 0;
@@ -1847,29 +1453,93 @@ body:not(.board-empty) main#board.board-view-week {
   outline-offset: 2px;
 }
 
+.board-table-heading-title,
 .board-table-cell-title {
   width: 34%;
   min-width: 260px;
 }
 
+.board-table-heading-list,
 .board-table-cell-list {
   width: 210px;
 }
 
-.board-table-cell-start,
-.board-table-cell-due,
-.board-table-cell-updated,
-.board-table-cell-created,
+.board-table-heading-tasks,
 .board-table-cell-tasks {
   width: 130px;
 }
 
+.board-table-heading-links,
 .board-table-cell-links {
   width: 90px;
 }
 
+.board-table-heading-labels,
 .board-table-cell-labels {
   min-width: 180px;
+}
+
+.board-table-heading-depends_on,
+.board-table-heading-blocked_by,
+.board-table-cell-depends_on,
+.board-table-cell-blocked_by {
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.board-table-card-references {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.board-table-card-reference {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 0.24em;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--link, #0b5fff) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--link, #0b5fff) 8%, transparent);
+  color: var(--link, #0b5fff);
+  font-size: var(--font-sm);
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.board-table-card-reference::before {
+  content: '▣';
+  flex: 0 0 auto;
+  font-size: 0.78em;
+  opacity: 0.72;
+}
+
+.board-table-card-reference-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-table-heading-priority_index,
+.board-table-heading-risk_reduction_index,
+.board-table-heading-impact_index,
+.board-table-heading-autonomy_score,
+.board-table-heading-quick_win_index,
+.board-table-heading-human_leverage_index,
+.board-table-cell-priority_index,
+.board-table-cell-risk_reduction_index,
+.board-table-cell-impact_index,
+.board-table-cell-autonomy_score,
+.board-table-cell-quick_win_index,
+.board-table-cell-human_leverage_index {
+  min-width: 110px;
+  text-align: right;
 }
 
 .board-table-card-title-button {
@@ -1997,380 +1667,6 @@ body:not(.board-empty) main#board.board-view-week {
   font-weight: 650;
 }
 
-.board-calendar {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 10px;
-  min-width: 900px;
-  min-height: 640px;
-  height: 100%;
-}
-
-.planner-calendar.has-empty-notice {
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-}
-
-.board-calendar-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 12px;
-}
-
-.board-calendar-nav {
-  grid-column: 1;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.board-calendar-nav-button,
-.board-calendar-today-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-}
-
-.board-calendar-nav-button {
-  width: 34px;
-  padding: 0;
-}
-
-.board-calendar-nav-button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.board-calendar-month-label {
-  grid-column: 2;
-  justify-self: center;
-  margin: 0;
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: .01em;
-  text-align: center;
-}
-
-.board-calendar-today-button {
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: var(--font-sm);
-}
-
-.board-calendar-today-button:disabled {
-  opacity: .55;
-  cursor: default;
-}
-
-.board-calendar-weekdays,
-.board-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.board-calendar-grid {
-  min-height: 600px;
-  height: 100%;
-  grid-auto-rows: minmax(138px, 1fr);
-}
-
-.board-calendar-weekday {
-  color: var(--muted);
-  font-size: var(--font-xs);
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  font-weight: 620;
-  padding: 4px 8px;
-}
-
-.board-calendar-weekday.is-weekend {
-  color: color-mix(in oklab, var(--muted) 88%, var(--text));
-}
-
-.board-calendar-day {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: color-mix(in oklab, var(--bg-card) 94%, var(--bg));
-  box-shadow: 0 2px 8px var(--shadow);
-  min-height: 138px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.board-calendar-day.is-weekend {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-}
-
-.board-calendar-day--outside {
-  background: color-mix(in oklab, var(--bg) 90%, var(--border));
-  border-style: dashed;
-  box-shadow: none;
-}
-
-.board-calendar-day.is-today {
-  border-color: color-mix(in oklab, var(--accent) 58%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent), 0 8px 18px var(--shadow);
-}
-
-.board-calendar-day-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px 6px;
-}
-
-.board-calendar-day-number {
-  font-size: var(--font-sm);
-  font-weight: 620;
-}
-
-.board-calendar-today-badge {
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--accent) 48%, var(--border));
-  background: color-mix(in oklab, var(--accent) 16%, var(--bg-card));
-  color: color-mix(in oklab, var(--accent) 82%, var(--text));
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  font-weight: 700;
-  padding: 1px 8px;
-}
-
-.board-calendar-day-cards {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 2px 8px 8px;
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.board-calendar-card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-  font-size: 13px;
-  line-height: 1.25;
-  cursor: grab;
-}
-
-.board-temporal-card-frame {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  width: 100%;
-  min-width: 0;
-  border-radius: 9px;
-  border: 1px solid color-mix(in oklab, var(--border) 84%, var(--bg-card));
-  background: color-mix(in oklab, var(--bg-card) 92%, var(--bg));
-  color: var(--text);
-  box-shadow: 0 1px 6px var(--shadow-card);
-  padding: 6px 8px;
-}
-
-.board-calendar-card:hover .board-temporal-card-frame {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-}
-
-.board-calendar-card:active {
-  cursor: grabbing;
-  transform: none;
-}
-
-.board-this-week {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 10px;
-  min-width: 900px;
-  min-height: 640px;
-  height: 100%;
-}
-
-.planner-this-week.has-empty-notice {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
-.board-this-week-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-areas:
-    "mon thu"
-    "tue fri"
-    "wed weekend";
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  min-height: 600px;
-  height: 100%;
-}
-
-.board-this-week-day {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: color-mix(in oklab, var(--bg-card) 94%, var(--bg));
-  box-shadow: 0 2px 8px var(--shadow);
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.board-this-week-day.is-weekend {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-}
-
-.board-this-week-day.is-today {
-  border-color: color-mix(in oklab, var(--accent) 58%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent), 0 8px 18px var(--shadow);
-}
-
-.board-this-week-day-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px 6px;
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
-}
-
-.board-this-week-day-title {
-  font-size: var(--font-sm);
-  font-weight: 620;
-}
-
-.board-this-week-day-date {
-  font-size: var(--font-xs);
-  color: var(--muted);
-}
-
-.board-this-week-day-cards {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 8px;
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.board-this-week-card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-  font-size: 13px;
-  line-height: 1.25;
-  cursor: grab;
-}
-
-.board-this-week-card:hover .board-temporal-card-frame {
-  background: color-mix(in oklab, var(--bg-card) 84%, var(--border));
-}
-
-.board-this-week-card:active {
-  cursor: grabbing;
-  transform: none;
-}
-
-.board-temporal-card-title {
-  display: block;
-  width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.board-temporal-card-context {
-  display: block;
-  width: 100%;
-  font-size: 11px;
-  line-height: 1.2;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.board-temporal-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-}
-
-.board-temporal-card-list {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  border-radius: 6px;
-  border: 1px solid color-mix(in oklab, var(--border) 84%, transparent);
-  background: color-mix(in oklab, var(--bg-card) 76%, var(--border));
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.15;
-  letter-spacing: .01em;
-  padding: 2px 6px;
-}
-
-.board-temporal-card-source.has-board-source-theme {
-  border-color: var(--board-source-pill-border, color-mix(in oklab, var(--border) 84%, transparent));
-  background: var(--board-source-pill-bg, color-mix(in oklab, var(--bg-card) 76%, var(--border)));
-  color: var(--board-source-pill-text, var(--muted));
-}
-
-:root[data-theme="dark"] .board-temporal-card-source.has-board-source-theme {
-  border-color: var(--board-source-pill-border-dark, var(--board-source-pill-border, color-mix(in oklab, var(--border) 84%, transparent)));
-  background: var(--board-source-pill-bg-dark, var(--board-source-pill-bg, color-mix(in oklab, var(--bg-card) 76%, var(--border))));
-  color: var(--board-source-pill-text-dark, var(--board-source-pill-text, var(--muted)));
-}
-
-.board-temporal-task-progress {
-  margin-left: auto;
-  font-size: 11px;
-  line-height: 1;
-  flex: 0 0 auto;
-}
-
-.board-temporal-task-progress svg {
-  width: 12px;
-  height: 12px;
-}
-
-.board-this-week-day.day-mon { grid-area: mon; }
-.board-this-week-day.day-tue { grid-area: tue; }
-.board-this-week-day.day-wed { grid-area: wed; }
-.board-this-week-day.day-thu { grid-area: thu; }
-.board-this-week-day.day-fri { grid-area: fri; }
-
-.board-this-week-weekend {
-  grid-area: weekend;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
 
 body.board-empty main#board {
   align-items: center;
@@ -3181,6 +2477,23 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   transform: translate(-50%, 10px);
 }
 
+/* Dashboard explanation tooltips stay quieter than card titles and wrap before they span the board. */
+.v-popper--theme-tooltip.dashboard-card-tooltip .v-popper__inner {
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 5px 9px;
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.v-popper--theme-tooltip.dashboard-card-tooltip .v-popper__inner > div > div {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -3192,7 +2505,6 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   }
 
   .sb-tooltip,
-  .planner-overlay,
   .workspace-view-dock,
   .workspace-view-dock-button {
     transition: none;
@@ -3205,10 +2517,6 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   }
 
   .card:hover > .card-drag-frame,
-  .board-calendar-card:hover .board-temporal-card-frame,
-  .board-this-week-card:hover .board-temporal-card-frame,
-  .planner-calendar-card:hover .board-temporal-card-frame,
-  .planner-this-week-card:hover .board-temporal-card-frame,
   .card-sortable--dragging > .card-drag-frame,
   .card-sortable--fallback > .card-drag-frame {
     transform: none !important;
@@ -3587,7 +2895,8 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   transform: translateX(-50%);
   width: min(520px, calc(100vw - 28px));
   max-width: 520px;
-  padding: 10px;
+  overflow: hidden;
+  padding: 0;
   box-shadow: 0 18px 48px rgba(16, 24, 40, .18);
 }
 
@@ -3596,17 +2905,24 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #boardSwitcherInput {
-  border-radius: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   font-size: 17px;
   padding: 12px 14px;
 }
 
+.board-switcher-modal #boardSwitcherInput:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
 .board-switcher-results {
   display: grid;
-  gap: 4px;
+  gap: 0;
   max-height: min(320px, calc(100vh - 150px));
   overflow-y: auto;
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .board-switcher-option {
@@ -3617,7 +2933,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   width: 100%;
   min-height: 58px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   overflow: hidden;
@@ -3667,6 +2983,32 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   font-size: var(--font-xs);
 }
 
+.board-switcher-option-excerpt {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--font-xs);
+  font-weight: 400;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-switcher-option-excerpt mark {
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+  color: var(--text);
+  padding: 0 2px;
+}
+
+.board-switcher-card-list {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--font-xs);
+  white-space: nowrap;
+}
+
 .board-switcher-close {
   align-self: center;
   justify-self: center;
@@ -3691,16 +3033,6 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 .board-switcher-close:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--accent) 55%, var(--bg-card));
   outline-offset: -2px;
-}
-
-.board-switcher-current {
-  border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border));
-  border-radius: 999px;
-  color: color-mix(in oklab, var(--accent) 68%, var(--text));
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 7px;
-  text-transform: uppercase;
 }
 
 .board-switcher-empty {
@@ -5484,6 +4816,98 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   padding: 8px;
 }
 
+.card-editor-card-link-popover {
+  width: min(320px, calc(100vw - 16px));
+  min-width: 240px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.card-editor-card-link-menu {
+  display: grid;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 10px;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, var(--bg-card));
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px var(--shadow-card);
+}
+
+.card-editor-card-link-menu:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--paynes-gray));
+  box-shadow: 0 6px 18px var(--shadow-card);
+}
+
+.card-editor-card-link-menu-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--font-md);
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.card-editor-card-link-menu-title-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.card-editor-card-link-menu-title-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.card-editor-card-link-menu-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card-editor-card-link-menu-option {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--bg-card) 92%, var(--bg));
+  color: var(--text);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.card-editor-card-link-menu-option:hover {
+  border-color: color-mix(in oklab, var(--accent) 38%, var(--border));
+  background: color-mix(in oklab, var(--accent) 8%, var(--bg-card));
+  color: color-mix(in oklab, var(--accent) 86%, var(--text));
+}
+
+.card-editor-card-link-menu-option:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 55%, var(--bg-card));
+  outline-offset: 1px;
+}
+
 #labelFilterPopover {
   right: auto;
   top: auto;
@@ -6928,26 +6352,6 @@ select:disabled {
     padding: 0 2px;
   }
 
-  .planner-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding-bottom: 10px;
-  }
-
-  .planner-header-controls {
-    width: 100%;
-  }
-
-  .planner-header-left {
-    flex-wrap: wrap;
-  }
-
-  #plannerSearchInput {
-    flex: 1 1 auto;
-    max-width: none;
-  }
-
   .archive-browser-body {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(220px, 1fr) minmax(240px, 1fr);
@@ -7009,33 +6413,14 @@ select:disabled {
   body:not(.board-empty) main#board.board-view-week {
     padding-left: 12px;
   }
-  .planner-header {
-    padding-right: 10px;
-  }
-  .planner-header-left {
-    width: 100%;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .planner-view-tabs {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-  .planner-view-tab {
-    min-height: 32px;
-    padding: 6px 9px;
-  }
-  .planner-body {
-    padding: 12px 12px calc(var(--workspace-view-dock-height) + var(--workspace-view-dock-bottom) + 20px);
-  }
   .workspace-view-dock {
     width: min(calc(100vw - 24px), 390px);
-    padding: 4px 8px;
+    padding: 1.3333px 2.6667px;
   }
   .workspace-view-dock-button {
     min-width: 0;
     flex: 1 1 0;
-    padding: 7px 8px;
+    padding: 2.3333px 2.6667px;
   }
   .workspace-view-dock-button.is-primary {
     min-width: 0;
@@ -7044,29 +6429,6 @@ select:disabled {
   #quickAddHeaderButton span,
   .sponsor-signboard-button span:not(.sponsor-signboard-dismiss) {
     display: none;
-  }
-  .planner-calendar,
-  .planner-this-week,
-  .planner-day,
-  .planner-agenda {
-    min-width: 740px;
-  }
-  .board-calendar {
-    min-width: 740px;
-  }
-  .board-this-week {
-    min-width: 740px;
-  }
-  .board-this-week-grid {
-    min-height: 520px;
-  }
-  .board-calendar-header {
-    grid-template-columns: 1fr;
-  }
-  .board-calendar-month-label {
-    grid-column: 1;
-    justify-self: center;
-    text-align: center;
   }
   .empty-board-cta {
     width: min(760px, calc(100vw - 24px));
@@ -7170,7 +6532,7 @@ select:disabled {
 
 /* 11) Print – simple, text-first */
 @media print {
-  body > header, #themeToggle, .workspace-view-dock, .planner-overlay { display: none !important; }
+  body > header, #themeToggle, .workspace-view-dock { display: none !important; }
   main#board { overflow: visible; }
   .list { box-shadow: none; border-color: #bbb; }
   .card { box-shadow: none; border-color: #bbb; }

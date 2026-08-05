@@ -6,9 +6,9 @@ describe('Task 14 board color schemes', () => {
     expect(COLOR_SCHEMES.map((scheme) => scheme.id)).toEqual(['default', 'lavender', 'harvest', 'olive', 'evergreen', 'rosewood', 'mid-winter', 'cozy-blush', 'coffee'])
 
     const board = document.createElement('main')
-    const planner = document.createElement('section')
+    const unrelatedSurface = document.createElement('section')
     document.documentElement.style.removeProperty('--bg')
-    document.body.append(board, planner)
+    document.body.append(board, unrelatedSurface)
 
     applyBoardThemeToElement(board, { colorScheme: 'harvest' }, 'light')
 
@@ -18,9 +18,9 @@ describe('Task 14 board color schemes', () => {
     expect(board.style.getPropertyValue('--accent')).toBe('#c4850a')
     expect(board.style.getPropertyValue('--sb-dark-bg')).toBe('#1c1709')
     expect(document.documentElement.style.getPropertyValue('--bg')).toBe('')
-    expect(planner.style.getPropertyValue('--bg')).toBe('')
+    expect(unrelatedSurface.style.getPropertyValue('--bg')).toBe('')
 
-    board.remove(); planner.remove()
+    board.remove(); unrelatedSurface.remove()
   })
 
   it('switches the same board to the dark palette without changing the selected scheme', () => {

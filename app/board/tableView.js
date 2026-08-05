@@ -1,24 +1,31 @@
 const BOARD_TABLE_COLUMNS = Object.freeze([
   { id: 'select', label: '' },
-  { id: 'start', label: 'Start' },
-  { id: 'due', label: 'Due' },
-  { id: 'updated', label: 'Updated' },
-  { id: 'created', label: 'Created' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'links', label: 'Links' },
   { id: 'title', label: 'Card' },
   { id: 'list', label: 'List' },
+  { id: 'tasks', label: 'Tasks' },
   { id: 'labels', label: 'Labels' },
+  { id: 'links', label: 'Links' },
+  { id: 'depends_on', label: 'Depends on' },
+  { id: 'blocked_by', label: 'Blocked By' },
+  { id: 'priority_index', label: 'Priority' },
+  { id: 'risk_reduction_index', label: 'Risk reduction' },
+  { id: 'impact_index', label: 'Impact' },
+  { id: 'autonomy_score', label: 'Autonomy' },
+  { id: 'quick_win_index', label: 'Quick win' },
+  { id: 'human_leverage_index', label: 'Human leverage' },
 ]);
 
 const BOARD_TABLE_SORT_OPTIONS = Object.freeze([
   { value: 'board', label: 'Board order' },
+  { value: 'dashboard-priority', label: 'Dashboard priority' },
+  { value: 'dashboard-impact', label: 'Impact' },
   { value: 'updated-asc', label: 'Updated, oldest first' },
   { value: 'updated-desc', label: 'Updated, newest first' },
   { value: 'created-asc', label: 'Created, oldest first' },
   { value: 'created-desc', label: 'Created, newest first' },
   { value: 'due-asc', label: 'Due date' },
   { value: 'title-asc', label: 'Title, A-Z' },
+  { value: 'title-desc', label: 'Title, Z-A' },
 ]);
 
 const BOARD_TABLE_LIST_FILTER_ALL = 'all';
@@ -203,6 +210,19 @@ async function collectBoardTableCards(boardRoot, listsWithCards) {
             ? card.frontmatter
             : {};
           const body = String(card && typeof card.body === 'string' ? card.body : '');
+          const projection = card && card.v2 && typeof card.v2 === 'object' ? card.v2 : null;
+          const metadata = frontmatter.signboard_v2 && typeof frontmatter.signboard_v2 === 'object' && !Array.isArray(frontmatter.signboard_v2)
+            ? frontmatter.signboard_v2
+            : (projection && projection.metadata && typeof projection.metadata === 'object' ? projection.metadata : {});
+          const scores = projection && projection.scores && typeof projection.scores === 'object' ? projection.scores : {};
+          const prioritySection = Array.isArray(projection && projection.sections)
+            ? projection.sections.find((section) => section && section.name === 'priority')
+            : null;
+          const tieBreakInputs = prioritySection && prioritySection.tie_break_inputs && typeof prioritySection.tie_break_inputs === 'object'
+            ? prioritySection.tie_break_inputs
+            : {};
+          const dependsOn = Array.isArray(metadata.depends_on) ? metadata.depends_on.map((value) => String(value || '').trim()).filter(Boolean) : [];
+          const blockedBy = Array.isArray(metadata.blocked_by) ? metadata.blocked_by.map((value) => String(value || '').trim()).filter(Boolean) : [];
 
           return {
             boardRoot,
@@ -218,6 +238,20 @@ async function collectBoardTableCards(boardRoot, listsWithCards) {
             labels: Array.isArray(frontmatter.labels)
               ? frontmatter.labels.map((labelId) => String(labelId))
               : [],
+            dependsOn,
+            dependsOnText: dependsOn.join(', '),
+            blockedBy,
+            blockedByText: blockedBy.join(', '),
+            priority_index: typeof scores.priority_index === 'number' ? scores.priority_index : null,
+            risk_reduction_index: typeof scores.risk_reduction_index === 'number' ? scores.risk_reduction_index : null,
+            impact_index: typeof scores.impact_index === 'number' ? scores.impact_index : null,
+            autonomy_score: typeof scores.autonomy_score === 'number' ? scores.autonomy_score : null,
+            quick_win_index: typeof scores.quick_win_index === 'number' ? scores.quick_win_index : null,
+            human_leverage_index: typeof scores.human_leverage_index === 'number' ? scores.human_leverage_index : null,
+            dashboardPriorityRank: typeof tieBreakInputs.priority_rank === 'number' ? tieBreakInputs.priority_rank : null,
+            dashboardScore: typeof tieBreakInputs.score === 'number' ? tieBreakInputs.score : null,
+            dashboardStatusRank: typeof tieBreakInputs.status_rank === 'number' ? tieBreakInputs.status_rank : null,
+            dashboardCardName: String((projection && projection.cardName) || cardName || ''),
             body,
             taskSummary: card.taskSummary && typeof card.taskSummary === 'object'
               ? card.taskSummary
@@ -426,6 +460,30 @@ function sortBoardTableCards(cards, sortKey = getBoardTableSortKey()) {
       if (byCreated !== 0) {
         return byCreated;
       }
+    } else if (normalizedSortKey === 'dashboard-priority') {
+      const leftPriority = typeof left.dashboardPriorityRank === 'number' ? left.dashboardPriorityRank : Number.MAX_SAFE_INTEGER;
+      const rightPriority = typeof right.dashboardPriorityRank === 'number' ? right.dashboardPriorityRank : Number.MAX_SAFE_INTEGER;
+      const leftScore = typeof left.dashboardScore === 'number' ? left.dashboardScore : Number.NEGATIVE_INFINITY;
+      const rightScore = typeof right.dashboardScore === 'number' ? right.dashboardScore : Number.NEGATIVE_INFINITY;
+      const leftStatus = typeof left.dashboardStatusRank === 'number' ? left.dashboardStatusRank : Number.MAX_SAFE_INTEGER;
+      const rightStatus = typeof right.dashboardStatusRank === 'number' ? right.dashboardStatusRank : Number.MAX_SAFE_INTEGER;
+      const byDashboardPriority = leftPriority - rightPriority
+        || rightScore - leftScore
+        || leftStatus - rightStatus
+        || String(left.dashboardCardName || '').localeCompare(String(right.dashboardCardName || ''), undefined, { numeric: true, sensitivity: 'base', ignorePunctuation: true });
+      if (byDashboardPriority !== 0) {
+        return byDashboardPriority;
+      }
+    } else if (normalizedSortKey === 'dashboard-impact') {
+      const leftImpact = typeof left.impact_index === 'number' ? left.impact_index : Number.NEGATIVE_INFINITY;
+      const rightImpact = typeof right.impact_index === 'number' ? right.impact_index : Number.NEGATIVE_INFINITY;
+      const byImpact = rightImpact - leftImpact
+        || (typeof left.dashboardStatusRank === 'number' ? left.dashboardStatusRank : Number.MAX_SAFE_INTEGER)
+          - (typeof right.dashboardStatusRank === 'number' ? right.dashboardStatusRank : Number.MAX_SAFE_INTEGER)
+        || String(left.dashboardCardName || '').localeCompare(String(right.dashboardCardName || ''), undefined, { numeric: true, sensitivity: 'base', ignorePunctuation: true });
+      if (byImpact !== 0) {
+        return byImpact;
+      }
     } else if (normalizedSortKey === 'due-asc') {
       const byDue = compareOptionalIsoDateValues(
         getBoardTablePrimaryDueDate(left),
@@ -434,14 +492,14 @@ function sortBoardTableCards(cards, sortKey = getBoardTableSortKey()) {
       if (byDue !== 0) {
         return byDue;
       }
-    } else if (normalizedSortKey === 'title-asc') {
+    } else if (normalizedSortKey === 'title-asc' || normalizedSortKey === 'title-desc') {
       const byTitle = String(left && left.title || '').localeCompare(String(right && right.title || ''), undefined, {
         numeric: true,
         sensitivity: 'base',
         ignorePunctuation: true,
       });
       if (byTitle !== 0) {
-        return byTitle;
+        return normalizedSortKey === 'title-desc' ? -byTitle : byTitle;
       }
     }
 
@@ -1340,6 +1398,37 @@ function createBoardTableLabelsCell(entry) {
   return cell;
 }
 
+function createBoardTableDependencyCell(entry, field) {
+  const cell = document.createElement('td');
+  cell.className = `board-table-cell board-table-cell-${field}`;
+  const values = field === 'depends_on' ? entry.dependsOn : entry.blockedBy;
+  const text = field === 'depends_on' ? entry.dependsOnText : entry.blockedByText;
+  if (Array.isArray(values) && values.length) {
+    cell.textContent = text;
+  } else {
+    const empty = document.createElement('span');
+    empty.className = 'board-table-empty-value';
+    empty.textContent = 'None';
+    cell.appendChild(empty);
+  }
+  return cell;
+}
+
+function createBoardTableScoreCell(entry, field) {
+  const cell = document.createElement('td');
+  cell.className = `board-table-cell board-table-cell-${field}`;
+  const value = entry[field];
+  if (value === null || typeof value === 'undefined') {
+    const empty = document.createElement('span');
+    empty.className = 'board-table-empty-value';
+    empty.textContent = 'None';
+    cell.appendChild(empty);
+  } else {
+    cell.textContent = String(Math.round(value));
+  }
+  return cell;
+}
+
 async function createBoardTableRow(entry, listOptions, visibleEntries) {
   const row = document.createElement('tr');
   row.className = 'board-table-row';
@@ -1357,15 +1446,16 @@ async function createBoardTableRow(entry, listOptions, visibleEntries) {
   });
 
   row.appendChild(createBoardTableSelectionCell(entry, visibleEntries));
-  row.appendChild(await createBoardTableStartCell(entry));
-  row.appendChild(await createBoardTableDueCell(entry));
-  row.appendChild(createBoardTableTimestampCell(entry, 'updatedAt'));
-  row.appendChild(createBoardTableTimestampCell(entry, 'createdAt'));
-  row.appendChild(createBoardTableTaskCell(entry));
-  row.appendChild(createBoardTableLinkedObjectsCell(entry));
   row.appendChild(createBoardTableTitleCell(entry));
   row.appendChild(createBoardTableListCell(entry, listOptions));
+  row.appendChild(createBoardTableTaskCell(entry));
   row.appendChild(createBoardTableLabelsCell(entry));
+  row.appendChild(createBoardTableLinkedObjectsCell(entry));
+  row.appendChild(createBoardTableDependencyCell(entry, 'depends_on'));
+  row.appendChild(createBoardTableDependencyCell(entry, 'blocked_by'));
+  for (const field of ['priority_index', 'risk_reduction_index', 'impact_index', 'autonomy_score', 'quick_win_index', 'human_leverage_index']) {
+    row.appendChild(createBoardTableScoreCell(entry, field));
+  }
 
   return row;
 }

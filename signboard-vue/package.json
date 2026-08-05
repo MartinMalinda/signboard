@@ -39,6 +39,7 @@
     "floating-vue": "^5.2.2",
     "muuri": "^0.9.5",
     "pinia": "^4.0.2",
+    "primevue": "4.5.5",
     "prosemirror-highlight": "^0.15.3",
     "shiki": "^4.3.1",
     "tiptap-markdown": "0.9.0",

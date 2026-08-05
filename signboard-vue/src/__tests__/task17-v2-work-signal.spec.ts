@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import CardItem from '../components/board/CardItem.vue'
+import V2SignalChip from '../components/board/V2SignalChip.vue'
 import { useBoardDataStore } from '../stores/useBoardDataStore'
 
 const updateFrontmatter = vi.fn()
@@ -69,36 +70,50 @@ describe('V2 Kanban work signals', () => {
     wrapper.unmount()
   })
 
-  it('renders compact signals and edits namespaced metadata from the popover', async () => {
+  it('omits the default Task kind while rendering the other compact signals', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const data = useBoardDataStore()
     data.snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { v2: { enabled: true } }, lists: [], errors: [], v2: { profile: { enabled: true }, cards: [] } }
-    const onOpen = vi.fn()
-    const wrapper = mount(CardItem, { global: { plugins: [pinia] }, props: { card: shapedCard, onOpen } })
+    const wrapper = mount(CardItem, { global: { plugins: [pinia] }, props: { card: shapedCard } })
 
-    expect(wrapper.find('.card-v2-signal-kind').text()).toBe('Task')
+    expect(wrapper.find('.card-v2-signal-kind').exists()).toBe(false)
     expect(wrapper.find('.card-v2-signal-priority').text()).toBe('P2')
     expect(wrapper.find('.card-v2-signal-derived').text()).toBe('Quick win')
 
-    await wrapper.find('.card-v2-work-details-button').trigger('click')
-    const popover = document.body.querySelector<HTMLElement>('#cardV2WorkDetailsPopover')
-    expect(popover?.getAttribute('aria-hidden')).toBe('false')
-    expect(popover?.textContent).toContain('Work details')
+    expect(wrapper.find('.card-v2-work-details-button').exists()).toBe(false)
+    expect(document.body.querySelector('#cardV2WorkDetailsPopover')).toBeNull()
+    wrapper.unmount()
+  })
 
-    const selects = Array.from(popover?.querySelectorAll('select') || []) as HTMLSelectElement[]
-    const prioritySelect = selects[2]
-    expect(prioritySelect).toBeDefined()
-    if (!prioritySelect) throw new Error('Priority selector was not rendered.')
-    prioritySelect.value = 'P1'
-    prioritySelect.dispatchEvent(new Event('change', { bubbles: true }))
-    await vi.waitFor(() => expect(updateFrontmatter).toHaveBeenCalledWith(shapedCard.cardPath, {
-      signboard_v2: expect.objectContaining({ priority_class: 'P1', contract_version: 1 }),
-    }))
+  it('renders non-default kinds such as Epic', () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const data = useBoardDataStore()
+    data.snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { v2: { enabled: true } }, lists: [], errors: [], v2: { profile: { enabled: true }, cards: [] } }
+    const epicCard = {
+      ...shapedCard,
+      frontmatter: { ...shapedCard.frontmatter, signboard_v2: { ...shapedCard.frontmatter.signboard_v2, kind: 'epic' } },
+      v2: { ...shapedCard.v2, metadata: { ...shapedCard.v2.metadata, kind: 'epic' } },
+    }
+    const wrapper = mount(CardItem, { global: { plugins: [pinia] }, props: { card: epicCard } })
 
-    const editorLink = Array.from(popover?.querySelectorAll('button') || []).find((button) => button.textContent?.includes('More in editor'))
-    editorLink?.click()
-    expect(onOpen).toHaveBeenCalledWith(shapedCard.cardPath)
+    expect(wrapper.find('.card-v2-signal-kind').text()).toBe('Epic')
+    wrapper.unmount()
+  })
+
+  it('does not turn the broad Impact dashboard section into a card badge', () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const data = useBoardDataStore()
+    data.snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { v2: { enabled: true } }, lists: [], errors: [], v2: { profile: { enabled: true }, cards: [] } }
+    const impactCard = {
+      ...shapedCard,
+      v2: { ...shapedCard.v2, sections: [{ name: 'impact', included: true }] },
+    }
+    const wrapper = mount(CardItem, { global: { plugins: [pinia] }, props: { card: impactCard } })
+    expect(wrapper.findAllComponents(V2SignalChip).some((chip) => chip.props('label') === 'Impact')).toBe(false)
+    expect(wrapper.find('.card-v2-signal-derived').exists()).toBe(false)
     wrapper.unmount()
   })
 })

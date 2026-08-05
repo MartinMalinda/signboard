@@ -28,15 +28,36 @@ export interface CardSnapshot {
 
 export interface V2CardProjection {
   score_version: number
+  stageSemantics?: V2StageSemantics
   normalized: Record<string, unknown>
   metadata: Record<string, unknown>
   scores: Record<string, number | null>
+  explanations?: {
+    impact_index?: V2ImpactExplanation | null
+    [key: string]: unknown
+  }
   eligibility: Record<string, unknown>
   classes: Record<string, string | null>
   sections: Array<Record<string, unknown>>
   missing_fields: string[]
   defaults_applied: Record<string, unknown>
   warnings: string[]
+}
+
+export interface V2StageSemantics {
+  stage: V2StageKey | null
+  mapped: boolean
+  ambiguous: boolean
+  terminal: boolean
+}
+
+export interface V2ImpactExplanation {
+  positive_impact: number
+  confidence_multiplier: number
+  strategic_multiplier: number
+  effort_points: number
+  effort_factor: number
+  result: number
 }
 
 export interface CardRead {
@@ -76,10 +97,11 @@ export interface V2BoardProfile {
     kind?: string
     workType?: string
     priorityClass?: string
+    executionCeiling?: string
+    backgroundSelection?: boolean
     [key: string]: unknown
   }
   validationPolicy?: string
-  retainPlanner?: boolean
   [key: string]: unknown
 }
 
@@ -297,6 +319,7 @@ export interface ElectronApiBridge {
   onToggleThemeMode?(callback: () => void): () => void
   copyTextToClipboard?(text: string): Promise<unknown>
   onOpenQuickAddCard?(callback: () => void): () => void
+  onOpenSignboardCardLink?(callback: (payload: { cardPath?: string; cardId?: string; ok?: boolean }) => void): () => void
   onOpenBoardSettings?(callback: () => void): () => void
   readAppSettings?(): Promise<AppSettings>
   updateAppSettings?(partialSettings: Record<string, unknown>): Promise<AppSettings>

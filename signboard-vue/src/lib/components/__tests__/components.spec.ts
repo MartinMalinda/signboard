@@ -65,4 +65,30 @@ describe('shared Vue components', () => {
     expect(document.querySelector('#modals [role="dialog"]')).not.toBeNull()
     expect(grid.find('.grid').exists()).toBe(true)
   })
+
+  it('keeps an anchored modal inside the viewport after a rendered transform', async () => {
+    const modal = mount(Modal, {
+      props: { isOpen: true, onClose: vi.fn(), transition: false, position: 'below' },
+    })
+
+    await modal.vm.$nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const dialog = document.querySelector('#modals [role="dialog"]') as HTMLElement
+    Object.defineProperties(dialog, {
+      offsetWidth: { configurable: true, value: 500 },
+      offsetHeight: { configurable: true, value: 200 },
+    })
+    vi.spyOn(dialog, 'getBoundingClientRect').mockImplementation(() => {
+      const left = Number.parseFloat(dialog.style.left || '0') || 0
+      const top = Number.parseFloat(dialog.style.top || '0') || 0
+      return { left: left + 120, top, width: 500, height: 200, right: left + 620, bottom: top + 200 } as DOMRect
+    })
+
+    window.dispatchEvent(new Event('resize'))
+    await modal.vm.$nextTick()
+
+    expect(Number.parseFloat(dialog.style.left)).toBeLessThanOrEqual(window.innerWidth - 500 - 8 - 120)
+    expect(Number.parseFloat(dialog.style.top)).toBeGreaterThanOrEqual(8)
+    modal.unmount()
+  })
 })

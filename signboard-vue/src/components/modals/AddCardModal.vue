@@ -18,7 +18,7 @@ function resetWorkDetails() { kind.value = String(v2Defaults.value.kind || 'task
 function creationFrontmatter() {
   const frontmatter: Record<string, unknown> = selectedLabels.value.length ? { labels: selectedLabels.value } : {}
   if (v2Enabled.value) {
-    const metadata: Record<string, unknown> = { contract_version: 1, kind: kind.value, work_type: workType.value, priority_class: priorityClass.value }
+    const metadata: Record<string, unknown> = { contract_version: 1, kind: kind.value, work_type: workType.value, priority_class: priorityClass.value, execution: { ceiling: String(v2Defaults.value.executionCeiling || 'human_only'), background_selection: v2Defaults.value.backgroundSelection === true } }
     if (effortPoints.value) metadata.estimate = { effort_points: Number(effortPoints.value) }
     frontmatter.signboard_v2 = metadata
   }

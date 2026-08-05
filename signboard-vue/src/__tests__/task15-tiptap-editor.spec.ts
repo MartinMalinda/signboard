@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import RichTextEditor from '../lib/components/RichTextEditor.vue'
 
@@ -50,6 +51,62 @@ describe('Task 15 Tiptap card notes editor', () => {
     await mounted.find('.card-editor-body-url-open').trigger('click')
     expect(openExternal).toHaveBeenCalledWith('https://example.test/docs')
     expect((mounted.vm as unknown as { getMarkdown: () => string }).getMarkdown()).toContain('https://example.test/docs.')
+  })
+
+  it('renders compact card links and opens a title/action menu after a hover delay', async () => {
+    const openExternal = vi.fn()
+    window.electronAPI = { openExternal } as never
+    mounted = mount(RichTextEditor, { attachTo: document.body, props: { modelValue: '[Related card](signboard://open-card?id=Ab123)' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const link = mounted.find('a.card-editor-card-link')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('data-card-link')).toBe('signboard://open-card?id=Ab123')
+    await link.trigger('mouseover')
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(document.body.querySelector('#cardEditorCardLinkPopover')?.getAttribute('aria-hidden')).toBe('true')
+    await new Promise((resolve) => setTimeout(resolve, 180))
+    const menu = document.body.querySelector<HTMLElement>('#cardEditorCardLinkPopover')
+    expect(menu?.getAttribute('aria-hidden')).toBe('false')
+    expect(menu?.querySelector('.card-editor-card-link-menu-title')?.textContent).toBe('Related card')
+    expect(openExternal).not.toHaveBeenCalled()
+
+    const visit = Array.from(menu?.querySelectorAll<HTMLButtonElement>('button') || []).find((button) => button.textContent === 'Open')
+    visit?.click()
+    expect(openExternal).toHaveBeenCalledWith('signboard://open-card?id=Ab123')
+  })
+
+  it('opens the link editor from the card-link menu', async () => {
+    mounted = mount(RichTextEditor, { attachTo: document.body, props: { modelValue: '[Related card](signboard://open-card?id=Ab123)' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await mounted.find('a.card-editor-card-link').trigger('mouseover')
+    await new Promise((resolve) => setTimeout(resolve, 320))
+    const menu = document.body.querySelector<HTMLElement>('#cardEditorCardLinkPopover')
+    const edit = Array.from(menu?.querySelectorAll<HTMLButtonElement>('button') || []).find((button) => button.textContent === 'Edit')
+    edit?.click()
+    await nextTick()
+    await nextTick()
+
+    expect(document.body.querySelector('#modalCardEditorLink')).toBeTruthy()
+    expect(document.body.querySelector<HTMLInputElement>('#modalCardEditorLink input[type="url"]')?.value).toBe('signboard://open-card?id=Ab123')
+  })
+
+  it('resolves relative Markdown card links from the current card path', async () => {
+    const openCard = vi.fn()
+    mounted = mount(RichTextEditor, {
+      props: {
+        modelValue: '[Related card](../Doing/related-card.md)',
+        cardPath: '/boards/Example/To-do/current-card.md',
+        onOpenCard: openCard,
+      },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const link = mounted.find('a.card-editor-card-link')
+    expect(link.exists()).toBe(true)
+    await link.trigger('click')
+    expect(openCard).toHaveBeenCalledWith('/boards/Example/Doing/related-card.md', { stack: true })
   })
 
   it('keeps fenced code blocks separate from inline code styling', async () => {

@@ -25,12 +25,16 @@ async function loadEditorExtras() {
   if (window.board.listLists && root) listPaths.value = (await window.board.listLists(root)).map((name) => `${root}${name}`)
 }
 
-async function openCard(path: string, options: { focusNotes?: boolean } = {}) {
-  const opened = await editor.open(path, options)
+async function openCard(path: string, options: { focusNotes?: boolean; stack?: boolean } = {}) {
+  const opened = options.stack ? await editor.openStacked(path, options) : await editor.open(path, options)
   if (opened) await loadEditorExtras()
 }
 
-async function close() { await editor.close() }
+async function close() {
+  await editor.close()
+  if (editor.isOpen) await loadEditorExtras()
+}
+async function closeAll() { await editor.closeAll() }
 
 async function refreshFromExternalChange() {
   const changed = await editor.refreshFromDiskIfClean()
@@ -60,7 +64,7 @@ async function moveAdjacent(direction: -1 | 1) {
 async function archiveActive() { await archive() }
 
 async function openDashboardSection(section: string) {
-  await close()
+  await closeAll()
   view.setDashboardSectionFilter(section)
   view.setView('table')
 }
@@ -74,7 +78,7 @@ async function handleDrop(event: DragEvent) {
   if (result?.ok) status.value = 'Linked dropped files.'
 }
 
-defineExpose({ openCard, closeCard: close, refreshFromExternalChange, moveAdjacent, archiveActive })
+defineExpose({ openCard, closeCard: closeAll, closeCardStack: close, refreshFromExternalChange, moveAdjacent, archiveActive })
 
 onMounted(() => {
   externalSyncTimer = window.setInterval(() => {
@@ -89,13 +93,14 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
     <div class="cardEditorHeader">
       <CardTitleField :value="editor.title" :on-change="editor.setTitle" />
       <div class="cardEditorHeaderActions">
-      <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
+        <button v-if="editor.stackDepth" id="cardEditorBack" type="button" title="Back to previous card" aria-label="Back to previous card" @click="close"><FeatherIcon name="arrow-left" /></button>
+        <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
         <button id="cardEditorClose" type="button" title="Close" aria-label="Close card editor" aria-keyshortcuts="Escape" @click="close"><FeatherIcon name="x" /></button>
       </div>
     </div>
     <div class="card-editor-modal-content" @dragover.prevent @drop.prevent="void handleDrop($event)">
       <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" :on-open-dashboard="openDashboardSection" />
-      <CardNotesEditor ref="notes" />
+      <CardNotesEditor ref="notes" :on-open-card="openCard" :v2-enabled="v2Enabled" :list-paths="listPaths" :on-move="move" />
       <CardTimestamps :timestamps="editor.timestamps" />
       <input id="cardEditorCardPath" type="hidden" :value="editor.cardPath" />
       <input id="cardEditorCardMetadata" type="hidden" :value="JSON.stringify(editor.frontmatter)" />

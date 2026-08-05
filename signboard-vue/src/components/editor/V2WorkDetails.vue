@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { getListDisplayName } from '../../../lib/listNaming.js'
+import { formatDashboardReasonCodes } from '../../../lib/dashboardSections'
 import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import { useEditorStore } from '../../stores/useEditorStore'
-import CardMoveControls from './CardMoveControls.vue'
 import FeatherIcon from '../FeatherIcon.vue'
 import V2RelatedTaskSelect from './V2RelatedTaskSelect.vue'
 
@@ -11,11 +11,14 @@ const props = defineProps<{ listPaths: string[]; onMove: (path: string) => Promi
 const editor = useEditorStore()
 const data = useBoardDataStore()
 const detailsOpen = ref(false)
-const advancedOpen = ref(false)
 
-const KIND_OPTIONS = ['task', 'discovery', 'epic', 'incident']
-const WORK_TYPE_OPTIONS = ['product', 'ux', 'security', 'correctness', 'data_integrity', 'reliability', 'performance', 'compliance', 'privacy', 'engineering_health', 'technical_debt', 'observability', 'operations', 'enablement', 'discovery', 'documentation']
-const PRIORITY_OPTIONS = ['', 'P0', 'P1', 'P2', 'P3']
+const ADVANCED_GROUPS = [
+  { group: 'opportunity', label: 'Opportunity' },
+  { group: 'risk_prevented', label: 'Risk prevented' },
+  { group: 'delivery', label: 'Delivery' },
+  { group: 'modifiers', label: 'Modifiers' },
+  { group: 'execution', label: 'Execution' },
+] as const
 const ADVANCED_FIELDS = [
   { group: 'opportunity', field: 'reach', label: 'Reach', min: 0, max: 5 },
   { group: 'opportunity', field: 'benefit', label: 'Benefit', min: 0, max: 5 },
@@ -39,9 +42,14 @@ const ADVANCED_FIELDS = [
   { group: 'execution', field: 'isolation', label: 'Isolation', min: 0, max: 5 },
 ]
 const POLICY_FIELDS = [
-  { field: 'do_not_autorun', label: 'Do not auto-run' },
-  { field: 'agent_execution_blocked', label: 'Block agent execution' },
-  { field: 'autonomous_execution_blocked', label: 'Block autonomous execution' },
+  { field: 'background_selection', label: 'Allow automatic background selection' },
+]
+const EXECUTION_CEILING_OPTIONS = [
+  { value: 'human_only', label: 'Human only' },
+  { value: 'analysis_planning', label: 'Analysis and planning only' },
+  { value: 'supervised_implementation', label: 'Supervised implementation' },
+  { value: 'autonomous_pull_request', label: 'Autonomous pull request' },
+  { value: 'autonomous_merge', label: 'Policy-permitted autonomous merge' },
 ]
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -83,16 +91,16 @@ const relatedTaskOptions = computed(() => {
 const projection = computed(() => data.snapshot?.v2?.cards.find((card) => card.cardPath === editor.cardPath))
 const includedSections = computed(() => new Set((projection.value?.sections || []).filter((section) => section.included === true).map((section) => String(section.name))))
 const derivedSignal = computed(() => {
-  if (priority.value === 'P0' || priority.value === 'P1' || includedSections.value.has('critical')) return 'Critical'
   if (includedSections.value.has('blocked')) return 'Blocked'
   if (includedSections.value.has('agent_loops')) return 'Agent-ready'
+  if (includedSections.value.has('impact')) return 'Impact'
   if (includedSections.value.has('low_hanging_fruit')) return 'Quick win'
   return 'None'
 })
 const derivedSection = computed(() => {
-  if (derivedSignal.value === 'Critical') return 'critical'
   if (derivedSignal.value === 'Blocked') return 'blocked'
   if (derivedSignal.value === 'Agent-ready') return 'agent_loops'
+  if (derivedSignal.value === 'Impact') return 'impact'
   if (derivedSignal.value === 'Quick win') return 'low_hanging_fruit'
   return ''
 })
@@ -100,7 +108,7 @@ const whyText = computed(() => {
   const section = projection.value?.sections.find((item) => item.name === derivedSection.value)
   const firstReason = (value: unknown) => Array.isArray(value) ? value[0] : undefined
   const reason = firstReason(section?.reason_codes) || firstReason(projection.value?.eligibility?.reason_codes)
-  return String(reason || 'Complete the required work fields to produce a computed signal.').replace(/_/g, ' ').toLowerCase()
+  return formatDashboardReasonCodes(reason ? [reason] : []) || 'Complete the required work fields to produce a computed signal.'
 })
 
 function label(value: string) {
@@ -111,10 +119,6 @@ function updateV2(nextPartial: Record<string, unknown>) {
   const next = { ...clone(v2Metadata.value), contract_version: 1, ...nextPartial }
   editor.frontmatter = { ...editor.frontmatter, signboard_v2: next }
   editor.queueSave()
-}
-
-function updateCore(field: 'kind' | 'work_type' | 'priority_class', value: string) {
-  updateV2({ [field]: value })
 }
 
 function updateEffort(event: Event) {
@@ -148,6 +152,21 @@ function readPolicyValue(field: string) {
   return execution[field] === true
 }
 
+function readExecutionCeiling() {
+  const execution = isObject(v2Metadata.value.execution) ? v2Metadata.value.execution : {}
+  return String(execution.ceiling || 'human_only')
+}
+
+function hasExecutionCeilingOption(value: string) {
+  return EXECUTION_CEILING_OPTIONS.some((option) => option.value === value)
+}
+
+function updateExecutionCeiling(event: Event) {
+  const execution = clone(v2Metadata.value.execution)
+  execution.ceiling = String((event.target as HTMLSelectElement).value || 'human_only')
+  updateV2({ execution })
+}
+
 function updatePolicyValue(field: string, event: Event) {
   const execution = clone(v2Metadata.value.execution)
   execution[field] = (event.target as HTMLInputElement).checked
@@ -162,20 +181,22 @@ function updatePolicyValue(field: string, event: Event) {
       <span class="v2-editor-work-summary-stage">{{ currentListName }} <FeatherIcon :name="detailsOpen ? 'chevron-up' : 'chevron-down'" :size="15" /></span>
     </button>
     <div v-if="detailsOpen" id="cardEditorWorkDetailsPanel" class="v2-editor-work-panel">
-      <div class="v2-editor-core-grid">
-        <label>Kind<select :value="kind" @change="updateCore('kind', ($event.target as HTMLSelectElement).value)"><option v-for="option in KIND_OPTIONS" :key="option" :value="option">{{ label(option) }}</option></select></label>
-        <label>Work type<select :value="workType" @change="updateCore('work_type', ($event.target as HTMLSelectElement).value)"><option v-for="option in WORK_TYPE_OPTIONS" :key="option" :value="option">{{ label(option) }}</option></select></label>
-        <label>Priority<select :value="priority" @change="updateCore('priority_class', ($event.target as HTMLSelectElement).value)"><option v-for="option in PRIORITY_OPTIONS" :key="option" :value="option">{{ option || 'Unset' }}</option></select></label>
-        <label>Effort points<input type="number" min="1" max="99" step="1" :value="effort" placeholder="Unset" @change="updateEffort" /></label>
-      </div>
-      <div class="v2-editor-stage-row"><div class="v2-editor-stage-field"><span class="v2-editor-field-label">Stage</span><CardMoveControls :card-path="editor.cardPath" :list-paths="props.listPaths" :on-move="props.onMove" /></div></div>
+      <div class="v2-editor-estimate-field"><label>Effort points<input type="number" min="1" max="99" step="1" :value="effort" placeholder="Unset" @change="updateEffort" /></label></div>
       <V2RelatedTaskSelect label="Depends on" :model-value="dependencies" :options="relatedTaskOptions" @update:model-value="updateDependencies('depends_on', $event)" />
       <V2RelatedTaskSelect label="Blocked by" :model-value="blockedBy" :options="relatedTaskOptions" @update:model-value="updateDependencies('blocked_by', $event)" />
 
-      <button class="v2-editor-disclosure" type="button" :aria-expanded="advancedOpen" @click="advancedOpen = !advancedOpen"><span>Advanced scoring</span><FeatherIcon :name="advancedOpen ? 'chevron-up' : 'chevron-down'" :size="14" /></button>
-      <div v-if="advancedOpen" class="v2-editor-advanced-grid">
-        <label v-for="field in ADVANCED_FIELDS" :key="`${field.group}.${field.field}`">{{ field.label }}<input type="number" :min="field.min" :max="field.max" step="1" :value="readAdvancedValue(field.group, field.field)" @change="updateAdvancedValue(field.group, field.field, $event)" /></label>
-        <label v-for="field in POLICY_FIELDS" :key="field.field" class="v2-editor-policy-field"><input type="checkbox" :checked="readPolicyValue(field.field)" @change="updatePolicyValue(field.field, $event)" />{{ field.label }}</label>
+      <div class="v2-editor-advanced-grid">
+        <fieldset v-for="scoreGroup in ADVANCED_GROUPS" :key="scoreGroup.group" class="v2-editor-score-group">
+          <legend>{{ scoreGroup.label }}</legend>
+          <div class="v2-editor-score-fields">
+            <label v-for="field in ADVANCED_FIELDS.filter((item) => item.group === scoreGroup.group)" :key="`${field.group}.${field.field}`">{{ field.label }}<input type="number" :min="field.min" :max="field.max" step="1" :value="readAdvancedValue(field.group, field.field)" @change="updateAdvancedValue(field.group, field.field, $event)" /></label>
+            <template v-if="scoreGroup.group === 'execution'">
+              <label class="v2-editor-policy-select">Agent execution ceiling<select id="cardEditorExecutionCeiling" :value="readExecutionCeiling()" @change="updateExecutionCeiling"><option v-if="!hasExecutionCeilingOption(readExecutionCeiling())" :value="readExecutionCeiling()">Invalid value (preserved): {{ readExecutionCeiling() }}</option><option v-for="option in EXECUTION_CEILING_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option></select></label>
+              <label v-for="field in POLICY_FIELDS" :key="field.field" class="v2-editor-policy-field"><input type="checkbox" :checked="readPolicyValue(field.field)" @change="updatePolicyValue(field.field, $event)" />{{ field.label }}</label>
+              <p class="v2-editor-policy-note">Signboard records this policy for planning only; it has no agent runner or merge executor.</p>
+            </template>
+          </div>
+        </fieldset>
       </div>
 
       <div class="v2-editor-computed" aria-label="Computed signals"><span class="v2-editor-field-label">Computed signals</span><strong>{{ derivedSignal }}</strong><span class="v2-editor-why">{{ whyText }}</span><button v-if="derivedSection && props.onOpenDashboard" type="button" class="v2-editor-dashboard-link" @click="props.onOpenDashboard(derivedSection)">View in Dashboard</button></div>
@@ -190,19 +211,20 @@ function updatePolicyValue(field: string, event: Event) {
 .v2-editor-eyebrow, .v2-editor-field-label { color: var(--muted, #6b7280); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .v2-editor-work-summary-stage { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; color: var(--muted, #6b7280); font-size: 12px; }
 .v2-editor-work-panel { display: grid; gap: 12px; padding: 0 12px 12px; }
-.v2-editor-core-grid, .v2-editor-advanced-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.v2-editor-core-grid label, .v2-editor-advanced-grid label, .v2-editor-wide-field { display: grid; gap: 4px; color: var(--muted, #6b7280); font-size: 11px; }
-.v2-editor-core-grid select, .v2-editor-core-grid input, .v2-editor-advanced-grid input:not([type="checkbox"]), .v2-editor-wide-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; height: 32px; padding: 5px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); color: var(--text, #111827); font: inherit; font-size: 13px; line-height: 1.2; }
-.v2-editor-stage-row { display: grid; gap: 4px; padding: 8px 0; border-block: 1px solid var(--border, #e6e8ec); }
-.v2-editor-stage-field { display: grid; gap: 4px; }
-.v2-editor-stage-field :deep(.cardEditorListControl) { width: 100%; min-width: 0; padding-left: 0; }
-.v2-editor-stage-field :deep(.card-editor-stage-select), .v2-editor-stage-field :deep(.card-editor-stage-select select) { width: 100%; min-width: 0; }
+.v2-editor-advanced-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.v2-editor-estimate-field label, .v2-editor-advanced-grid label, .v2-editor-wide-field { display: grid; gap: 4px; color: var(--muted, #6b7280); font-size: 11px; }
+.v2-editor-score-group { min-width: 0; margin: 0; padding: 8px; border: 1px solid var(--border, #e6e8ec); border-radius: 6px; }
+.v2-editor-score-group legend { padding: 0 4px; color: var(--text, #111827); font-size: 11px; font-weight: 650; }
+.v2-editor-score-fields { display: grid; gap: 8px; }
+.v2-editor-estimate-field input, .v2-editor-advanced-grid input:not([type="checkbox"]), .v2-editor-wide-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; height: 32px; padding: 5px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); color: var(--text, #111827); font: inherit; font-size: 13px; line-height: 1.2; }
 .v2-editor-wide-field textarea { resize: vertical; }
-.v2-editor-disclosure { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border: 0; border-top: 1px solid var(--border, #e6e8ec); background: transparent; color: inherit; font-weight: 600; text-align: left; cursor: pointer; }
 .v2-editor-policy-field { display: flex !important; grid-template-columns: auto 1fr; align-items: center; gap: 6px !important; }
 .v2-editor-policy-field input[type="checkbox"] { flex: 0 0 16px; width: 16px; height: 16px; min-width: 16px; min-height: 16px; margin: 0; padding: 0; accent-color: var(--primary, #0b5fff); }
+.v2-editor-policy-select select { box-sizing: border-box; width: 100%; min-height: 32px; padding: 5px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); color: var(--text, #111827); font: inherit; font-size: 13px; }
+.v2-editor-policy-note { margin: 0; color: var(--muted, #6b7280); font-size: 11px; line-height: 1.35; }
 .v2-editor-computed { display: grid; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border, #e6e8ec); }
 .v2-editor-why { color: var(--muted, #6b7280); font-size: 12px; }
 .v2-editor-dashboard-link { justify-self: start; padding: 0; border: 0; background: transparent; color: var(--primary, #0b5fff); cursor: pointer; font-size: 12px; }
-@media (max-width: 580px) { .v2-editor-core-grid, .v2-editor-advanced-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .v2-editor-advanced-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 580px) { .v2-editor-advanced-grid { grid-template-columns: 1fr; } }
 </style>
