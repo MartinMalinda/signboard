@@ -61,8 +61,6 @@ function syncBoardViewLayout(boardEl, activeBoardView) {
   }
 
   boardEl.classList.toggle('board-view-table', activeBoardView === 'table');
-  boardEl.classList.toggle('board-view-calendar', activeBoardView === 'calendar');
-  boardEl.classList.toggle('board-view-week', activeBoardView === 'this-week');
 }
 
 async function handleEmptyBoardCallToActionClick(buttonEl) {

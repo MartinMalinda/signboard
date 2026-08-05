@@ -301,8 +301,5 @@ async function closeAllModals(e, options = {}){
 
     if (!skipRerender && (shouldRerender || editModalClosed || boardSettingsClosed)) {
         await renderBoard();
-        if (editModalClosed && typeof isPlannerOpen === 'function' && isPlannerOpen() && typeof renderPlannerView === 'function') {
-            await renderPlannerView();
-        }
     }
 }

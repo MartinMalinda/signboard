@@ -998,7 +998,6 @@ async function init() {
         initializeBoardLabelControls();
         initializeBoardSearchControls();
         initializeBoardViewControls();
-        initializePlannerControls();
         initializeArchiveBrowserControls();
         initializeBoardSwitcherControls();
     };
@@ -1115,9 +1114,6 @@ async function init() {
         }
         if (typeof closeBoardMenuPopoverIfClickOutside === 'function') {
             closeBoardMenuPopoverIfClickOutside(e.target);
-        }
-        if (typeof closePlannerFilterPopoverIfClickOutside === 'function') {
-            closePlannerFilterPopoverIfClickOutside(e.target);
         }
         if (typeof closeListActionsPopoverIfClickOutside === 'function') {
             closeListActionsPopoverIfClickOutside(e.target);
