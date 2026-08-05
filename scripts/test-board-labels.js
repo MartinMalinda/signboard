@@ -50,13 +50,12 @@ async function run() {
         dropped: [],
       },
       dashboard: {
-        sections: ['critical', 'next_best_work', 'low_hanging_fruit', 'agent_loops', 'blocked'],
+        sections: ['priority', 'impact', 'low_hanging_fruit', 'agent_loops', 'blocked'],
         title: '',
         description: '',
       },
-      cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2' },
+      cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2', executionCeiling: 'human_only', backgroundSelection: false },
       validationPolicy: 'framework_v1',
-      retainPlanner: true,
     });
 
     const settingsPath = path.join(boardPath, '.board.json');
@@ -136,13 +135,12 @@ async function run() {
         version: 1,
         stages: { ready: [' Ready ', 'Ready', 42] },
         dashboard: {
-          sections: ['blocked', 'unknown'],
+          sections: ['critical', 'next_best_work', 'blocked'],
           title: 'V2 dashboard',
           customDashboardKey: { preserved: true },
         },
-        cardDefaults: { kind: 'discovery', priorityClass: 42 },
+        cardDefaults: { kind: 'discovery', priorityClass: 42, executionCeiling: 'not-a-ceiling', backgroundSelection: 'false' },
         validationPolicy: 'framework_v1',
-        retainPlanner: false,
         customProfileKey: { preserved: true },
         dashboardExtra: { preserved: true },
       },
@@ -151,10 +149,11 @@ async function run() {
     assert.strictEqual(v2Settings.v2.enabled, true);
     assert.strictEqual(v2Settings.v2.profileId, 'signboard_v2_migration');
     assert.deepStrictEqual(v2Settings.v2.stages.ready, ['Ready']);
-    assert.deepStrictEqual(v2Settings.v2.dashboard.sections, ['blocked']);
+    assert.deepStrictEqual(v2Settings.v2.dashboard.sections, ['priority', 'impact', 'blocked']);
     assert.strictEqual(v2Settings.v2.cardDefaults.kind, 'discovery');
     assert.strictEqual(v2Settings.v2.cardDefaults.priorityClass, 'P2');
-    assert.strictEqual(v2Settings.v2.retainPlanner, false);
+    assert.strictEqual(v2Settings.v2.cardDefaults.executionCeiling, 'human_only');
+    assert.strictEqual(v2Settings.v2.cardDefaults.backgroundSelection, false);
     assert.deepStrictEqual(v2Settings.v2.customProfileKey, { preserved: true });
     assert.deepStrictEqual(v2Settings.v2.dashboard.customDashboardKey, { preserved: true });
 

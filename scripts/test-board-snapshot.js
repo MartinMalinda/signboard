@@ -82,8 +82,9 @@ async function testReadBoardSnapshot() {
     assert.strictEqual(v2TodoCard.v2.metadata.valid, true);
     assert.strictEqual(v2TodoCard.v2.normalized.status, 'ready');
     assert.strictEqual(v2TodoCard.v2.metadata.status, 'ready');
-    assert(v2TodoCard.v2.scores.critical_index > 0 || v2TodoCard.v2.scores.critical_index === 0);
-    assert(v2TodoCard.v2.sections.find((section) => section.name === 'critical').included);
+    assert(v2TodoCard.v2.scores.risk_reduction_index > 0 || v2TodoCard.v2.scores.risk_reduction_index === 0);
+    assert.strictEqual(v2TodoCard.v2.explanations.impact_index, null);
+    assert(v2TodoCard.v2.sections.find((section) => section.name === 'priority'));
     const legacyV2Card = v2Snapshot.lists.find((list) => list.listName === '001-Done-stock').cards[0];
     assert.strictEqual(legacyV2Card.v2.metadata.valid, false);
     assert(legacyV2Card.v2.warnings.includes('V2_METADATA_MISSING'));
@@ -134,10 +135,8 @@ function completeV2Metadata(overrides = {}) {
       verification_strength: 5,
       boundedness: 5,
       isolation: 5,
-      agent_execution_blocked: false,
-      autonomous_execution_blocked: false,
-      do_not_autorun: false,
-      policy_autonomous_merge_allowed: false,
+      ceiling: 'autonomous_pull_request',
+      background_selection: true,
       rollback_straightforward: false,
       ci_deterministic: false,
       ci_comprehensive: false,
@@ -180,7 +179,7 @@ async function testOptInV2Projection() {
       body: 'Legacy body',
     });
     await cardFrontmatter.writeCard(path.join(readyList, '004-malformed.md'), {
-      frontmatter: { title: 'Malformed', signboard_v2: { contract_version: 1, kind: 99, work_type: 42, priority_class: 99, execution: { do_not_autorun: 'false' } } },
+      frontmatter: { title: 'Malformed', signboard_v2: { contract_version: 1, kind: 99, work_type: 42, priority_class: 99, execution: { ceiling: 'unknown', background_selection: 'false' } } },
       body: 'Malformed body',
     });
     await cardFrontmatter.writeCard(path.join(readyList, '005-invalid-version.md'), {
@@ -215,7 +214,9 @@ async function testOptInV2Projection() {
 
     for (const name of ['001-p0.md', '002-p1.md']) {
       const projection = cards[name].v2;
-      assert(projection.sections.find((section) => section.name === 'critical').included);
+      assert(projection.sections.find((section) => section.name === 'priority'));
+      assert.strictEqual(projection.explanations.impact_index.strategic_multiplier, 1);
+      assert.strictEqual(projection.scores.impact_index, projection.explanations.impact_index.result);
       assert(projection.scores.autonomy_score <= 74);
       assert.strictEqual(projection.eligibility.agent_eligible, false);
       assert(projection.eligibility.reason_codes.includes('PRIORITY_AUTONOMY_CAP'));
@@ -229,13 +230,20 @@ async function testOptInV2Projection() {
     assert.strictEqual(cards['003-legacy.md'].v2.eligibility.eligible, false);
     assert(cards['003-legacy.md'].v2.missing_fields.length > 0);
     assert.strictEqual(cards['005-invalid-version.md'].v2.metadata.valid, false);
-    assert(cards['005-invalid-version.md'].v2.warnings.includes('INVALID_V2_CONTRACT_VERSION'));
+    assert(cards['005-invalid-version.md'].v2.warnings.includes('V2_METADATA_MISSING'));
     assert.strictEqual(cards['004-malformed.md'].v2.eligibility.eligible, false);
     assert(cards['004-malformed.md'].v2.warnings.some((warning) => warning.startsWith('INVALID_')));
-    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_PRIORITY'));
-    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_KIND'));
-    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_WORK_TYPE'));
-    assert(cards['004-malformed.md'].v2.eligibility.reason_codes.includes('METADATA_GATE_FAILED'));
+    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_PRIORITY'));
+    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_KIND'));
+    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_WORK_TYPE'));
+    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_EXECUTION_CEILING:execution.ceiling'));
+    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_BOOLEAN:execution.background_selection'));
+    assert.strictEqual(cards['004-malformed.md'].v2.defaults_applied['execution.ceiling'], 'human_only');
+    assert.strictEqual(cards['004-malformed.md'].v2.defaults_applied['execution.background_selection'], false);
+    assert.strictEqual(cards['004-malformed.md'].v2.metadata.execution.ceiling, 'unknown');
+    assert.strictEqual(cards['004-malformed.md'].v2.metadata.execution.background_selection, 'false');
+    assert(!cards['004-malformed.md'].v2.eligibility.reason_codes.includes('METADATA_GATE_FAILED'));
+    assert(cards['004-malformed.md'].v2.eligibility.reason_codes.includes('READINESS_FAILED'));
     assert.strictEqual(cards['006-sparse.md'].v2.scores.priority_index, null);
     assert.strictEqual(cards['006-sparse.md'].v2.eligibility.eligible, false);
     assert(cards['006-sparse.md'].v2.missing_fields.includes('estimate.effort_points'));

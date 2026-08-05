@@ -5,6 +5,7 @@ const V2_WORK_TYPES = new Set([
   'observability', 'operations', 'enablement', 'discovery', 'documentation',
 ]);
 const V2_PRIORITIES = new Set(['P0', 'P1', 'P2', 'P3']);
+const { isExecutionCeiling } = require('./v2ExecutionPolicy');
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -39,6 +40,15 @@ function normalizeV2CardMetadata(value) {
       if (normalized?.length) next[field] = normalized;
       else delete next[field];
     }
+  }
+  if (isObject(next.execution)) {
+    const execution = { ...next.execution };
+    if (Object.prototype.hasOwnProperty.call(execution, 'ceiling') && isExecutionCeiling(execution.ceiling)) {
+      execution.ceiling = execution.ceiling.trim().toLowerCase();
+    }
+    for (const field of ['agent_execution_blocked', 'autonomous_execution_blocked', 'do_not_autorun', 'policy_autonomous_merge_allowed']) delete execution[field];
+    if (Object.keys(execution).length) next.execution = execution;
+    else delete next.execution;
   }
   return next;
 }

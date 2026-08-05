@@ -1,6 +1,7 @@
 // THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/dueNotifications.js until then.
 import { isCompletedListByWorkflow, normalizeWorkflowSettings } from './boardLabels.js'
 import { parseTaskListItems } from './taskList.js'
+import { resolveV2StageSemantics } from './v2StageSemantics'
 
 const MAX_TITLE = 80
 const MAX_TASK = 120
@@ -53,14 +54,21 @@ async function collectDueTodayItemsForBoard(boardApi, boardRoot, todayIsoDate) {
   const root = String(boardRoot || '').replace(/\\/g, '/').replace(/\/+$/, '') + '/'
   if (root === '/') return []
   let lists
-  let workflow
+  let boardSettings
   try {
     lists = await boardApi.listLists(root)
-    workflow = boardApi.readBoardSettings ? await boardApi.readBoardSettings(root).then((settings) => normalizeWorkflowSettings(settings?.workflow)).catch(() => normalizeWorkflowSettings({})) : normalizeWorkflowSettings({})
+    boardSettings = boardApi.readBoardSettings ? await boardApi.readBoardSettings(root).catch(() => ({})) : {}
   } catch { return [] }
+  const v2Profile = boardSettings?.v2?.enabled === true ? boardSettings.v2 : null
+  const workflow = normalizeWorkflowSettings(boardSettings?.workflow)
   const items = []
   for (const listName of Array.isArray(lists) ? lists : []) {
-    if (isCompletedListByWorkflow(listName, workflow)) continue
+    if (v2Profile) {
+      const stageSemantics = resolveV2StageSemantics(v2Profile, listName)
+      if (!stageSemantics.mapped || stageSemantics.ambiguous || stageSemantics.terminal) continue
+    } else if (isCompletedListByWorkflow(listName, workflow)) {
+      continue
+    }
     let cards
     try { cards = await boardApi.listCards(`${root}${listName}`) } catch { continue }
     for (const cardName of Array.isArray(cards) ? cards : []) {

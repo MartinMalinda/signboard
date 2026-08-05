@@ -17,7 +17,7 @@
   const STATUS_VALUES = new Set(['inbox', 'shaping', 'ready', 'active', 'review', 'blocked', 'done', 'dropped']);
   const PRIORITY_VALUES = new Set(['P0', 'P1', 'P2', 'P3']);
   const KIND_VALUES = new Set(['epic', 'task', 'discovery', 'incident']);
-  const SECTION_NAMES = Object.freeze(['critical', 'next_best_work', 'low_hanging_fruit', 'agent_loops', 'blocked']);
+  const SECTION_NAMES = Object.freeze(['priority', 'impact', 'low_hanging_fruit', 'agent_loops', 'blocked']);
   const CONFIDENCE_MULTIPLIER = Object.freeze({ 1: 0.45, 2: 0.60, 3: 0.75, 4: 0.90, 5: 1.00 });
   const STRATEGIC_MULTIPLIER = Object.freeze({ 1: 0.80, 2: 0.90, 3: 1.00, 4: 1.10, 5: 1.20 });
   const URGENCY_MULTIPLIER = Object.freeze({ 1: 0.90, 2: 1.00, 3: 1.10, 4: 1.25, 5: 1.45 });
@@ -30,6 +30,14 @@
     'cross_customer_data', 'secrets', 'encryption', 'key_handling', 'subjective_judgment', 'human_only',
   ]);
   const AGENT_EXECUTION_MODES = new Set(['general', 'autonomous']);
+  const {
+    DEFAULT_EXECUTION_CEILING,
+    DEFAULT_BACKGROUND_SELECTION,
+    EXECUTION_CEILING_VALUES,
+    executionCeilingRank,
+  } = typeof require === 'function'
+    ? require('./v2ExecutionPolicy')
+    : root.SignboardV2ExecutionPolicy;
 
   function isObject(value) {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -94,6 +102,34 @@
       return fallback;
     }
     return value;
+  }
+
+  function normalizeExecutionPolicy(execution, missingFields, defaultsApplied, warnings) {
+    const ceiling = execution.ceiling;
+    let normalizedCeiling = DEFAULT_EXECUTION_CEILING;
+    if (typeof ceiling === 'undefined') {
+      missingFields.push('execution.ceiling');
+      defaultsApplied['execution.ceiling'] = DEFAULT_EXECUTION_CEILING;
+    } else if (typeof ceiling !== 'string' || !EXECUTION_CEILING_VALUES.has(ceiling.trim().toLowerCase())) {
+      warnings.push('INVALID_EXECUTION_CEILING:execution.ceiling');
+      defaultsApplied['execution.ceiling'] = DEFAULT_EXECUTION_CEILING;
+    } else {
+      normalizedCeiling = ceiling.trim().toLowerCase();
+    }
+
+    const backgroundSelection = execution.background_selection;
+    let normalizedBackgroundSelection = DEFAULT_BACKGROUND_SELECTION;
+    if (typeof backgroundSelection === 'undefined') {
+      missingFields.push('execution.background_selection');
+      defaultsApplied['execution.background_selection'] = DEFAULT_BACKGROUND_SELECTION;
+    } else if (typeof backgroundSelection !== 'boolean') {
+      warnings.push('INVALID_BOOLEAN:execution.background_selection');
+      defaultsApplied['execution.background_selection'] = DEFAULT_BACKGROUND_SELECTION;
+    } else {
+      normalizedBackgroundSelection = backgroundSelection;
+    }
+
+    return { ceiling: normalizedCeiling, background_selection: normalizedBackgroundSelection };
   }
 
   function normalizeInput(input = {}) {
@@ -167,10 +203,7 @@
         verification_strength: normalizeScore(execution.verification_strength, 'execution.verification_strength', missingFields, defaultsApplied, warnings),
         boundedness: normalizeScore(execution.boundedness, 'execution.boundedness', missingFields, defaultsApplied, warnings),
         isolation: normalizeScore(execution.isolation, 'execution.isolation', missingFields, defaultsApplied, warnings),
-        agent_execution_blocked: normalizeBoolean(source, 'execution', 'agent_execution_blocked', true, missingFields, defaultsApplied, warnings),
-        autonomous_execution_blocked: normalizeBoolean(source, 'execution', 'autonomous_execution_blocked', true, missingFields, defaultsApplied, warnings),
-        do_not_autorun: normalizeBoolean(source, 'execution', 'do_not_autorun', true, missingFields, defaultsApplied, warnings),
-        policy_autonomous_merge_allowed: normalizeBoolean(source, 'execution', 'policy_autonomous_merge_allowed', false, missingFields, defaultsApplied, warnings),
+        ...normalizeExecutionPolicy(execution, missingFields, defaultsApplied, warnings),
         rollback_straightforward: normalizeBoolean(source, 'execution', 'rollback_straightforward', false, missingFields, defaultsApplied, warnings),
         ci_deterministic: normalizeBoolean(source, 'execution', 'ci_deterministic', false, missingFields, defaultsApplied, warnings),
         ci_comprehensive: normalizeBoolean(source, 'execution', 'ci_comprehensive', false, missingFields, defaultsApplied, warnings),
@@ -231,6 +264,15 @@
     return 20 * (0.40 * values.uncertainty_reduction + 0.35 * values.decision_importance + 0.25 * values.cost_of_wrong_choice);
   }
 
+  function positiveImpactScore(values) {
+    return coreValue([
+      values.opportunity,
+      values.engineering_health,
+      values.enablement,
+      values.discovery,
+    ]);
+  }
+
   function coreValue(scores) {
     const dominant = Math.max(...scores);
     const remaining = scores.reduce((sum, score) => sum + score, 0) - dominant;
@@ -248,7 +290,8 @@
   }
 
   function autonomyScore(card) {
-    if (card.execution.agent_execution_blocked) return 0;
+    const ceilingRank = executionCeilingRank(card.execution.ceiling);
+    if (ceilingRank === 0) return 0;
     const required = [
       card.execution.specification_clarity,
       card.execution.verification_strength,
@@ -260,14 +303,13 @@
     const base = 100 * geometricMean(required.map((value) => value / 5));
     const penalty = 6 * (card.delivery.regression_likelihood - 1) + 6 * (card.delivery.behavior_surface - 1) + 8 * (card.delivery.data_sensitivity - 1) + 4 * (card.estimate.coordination_complexity - 1);
     const calculated = Math.max(0, Math.min(100, base - penalty));
-    const hardGate = card.execution.autonomous_execution_blocked ||
+    const hardGate = ceilingRank < 3 ||
       card.priority_class === 'P0' || card.priority_class === 'P1' ||
       card.delivery.behavior_surface >= 4 || card.delivery.data_sensitivity >= 4 ||
       card.delivery.reversibility < 3 || AUTONOMY_HARD_GATE_WORK_TYPES.has(card.work_type) ||
       card.execution.manual_override;
-    return hardGate
-      ? Math.min(calculated, 74)
-      : calculated;
+    const ceilingCap = [0, 54, 74, 89, 100][ceilingRank] ?? 0;
+    return Math.min(calculated, hardGate ? Math.min(ceilingCap, 74) : ceilingCap);
   }
 
   function priorityIndex(card, core) {
@@ -279,10 +321,28 @@
     return (core * confidence * strategic * urgency * maintenance) / Math.pow(card.estimate.effort_points, 0.60);
   }
 
-  function criticalIndex(card, riskReduction) {
+  function riskReductionIndex(card, riskReduction) {
     if (!card.estimate.effort_points) return null;
     return (riskReduction * URGENCY_MULTIPLIER[card.modifiers.urgency] * CONFIDENCE_MULTIPLIER[card.modifiers.confidence]) /
       Math.pow(card.estimate.effort_points, 0.15);
+  }
+
+  function impactExplanation(card, positiveImpact) {
+    const effortPoints = card.estimate.effort_points;
+    if (!effortPoints || positiveImpact <= 0) return null;
+    const confidenceMultiplier = CONFIDENCE_MULTIPLIER[card.modifiers.confidence];
+    const strategicMultiplier = card.priority_class === 'P0' || card.priority_class === 'P1'
+      ? 1
+      : STRATEGIC_MULTIPLIER[card.modifiers.strategic_fit];
+    const effortFactor = Math.pow(effortPoints, 0.20);
+    return {
+      positive_impact: positiveImpact,
+      confidence_multiplier: confidenceMultiplier,
+      strategic_multiplier: strategicMultiplier,
+      effort_points: effortPoints,
+      effort_factor: effortFactor,
+      result: (positiveImpact * strategicMultiplier * confidenceMultiplier) / effortFactor,
+    };
   }
 
   function reasonSet(card, autonomy, gates) {
@@ -294,6 +354,8 @@
     if (gates.readiness !== 'pass') reasons.push('READINESS_FAILED');
     if (gates.dependencies !== 'pass') reasons.push('DEPENDENCY_UNRESOLVED');
     if (gates.execution_policy !== 'pass') reasons.push('EXECUTION_POLICY_FAILED');
+    if (executionCeilingRank(card.execution.ceiling) < 3) reasons.push('EXECUTION_CEILING_RESTRICTED');
+    if (!card.execution.background_selection) reasons.push('BACKGROUND_SELECTION_DISABLED');
     if (card.status === 'blocked') reasons.push('STATUS_BLOCKED');
     if (autonomy < 60) reasons.push('AUTONOMY_LOW');
     if (card.priority_class === 'P0' || card.priority_class === 'P1') reasons.push('PRIORITY_AUTONOMY_CAP');
@@ -302,7 +364,7 @@
 
   function sectionScore(name, values) {
     if (name === 'agent_loops') return values.agent_pick_index;
-    if (name === 'critical') return values.critical_index;
+    if (name === 'impact') return values.impact_index;
     return values.priority_index;
   }
 
@@ -317,17 +379,23 @@
     };
   }
 
-  function compareSectionItems(left, right, name = 'next_best_work') {
+  function compareSectionItems(left, right, name = 'priority') {
     const leftSection = left.sections.find((section) => section.name === name);
     const rightSection = right.sections.find((section) => section.name === name);
     if (leftSection.included !== rightSection.included) return leftSection.included ? -1 : 1;
     const leftKey = leftSection.tie_break_inputs;
     const rightKey = rightSection.tie_break_inputs;
-    if (leftKey.priority_rank !== rightKey.priority_rank) return leftKey.priority_rank - rightKey.priority_rank;
     const leftScore = leftKey.score ?? -Infinity;
     const rightScore = rightKey.score ?? -Infinity;
-    if (leftScore !== rightScore) return rightScore - leftScore;
-    if (leftKey.status_rank !== rightKey.status_rank) return leftKey.status_rank - rightKey.status_rank;
+    if (name === 'impact') {
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      if (leftKey.status_rank !== rightKey.status_rank) return leftKey.status_rank - rightKey.status_rank;
+      if (leftKey.priority_rank !== rightKey.priority_rank) return leftKey.priority_rank - rightKey.priority_rank;
+    } else {
+      if (leftKey.priority_rank !== rightKey.priority_rank) return leftKey.priority_rank - rightKey.priority_rank;
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      if (leftKey.status_rank !== rightKey.status_rank) return leftKey.status_rank - rightKey.status_rank;
+    }
     return String(leftKey.id).localeCompare(String(rightKey.id));
   }
 
@@ -338,8 +406,7 @@
     const executableKind = card.kind !== 'epic';
     if (!nonTerminal) reasons.push('STATUS_TERMINAL');
     if (!executableKind) reasons.push('KIND_NOT_EXECUTABLE');
-    if (name === 'critical' && card.priority_class !== 'P0' && card.priority_class !== 'P1') reasons.push('PRIORITY_NOT_CRITICAL');
-    if (name === 'next_best_work' || name === 'low_hanging_fruit') {
+    if (name === 'priority' || name === 'low_hanging_fruit') {
       if (gates.eligible !== true) reasons.push(...gates.reason_codes.filter((reason) => reason !== 'AUTONOMY_LOW'));
       if (!['ready', 'active', 'review'].includes(card.status)) reasons.push('STATUS_NOT_PLANNABLE');
     }
@@ -379,8 +446,11 @@
     };
     values.core_value = coreValue(Object.values(values));
     values.delivery_risk = deliveryRisk(card);
+    values.positive_impact = positiveImpactScore(values);
     values.priority_index = priorityIndex(card, values.core_value);
-    values.critical_index = criticalIndex(card, values.risk_reduction);
+    values.risk_reduction_index = riskReductionIndex(card, values.risk_reduction);
+    const impactScoreExplanation = impactExplanation(card, values.positive_impact);
+    values.impact_index = impactScoreExplanation ? impactScoreExplanation.result : null;
     values.autonomy_score = autonomyScore(card);
     values.agent_pick_index = values.priority_index === null ? null : values.priority_index * Math.pow(values.autonomy_score / 100, 2) * (1 + 0.30 * values.engineering_health / 100);
     values.quick_win_index = null;
@@ -391,25 +461,26 @@
       metadata: KIND_VALUES.has(card.kind) && typeof card.work_type === 'string' && card.work_type.trim() ? 'pass' : 'fail',
       readiness: card.eligibility.readiness && card.status !== 'blocked' && card.status !== 'done' && card.status !== 'dropped' ? 'pass' : 'fail',
       dependencies: card.eligibility.dependencies ? 'pass' : 'fail',
-      execution_policy: !card.execution.do_not_autorun && !card.execution.agent_execution_blocked && !card.execution.autonomous_execution_blocked && card.status !== 'blocked' ? 'pass' : 'fail',
+      execution_policy: card.execution.background_selection && executionCeilingRank(card.execution.ceiling) >= 3 && card.status !== 'blocked' ? 'pass' : 'fail',
     };
     gates.eligible = [gates.priority, gates.metadata, gates.readiness, gates.dependencies, gates.execution_policy]
       .every((value) => value === 'pass');
     gates.reason_codes = reasonSet(card, values.autonomy_score, gates);
     const a4Eligible = values.autonomy_score >= 90 &&
-      card.execution.policy_autonomous_merge_allowed &&
+      executionCeilingRank(card.execution.ceiling) >= 4 &&
       card.estimate.effort_points !== null && card.estimate.effort_points <= 3 &&
       card.delivery.behavior_surface <= 2 && card.delivery.data_sensitivity <= 2 &&
       values.delivery_risk !== null && values.delivery_risk <= 20 &&
       card.execution.rollback_straightforward && card.execution.ci_deterministic &&
       card.execution.ci_comprehensive && card.eligibility.protected_surface_clear &&
-      !card.execution.autonomous_execution_blocked && !card.execution.do_not_autorun &&
       !card.execution.manual_override && AGENT_EXECUTION_MODES.has(card.eligibility.mode);
     gates.agent_eligible = gates.eligible &&
       card.status === 'ready' && card.priority_class === 'P2' &&
       card.eligibility.date_window && card.eligibility.scope &&
       card.eligibility.claim_available && card.eligibility.protected_surface_clear &&
       values.autonomy_score >= 75 &&
+      executionCeilingRank(card.execution.ceiling) >= 3 &&
+      card.execution.background_selection &&
       card.delivery.behavior_surface <= 3 && card.delivery.data_sensitivity <= 3 &&
       card.delivery.reversibility >= 3 && !AUTONOMY_HARD_GATE_WORK_TYPES.has(card.work_type) &&
       Boolean(card.work_type) && AGENT_EXECUTION_MODES.has(card.eligibility.mode) &&
@@ -419,8 +490,8 @@
     const executableKind = card.kind !== 'epic';
     const sections = SECTION_NAMES.map((name) => {
       let included = false;
-      if (name === 'critical') included = nonTerminal && executableKind && (card.priority_class === 'P0' || card.priority_class === 'P1');
-      if (name === 'next_best_work') included = nonTerminal && executableKind && gates.eligible && ['ready', 'active', 'review'].includes(card.status);
+      if (name === 'priority') included = nonTerminal && executableKind && gates.eligible && ['ready', 'active', 'review'].includes(card.status);
+      if (name === 'impact') included = nonTerminal;
       if (name === 'low_hanging_fruit') included = nonTerminal && executableKind && gates.eligible && card.estimate.effort_points !== null && card.estimate.effort_points <= 3 && card.modifiers.confidence >= 4 && card.execution.verification_strength >= 4 && card.delivery.reversibility >= 4;
       if (name === 'agent_loops') included = gates.agent_eligible && executableKind;
       if (name === 'blocked') included = nonTerminal && executableKind && card.status === 'blocked';
@@ -439,6 +510,9 @@
       defaults_applied: normalizedResult.defaultsApplied,
       warnings: [...normalizedResult.warnings, 'FORMULA_DEFERRED:quick_win_index', 'FORMULA_DEFERRED:qa_class', 'FORMULA_DEFERRED:human_leverage_index'],
       scores: values,
+      explanations: {
+        impact_index: impactScoreExplanation,
+      },
       gates,
       classes: {
         autonomy: autonomyClass(values.autonomy_score, a4Eligible),

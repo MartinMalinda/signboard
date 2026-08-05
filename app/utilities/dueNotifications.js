@@ -72,20 +72,35 @@ async function collectDueTodayItemsForBoard(boardApi, boardRoot, todayIsoDate) {
   }
 
   let lists = [];
-  let workflowSettings = {};
+  let boardSettings = {};
   try {
-    [lists, workflowSettings] = await Promise.all([
+    [lists, boardSettings] = await Promise.all([
       boardApi.listLists(normalizedBoardRoot),
       typeof boardApi.readBoardSettings === 'function'
-        ? boardApi.readBoardSettings(normalizedBoardRoot).then((settings) => settings && settings.workflow ? settings.workflow : {}).catch(() => ({}))
+        ? boardApi.readBoardSettings(normalizedBoardRoot).then((settings) => settings && typeof settings === 'object' ? settings : {}).catch(() => ({}))
         : Promise.resolve({}),
     ]);
   } catch {
     return dueItems;
   }
 
+  const v2Profile = boardSettings && boardSettings.v2 && boardSettings.v2.enabled === true
+    ? boardSettings.v2
+    : null;
+  const v2SemanticsApi = typeof SignboardV2StageSemantics !== 'undefined'
+    ? SignboardV2StageSemantics
+    : null;
+  const workflowSettings = boardSettings && boardSettings.workflow ? boardSettings.workflow : {};
+
   for (const listName of lists) {
-    if (
+    if (v2Profile) {
+      const stageSemantics = v2SemanticsApi
+        ? v2SemanticsApi.resolveV2StageSemantics(v2Profile, listName)
+        : null;
+      if (!stageSemantics || !stageSemantics.mapped || stageSemantics.ambiguous || stageSemantics.terminal) {
+        continue;
+      }
+    } else if (
       typeof isBoardListCompletedByWorkflow === 'function' &&
       isBoardListCompletedByWorkflow(listName, workflowSettings)
     ) {
