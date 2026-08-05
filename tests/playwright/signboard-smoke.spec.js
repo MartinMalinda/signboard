@@ -30,7 +30,7 @@ function getShortcut(shortcut) {
   return `${modifier}+${shortcut}`;
 }
 
-function getCurrentBoardPlannerShortcut(shortcut) {
+function getCurrentBoardTableShortcut(shortcut) {
   return getShortcut(`Alt+${shortcut}`);
 }
 
@@ -47,17 +47,6 @@ function formatLocalIsoDate(date = new Date()) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function getCurrentMonthDate(dayOfMonth) {
-  const today = new Date();
-  return new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
-}
-
-function getCurrentWeekDate(dayOffset) {
-  const today = new Date();
-  const mondayFirstOffset = (today.getDay() + 6) % 7;
-  return new Date(today.getFullYear(), today.getMonth(), today.getDate() - mondayFirstOffset + dayOffset);
 }
 
 async function getAvailableLoopbackPort() {
@@ -106,93 +95,6 @@ async function startFakeOllamaServer(models) {
     url: `http://127.0.0.1:${address.port}`,
     close: () => new Promise((resolve) => server.close(() => resolve())),
   };
-}
-
-async function openCurrentBoardPlannerView(page, shortcut, viewSelector) {
-  await page.keyboard.press(getShortcut(shortcut));
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator(viewSelector)).toBeVisible();
-}
-
-async function getPlannerTemporalSortableEndTarget(sourceLocator, targetIso) {
-  return await sourceLocator.evaluate((item, targetDate) => {
-    if (!(item instanceof HTMLElement)) {
-      throw new Error('Planner temporal card was not an HTMLElement.');
-    }
-
-    const from = item.closest('.board-calendar-day-cards, .board-this-week-day-cards');
-    const targetSelector = from && from.classList.contains('board-this-week-day-cards')
-      ? `.planner-this-week .board-this-week-day-cards[data-date="${targetDate}"]`
-      : `.planner-calendar .board-calendar-day-cards[data-date="${targetDate}"]`;
-    const to = document.querySelector(targetSelector);
-
-    if (!(from instanceof HTMLElement) || !(to instanceof HTMLElement)) {
-      throw new Error('Unable to resolve Planner temporal drop containers.');
-    }
-    if (typeof createBoardCardSortableOptions !== 'function') {
-      throw new Error('Sortable options helper is unavailable.');
-    }
-
-    const rect = item.getBoundingClientRect();
-    const pointer = {
-      clientX: rect.left + (rect.width / 2),
-      clientY: rect.top + (rect.height / 2),
-    };
-    const options = createBoardCardSortableOptions();
-    const evt = {
-      item,
-      from,
-      to,
-      originalEvent: pointer,
-    };
-
-    options.onStart(evt);
-    options.onEnd(evt);
-
-    return {
-      toClass: evt.to instanceof HTMLElement ? evt.to.className : '',
-      toDate: evt.to instanceof HTMLElement ? String(evt.to.dataset.date || '') : '',
-      parentClass: item.parentElement instanceof HTMLElement ? item.parentElement.className : '',
-      parentDate: item.parentElement instanceof HTMLElement ? String(item.parentElement.dataset.date || '') : '',
-    };
-  }, targetIso);
-}
-
-async function dropPlannerTemporalCardOnDate(sourceLocator, targetIso) {
-  await sourceLocator.evaluate(async (item, targetDate) => {
-    if (!(item instanceof HTMLElement)) {
-      throw new Error('Planner temporal card was not an HTMLElement.');
-    }
-
-    const from = item.closest('.board-calendar-day-cards, .board-this-week-day-cards');
-    const targetSelector = from && from.classList.contains('board-this-week-day-cards')
-      ? `.planner-this-week .board-this-week-day-cards[data-date="${targetDate}"]`
-      : `.planner-calendar .board-calendar-day-cards[data-date="${targetDate}"]`;
-    const to = document.querySelector(targetSelector);
-
-    if (!(from instanceof HTMLElement) || !(to instanceof HTMLElement)) {
-      throw new Error('Unable to resolve Planner temporal drop containers.');
-    }
-    if (typeof handlePlannerCardDrop !== 'function') {
-      throw new Error('Planner drop handler is unavailable.');
-    }
-
-    await handlePlannerCardDrop({ item, from, to }, () => true);
-    if (typeof renderPlannerView === 'function') {
-      await renderPlannerView();
-    }
-  }, targetIso);
-}
-
-async function writeCardWithSingleTaskDue(cardPath, sourceIso, taskText) {
-  const card = await cardFrontmatter.readCard(cardPath);
-  const frontmatter = { ...card.frontmatter };
-  delete frontmatter.due;
-
-  await cardFrontmatter.writeCard(cardPath, {
-    frontmatter,
-    body: `- [ ] (due: ${sourceIso}) ${taskText}\n\nContext for the task due drag regression.`,
-  });
 }
 
 async function pathExists(targetPath) {
@@ -1046,7 +948,7 @@ test('exposes Obsidian actions and generates a board Base', async ({ page, board
 
   const planCard = boardLists(page).first().locator('.card').filter({ hasText: 'Plan release notes' });
   await expect(planCard.locator('.linked-objects-badge-inline')).toHaveText('2');
-  await page.keyboard.press(getCurrentBoardPlannerShortcut('1'));
+  await page.keyboard.press(getCurrentBoardTableShortcut('1'));
   await expect(page.locator('main#board')).toHaveClass(/board-view-table/);
   await expect(page.locator('.board-table-heading-links')).toHaveText('Links');
   const planRow = page.locator('.board-table-row').filter({ hasText: 'Plan release notes' });
@@ -1247,33 +1149,18 @@ test('keeps the list actions popover open during a pending board refresh', async
   await expect(listActionsPopover).toBeVisible();
 });
 
-test('navigates board search results from the keyboard', async ({ page }) => {
+test('opens the quick switcher when the board search field receives focus', async ({ page }) => {
   const searchInput = page.locator('#boardSearchInput');
-  const planCardButton = page.locator('.card-title-button').filter({ hasText: 'Plan release notes' });
-  const polishCardButton = page.locator('.card-title-button').filter({ hasText: 'Polish homepage copy' });
 
   await searchInput.focus();
-  await searchInput.fill('the');
-  await page.keyboard.press('Enter');
-  await expect(planCardButton).toBeFocused();
+  await expect(page.locator('#modalBoardSwitcher')).toBeVisible();
+  await expect(page.locator('#boardSwitcherInput')).toBeFocused();
 
-  await page.keyboard.press('ArrowDown');
-  await expect(polishCardButton).toBeFocused();
-
-  await page.keyboard.press('Escape');
-  await expect(searchInput).toBeFocused();
-  await expect(searchInput).toHaveValue('the');
+  await page.locator('#boardSwitcherInput').fill('Polish homepage copy');
+  await expect(page.locator('.board-switcher-option.is-card')).toContainText('Polish homepage copy');
 
   await page.keyboard.press('Escape');
-  await expect(searchInput).toHaveValue('');
-
-  await searchInput.fill('copy');
-  await page.keyboard.press('Enter');
-  await expect(polishCardButton).toBeFocused();
-  await page.keyboard.press('Enter');
-
-  await expect(page.locator('#modalEditCard')).toBeVisible();
-  await expect(page.locator('#cardEditorTitle')).toHaveText('Polish homepage copy');
+  await expect(page.locator('#modalBoardSwitcher')).toBeHidden();
 });
 
 test('navigates board popovers and settings sections from the keyboard', async ({ page }) => {
@@ -1781,8 +1668,7 @@ test('creates and opens a list-specific new card with Shift+Enter', async ({ pag
 });
 
 test('switches to table view and moves a card through the list column', async ({ page, boardRoot }) => {
-  await page.locator('#boardSearchInput').focus();
-  await page.keyboard.press(getCurrentBoardPlannerShortcut('1'));
+  await page.locator('#workspaceViewTable').click();
   await expect(page.locator('main#board')).toHaveClass(/board-view-table/);
   await expect(page.locator('.board-table-row')).toHaveCount(3);
 
@@ -1795,8 +1681,16 @@ test('switches to table view and moves a card through the list column', async ({
   await expect(page.locator('main#board')).toHaveClass(/board-view-table/);
   await expect(page.locator('#workspaceViewTable')).toHaveClass(/is-active/);
   await expect(page.locator('.board-table-row')).toHaveCount(3);
-  await expect(page.locator('.board-table-heading-updated')).toHaveText('Updated');
-  await expect(page.locator('.board-table-heading-created')).toHaveText('Created');
+  await expect(page.locator('.board-table-heading-title')).toHaveText(/Card/);
+  await expect(page.locator('.board-table-heading-start')).toHaveCount(0);
+  await expect(page.locator('.board-table-heading-due')).toHaveCount(0);
+  await expect(page.locator('.board-table-heading-title').first()).toBeVisible();
+  await page.locator('.board-table-heading-title').click();
+  await expect(page.locator('.board-table-sort-select')).toHaveValue('title-asc');
+  await page.locator('.board-table-heading-title').click();
+  await expect(page.locator('.board-table-sort-select')).toHaveValue('title-desc');
+  await page.locator('.board-table-heading-title').click();
+  await expect(page.locator('.board-table-sort-select')).toHaveValue('board');
   await expect(page.locator('.board-table-sort-select')).toHaveValue('board');
   await page.locator('.board-table-sort-select').selectOption({ label: 'Created, oldest first' });
   await expect(page.locator('.board-table-row').first()).toContainText('Ship beta');
@@ -1841,8 +1735,7 @@ test('switches to table view and moves a card through the list column', async ({
 });
 
 test('bulk manages selected table cards', async ({ page, boardRoot }) => {
-  await page.locator('#boardSearchInput').focus();
-  await page.keyboard.press(getCurrentBoardPlannerShortcut('1'));
+  await page.keyboard.press(getCurrentBoardTableShortcut('1'));
   await expect(page.locator('main#board')).toHaveClass(/board-view-table/);
   await expect(page.locator('.board-table-row')).toHaveCount(3);
 
@@ -1937,76 +1830,6 @@ test('bulk manages selected table cards', async ({ page, boardRoot }) => {
     const archiveEntries = await fs.readdir(path.join(boardRoot, 'XXX-Archive'));
     return archiveEntries.filter((entry) => entry.endsWith('.md')).length;
   }).toBe(3);
-});
-
-test('updates task item due dates from Planner calendar drops', async ({ page, boardRoot }) => {
-  const cardPath = path.join(boardRoot, '000-To-do-stock', '000-plan-release-stock.md');
-  const sourceIso = formatLocalIsoDate(getCurrentMonthDate(10));
-  const targetIso = formatLocalIsoDate(getCurrentMonthDate(11));
-  const taskText = 'Review task due calendar drag';
-
-  await writeCardWithSingleTaskDue(cardPath, sourceIso, taskText);
-  await seedBoardState(page, boardRoot);
-  await openCurrentBoardPlannerView(page, '2', '.planner-calendar');
-
-  const sourceCard = page
-    .locator(`.planner-calendar .board-calendar-day-cards[data-date="${sourceIso}"] .planner-calendar-card`)
-    .filter({ hasText: taskText });
-  const targetDayCards = page.locator(`.planner-calendar .board-calendar-day-cards[data-date="${targetIso}"]`);
-
-  await expect(sourceCard).toBeVisible();
-  await expect(targetDayCards).toBeVisible();
-
-  await expect(await getPlannerTemporalSortableEndTarget(sourceCard, targetIso)).toEqual(expect.objectContaining({
-    toDate: targetIso,
-    parentDate: sourceIso,
-  }));
-  await dropPlannerTemporalCardOnDate(sourceCard, targetIso);
-
-  await expect.poll(async () => {
-    const card = await cardFrontmatter.readCard(cardPath);
-    return card.body;
-  }).toContain(`- [ ] (due: ${targetIso}) ${taskText}`);
-
-  const updatedCard = await cardFrontmatter.readCard(cardPath);
-  expect(updatedCard.body).not.toContain(`- [ ] (due: ${sourceIso}) ${taskText}`);
-  expect(updatedCard.frontmatter.due).toBeUndefined();
-  await expect(targetDayCards.locator('.planner-calendar-card').filter({ hasText: taskText })).toBeVisible();
-});
-
-test('updates task item due dates from Planner This Week drops', async ({ page, boardRoot }) => {
-  const cardPath = path.join(boardRoot, '000-To-do-stock', '000-plan-release-stock.md');
-  const sourceIso = formatLocalIsoDate(getCurrentWeekDate(1));
-  const targetIso = formatLocalIsoDate(getCurrentWeekDate(2));
-  const taskText = 'Review task due week drag';
-
-  await writeCardWithSingleTaskDue(cardPath, sourceIso, taskText);
-  await seedBoardState(page, boardRoot);
-  await openCurrentBoardPlannerView(page, '3', '.planner-this-week');
-
-  const sourceCard = page
-    .locator(`.planner-this-week .board-this-week-day-cards[data-date="${sourceIso}"] .planner-this-week-card`)
-    .filter({ hasText: taskText });
-  const targetDayCards = page.locator(`.planner-this-week .board-this-week-day-cards[data-date="${targetIso}"]`);
-
-  await expect(sourceCard).toBeVisible();
-  await expect(targetDayCards).toBeVisible();
-
-  await expect(await getPlannerTemporalSortableEndTarget(sourceCard, targetIso)).toEqual(expect.objectContaining({
-    toDate: targetIso,
-    parentDate: sourceIso,
-  }));
-  await dropPlannerTemporalCardOnDate(sourceCard, targetIso);
-
-  await expect.poll(async () => {
-    const card = await cardFrontmatter.readCard(cardPath);
-    return card.body;
-  }).toContain(`- [ ] (due: ${targetIso}) ${taskText}`);
-
-  const updatedCard = await cardFrontmatter.readCard(cardPath);
-  expect(updatedCard.body).not.toContain(`- [ ] (due: ${sourceIso}) ${taskText}`);
-  expect(updatedCard.frontmatter.due).toBeUndefined();
-  await expect(targetDayCards.locator('.planner-this-week-card').filter({ hasText: taskText })).toBeVisible();
 });
 
 test('adds a new list to the right of the invoking list from the list actions popover', async ({ page, boardRoot }) => {
@@ -2198,9 +2021,9 @@ test('opens the board switcher from the keyboard shortcut and focuses search', a
 
   await expect(page.locator('#modalBoardSwitcher')).toBeVisible();
   await expect(page.locator('#boardSwitcherInput')).toBeFocused();
-  await expect(page.locator('#boardSwitcherInput')).toHaveAttribute('placeholder', 'Switch to board');
+  await expect(page.locator('#boardSwitcherInput')).toHaveAttribute('placeholder', 'Switch to board or card');
   await expect(page.locator('#boardSwitcherResults')).toContainText('Playwright Board');
-  await expect(page.locator('#boardSwitcherResults')).toContainText('Current');
+  await expect(page.locator('.board-switcher-current')).toHaveCount(0);
 });
 
 test('filters the board switcher to currently open boards', async ({ electronApp, boardRoot }) => {
@@ -2222,6 +2045,19 @@ test('filters the board switcher to currently open boards', async ({ electronApp
   await page.locator('#boardSwitcherInput').fill(path.basename(path.dirname(boardRoot)));
   await expect(page.locator('.board-switcher-option')).toHaveCount(0);
   await expect(page.locator('#boardSwitcherResults')).toContainText('No matching boards');
+});
+
+test('searches current-board cards in the switcher and opens one with Enter', async ({ page }) => {
+  await page.keyboard.press(getShortcut('K'));
+  await page.locator('#boardSwitcherInput').fill('Polish homepage copy');
+
+  await expect(page.locator('.board-switcher-option.is-card')).toHaveCount(1);
+  await expect(page.locator('.board-switcher-option.is-card')).toContainText('Polish homepage copy');
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#modalBoardSwitcher')).toBeHidden();
+  await expect(page.locator('#modalEditCard')).toBeVisible();
+  await expect(page.locator('#cardEditorTitle')).toHaveText('Polish homepage copy');
 });
 
 test('keeps more than six boards open and routes overflow through the switcher', async ({ electronApp, boardRoot }) => {
@@ -2299,183 +2135,6 @@ test('navigates and closes board tabs from the keyboard', async ({ electronApp, 
   await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('openBoardPaths') || '[]').length)).toBe(2);
 });
 
-test('opens Planner across currently open boards', async ({ electronApp, boardRoot }) => {
-  const { page, boardRoots } = await prepareOpenBoardsPage(electronApp, boardRoot, ['Roadmap Board']);
-  const todayIso = formatLocalIsoDate();
-  const targetPlannerDate = new Date();
-  targetPlannerDate.setDate(targetPlannerDate.getDate() + (targetPlannerDate.getDay() === 0 ? -1 : 1));
-  const targetPlannerIso = formatLocalIsoDate(targetPlannerDate);
-
-  await page.evaluate(async (boardRoot) => {
-    await window.board.updateBoardSettings(boardRoot, { colorScheme: 'harvest' });
-  }, normalizeBoardRoot(boardRoots[1]));
-
-  await Promise.all([
-    cardFrontmatter.updateFrontmatter(path.join(boardRoots[0], '000-To-do-stock', '000-plan-release-stock.md'), {
-      due: todayIso,
-    }),
-    cardFrontmatter.updateFrontmatter(path.join(boardRoots[1], '001-Doing-stock', '000-polish-copy-stock.md'), {
-      due: todayIso,
-    }),
-    cardFrontmatter.updateFrontmatter(path.join(boardRoots[0], '002-Done-stock', '000-ship-beta-stock.md'), {
-      due: todayIso,
-    }),
-  ]);
-
-  await page.keyboard.press(getShortcut('Shift+P'));
-
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('2 boards');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Plan release notes' })).toContainText('Playwright Board');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Polish homepage copy' })).toContainText('Roadmap Board');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Ship beta' })).toHaveCount(0);
-  await expect.poll(async () => page.evaluate(() => {
-    const bodyFont = getComputedStyle(document.body).fontFamily;
-    return [
-      '.planner-view-tab',
-      '.planner-scope-option',
-      '#plannerScopeLabel',
-      '#plannerFilterButton',
-    ].every((selector) => {
-      const element = document.querySelector(selector);
-      return element && getComputedStyle(element).fontFamily === bodyFont;
-    });
-  })).toBe(true);
-
-  const roadmapSourcePill = page
-    .locator('.planner-calendar-card')
-    .filter({ hasText: 'Polish homepage copy' })
-    .locator('.board-temporal-card-source');
-  await expect(roadmapSourcePill).toHaveAttribute('data-board-color-scheme', 'harvest');
-
-  const sourcePillTheme = await roadmapSourcePill.evaluate((element) => ({
-    background: element.style.getPropertyValue('--board-source-pill-bg').trim(),
-    border: element.style.getPropertyValue('--board-source-pill-border').trim(),
-    text: element.style.getPropertyValue('--board-source-pill-text').trim(),
-    darkBackground: element.style.getPropertyValue('--board-source-pill-bg-dark').trim(),
-  }));
-  const expectedSourcePillTheme = await page.evaluate(() => getBoardTemporalSourceTheme({ colorScheme: 'harvest' }));
-  expect(sourcePillTheme.background).toBe(expectedSourcePillTheme.light.background);
-  expect(sourcePillTheme.border).toBe(expectedSourcePillTheme.light.border);
-  expect(sourcePillTheme.text).toBe(expectedSourcePillTheme.light.color);
-  expect(sourcePillTheme.darkBackground).toBe(expectedSourcePillTheme.dark.background);
-
-  const plannerSearchInput = page.locator('#plannerSearchInput');
-  const plannerPolishCard = page.locator('.planner-calendar-card').filter({ hasText: 'Polish homepage copy' });
-  await plannerSearchInput.focus();
-  await plannerSearchInput.fill('polish');
-  await page.keyboard.press('Enter');
-  await expect(plannerPolishCard).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(plannerSearchInput).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(plannerSearchInput).toHaveValue('');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Plan release notes' })).toBeVisible();
-
-  await page.locator('#plannerFilterButton').click();
-  await expect(page.locator('#plannerFilterPopover').getByRole('button', { name: 'All dated cards' })).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(page.locator('#plannerFilterPopover').getByRole('button', { name: 'Today' })).toBeFocused();
-  await page.locator('#plannerFilterPopover').getByRole('button', { name: 'Show completed cards' }).click();
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Ship beta' })).toBeVisible();
-  await page.locator('#plannerFilterPopover').getByRole('button', { name: 'Hide completed cards' }).click();
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Ship beta' })).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#plannerFilterPopover')).toBeHidden();
-
-  await page.locator('.planner-scope-option[data-scope="current"]').click();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('Playwright Board');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Plan release notes' })).toBeVisible();
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Polish homepage copy' })).toHaveCount(0);
-
-  await page.locator('#plannerFilterButton').click();
-  await expect(page.locator('#plannerFilterPopover')).toBeVisible();
-  await expect(page.locator('#plannerFilterPopover')).toContainText('Labels');
-  await expect(page.locator('#plannerFilterPopover')).toContainText('Launch');
-  await expect.poll(async () => {
-    return page.evaluate(() => {
-      const popover = document.getElementById('plannerFilterPopover');
-      if (!popover) {
-        return false;
-      }
-      const bounds = popover.getBoundingClientRect();
-      const target = document.elementFromPoint(bounds.left + (bounds.width / 2), bounds.bottom - 12);
-      return Boolean(target && popover.contains(target));
-    });
-  }).toBe(true);
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#plannerFilterPopover')).toBeHidden();
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-
-  await page.locator('.planner-scope-option[data-scope="all"]').click();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('2 boards');
-
-  await page.keyboard.press(getCurrentBoardPlannerShortcut('2'));
-  await expect(page.locator('.planner-calendar')).toBeVisible();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('Playwright Board');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Plan release notes' })).toBeVisible();
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Polish homepage copy' })).toHaveCount(0);
-
-  await page.keyboard.press(getShortcut('2'));
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('2 boards');
-  await expect(page.locator('.planner-calendar-card').filter({ hasText: 'Polish homepage copy' })).toBeVisible();
-
-  await page.keyboard.press(getShortcut('4'));
-  await expect(page.locator('.planner-day')).toBeVisible();
-  await expect(page.locator('.planner-list-card').filter({ hasText: 'Plan release notes' })).toBeVisible();
-
-  await page.keyboard.press(getShortcut('1'));
-  await expect(page.locator('#plannerOverlay')).toBeHidden();
-
-  await page.keyboard.press(getShortcut('5'));
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator('.planner-agenda')).toBeVisible();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('2 boards');
-  await expect(page.locator('.planner-list-card').filter({ hasText: 'Polish homepage copy' })).toBeVisible();
-
-  await page.keyboard.press(getShortcut('1'));
-  await expect(page.locator('#plannerOverlay')).toBeHidden();
-
-  await page.keyboard.press(getCurrentBoardPlannerShortcut('4'));
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator('.planner-day')).toBeVisible();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('Playwright Board');
-
-  await page.keyboard.press(getShortcut('2'));
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator('.planner-calendar')).toBeVisible();
-  await expect(page.locator('#plannerScopeLabel')).toHaveText('2 boards');
-  await page.keyboard.press(getShortcut('3'));
-  await expect(page.locator('.planner-this-week')).toBeVisible();
-  await expect(page.locator('.planner-this-week .board-this-week-day-header').first()).toHaveCSS('padding-left', '10px');
-
-  const crossBoardCard = page.locator('.planner-this-week-card').filter({ hasText: 'Polish homepage copy' });
-  const targetDayCards = page.locator(`.planner-this-week .board-this-week-day-cards[data-date="${targetPlannerIso}"]`);
-  await expect(crossBoardCard).toBeVisible();
-  await expect(targetDayCards).toBeVisible();
-
-  await page.evaluate(async ({ cardPath, sourceDate, targetDate }) => {
-    const item = document.createElement('button');
-    item.dataset.path = cardPath;
-    const from = document.createElement('div');
-    from.dataset.date = sourceDate;
-    const to = document.createElement('div');
-    to.dataset.date = targetDate;
-    await handlePlannerCardDrop({ item, from, to }, () => true);
-  }, {
-    cardPath: path.join(boardRoots[1], '001-Doing-stock', '000-polish-copy-stock.md'),
-    sourceDate: todayIso,
-    targetDate: targetPlannerIso,
-  });
-
-  await expect.poll(async () => {
-    const card = await cardFrontmatter.readCard(path.join(boardRoots[1], '001-Doing-stock', '000-polish-copy-stock.md'));
-    return card.frontmatter.due;
-  }).toBe(targetPlannerIso);
-
-  await page.locator('#workspaceViewKanban').click();
-  await expect(page.locator('#plannerOverlay')).toBeHidden();
-});
 
 test('switches to the highlighted board from the switcher with arrows and Enter', async ({ electronApp, boardRoot }) => {
   const { page } = await prepareOpenBoardsPage(electronApp, boardRoot, ['Roadmap Board', 'Ideas Board']);
@@ -2519,6 +2178,20 @@ test('switching boards from an open editor flushes the pending edit and closes t
   await expect.poll(async () => {
     return await fs.readFile(cardPath, 'utf8');
   }).toContain('Pending switch save.');
+});
+
+test('switching boards from a board tab closes an open editor before activation', async ({ electronApp, boardRoot }) => {
+  const { page } = await prepareOpenBoardsPage(electronApp, boardRoot, ['Roadmap Board']);
+
+  await boardLists(page).first().locator('.card').first().click();
+  await expect(page.locator('#modalEditCard')).toBeVisible();
+  await page.locator('#boardTabs .board-tab-label').filter({ hasText: 'Roadmap Board' }).click({ force: true });
+
+  await expect(page.locator('#modalEditCard')).toBeHidden();
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Roadmap Board');
+
+  await page.locator('#boardTabs .board-tab-label').filter({ hasText: 'Playwright Board' }).click();
+  await expect(page.locator('#boardTabs .board-tab.is-active .board-tab-label')).toHaveText('Playwright Board');
 });
 
 test('opens the new-card modal from an active editor shortcut after closing the editor', async ({ page, boardRoot }) => {
@@ -2569,16 +2242,6 @@ test('opens settings from the renderer keyboard shortcut', async ({ page }) => {
   await page.locator('label[for="boardSettingsNotificationsToggle"]').click();
   await expect(notificationsDetails).toBeHidden();
   await expect(notificationsDetails).toHaveAttribute('aria-hidden', 'true');
-});
-
-test('opens Planner Agenda from an active editor view shortcut after closing the editor', async ({ page }) => {
-  await openFirstCardInEditor(page);
-
-  await page.keyboard.press(getShortcut('5'));
-
-  await expect(page.locator('#modalEditCard')).toBeHidden();
-  await expect(page.locator('#plannerOverlay')).toBeVisible();
-  await expect(page.locator('.planner-agenda')).toBeVisible();
 });
 
 test('cycles board color schemes without closing an active editor', async ({ page }) => {
