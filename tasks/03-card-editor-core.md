@@ -77,7 +77,7 @@ later task).
   ordering (`lib/cardFrontmatter.js` write order is the oracle).
 - No lost edits under rapid typing + immediate close; no clobbering of
   external edits; Playwright editor subset passing under
-  `test:playwright:vue`; legacy suite untouched/green.
+  `test:playwright`; the canonical Vue suite is the only renderer suite.
 
 ## Risks / notes
 
@@ -92,7 +92,7 @@ later task).
 
 Implemented in the Vue side-build. The editor keeps the legacy IDs/classes,
 uses the existing preload bridge for card reads/writes and card actions, and
-does not modify generated `app/signboard.js` or unrelated legacy renderer code.
+does not modify generated Vue output or unrelated renderer code.
 
 Passing:
 
@@ -101,7 +101,7 @@ Passing:
 - `npm run test:frontmatter`
 - `npm run test:task-list`
 - `npm run test:board-snapshot`
-- `npm run test:board-card-metadata`
+- canonical Vue unit coverage
 - `npm run test:card-timestamps`
 - targeted ESLint for the new editor/store/composable files
 

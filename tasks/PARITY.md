@@ -1,9 +1,7 @@
-# Feature Parity Tracker — Vue renderer vs legacy
+# Feature Parity Tracker — Vue renderer
 
-Oracle: `npm run test:playwright` (legacy, must stay green) and
-`npm run test:playwright:vue` (Vue, grows green per task).
-Rules: when a legacy feature ships during the parallel period, add it here in
-the same PR. When a task lands, tick its boxes and list newly passing specs.
+Oracle: `npm run test:playwright` plus the Vue unit suite. When a task lands,
+tick its boxes and list newly passing specs.
 
 ## Shell
 
@@ -208,30 +206,25 @@ before page interaction by Electron launch `SIGABRT`.
 
 ## Currently passing Playwright specs (Vue renderer)
 
-No Vue Playwright specs were recorded as passing in this environment: the Electron
+No Playwright specs were recorded as passing in this environment: the Electron
 launch phase aborted with SIGABRT before the suite could exercise the Vue page.
 Vue unit coverage and the renderer build/type-check pass; re-run
-`npm run test:playwright:vue` on a desktop session to record the E2E rows.
+`npm run test:playwright` on a desktop session to record the E2E rows.
 
 ## Final Vue cutover (Task 13)
 
-- [x] Vue is the default renderer; explicit `SIGNBOARD_RENDERER=legacy` rollback
-      and existing `SIGNBOARD_RENDERER=vue` selection remain supported
-- [x] Electron packaging includes Vue dist/assets, shared static/vendor files,
-      and the legacy rollback entry
-- [x] Meaningful legacy VM behavior is represented in Vue/lib pure and unit tests;
-      legacy VM suites remain as compatibility regressions while rollback exists
-- [x] Startup/build/package verification scripts and rollback documentation
+- [x] Vue is the only desktop renderer and always loads
+      `signboard-vue/dist/index.html`
+- [x] Electron packaging includes only the Vue dist/assets and shared
+      static/vendor files
+- [x] Canonical Vue/lib helpers own the migrated behavior and standalone checks
+      import those helpers directly
+- [x] Startup/build/package verification scripts and current documentation
 
-Task 13 is implemented. `npm run build:renderers` builds both renderer artifacts,
-`scripts/test-renderer-selection.js` verifies default/explicit mode resolution,
-and `scripts/test-vue-packaging.js` verifies the Electron Builder file contract.
-The legacy renderer files remain intentionally and are not broad-deleted. The
-known `scripts/test-board-views.js:638` add-list shortcut-hint assertion remains
-the existing baseline failure in `app/lists/listActionsPopover.js`; the Vue
-Playwright attempts for the default, explicit Vue, and explicit legacy entry
-points remain blocked by Electron launch `SIGABRT` at
-`tests/playwright/signboard-smoke.spec.js:506`.
+Task 13 is complete. `npm run build:vue` builds the renderer and
+`scripts/test-vue-packaging.js` verifies the Electron Builder file contract,
+including the absence of a root renderer shell. The old DOM/VM renderer and its
+build/watch path have been removed.
 
 ## Board color schemes (Task 14)
 

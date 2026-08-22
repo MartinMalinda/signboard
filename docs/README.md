@@ -16,12 +16,10 @@ If you want to automate Signboard, script it, or drive it from an agent without 
 
 If you want structured tool access from an agent, see [MCP Server](../MCP_README.md).
 
-## Renderer and rollback
+## Renderer
 
-The packaged Vue renderer is the normal desktop entry point. `SIGNBOARD_RENDERER=vue`
-is accepted for explicit renderer selection; `SIGNBOARD_RENDERER=legacy npm start`
-loads the deprecated legacy renderer for rollback/testing. Both paths use the
-same preload/main-process APIs.
+The packaged Vue renderer is the only desktop renderer. Development and
+packaged launches both load `signboard-vue/dist/index.html`.
 
 ## What These Docs Cover
 
@@ -33,12 +31,14 @@ same preload/main-process APIs.
 - Settings, including app-wide General/Notifications/Smart Actions panels, drag-reorderable local Ollama Smart Card Actions for generated titles/summaries/task lists/auto-labeling/smart paste/due dates/linked-object suggestions, one-off Quick Smart Actions, read-only card questions, and board-specific General, Labels, Appearance, Workflow, Obsidian, and Import panels, plus board rename/move/duplicate actions
 - Obsidian integration, including boards stored inside vaults, Open With actions, generated Bases files, linked notes, missing-note handling, linked objects, dropped local-file linking, URL favicons, `signboard://` card/board links, and the optional Obsidian companion plugin
 - Raw web URLs in card bodies, opened from the editor through the inline open-link control or Cmd/Ctrl-click
-- Card links in notes, rendered as compact card links with a 300ms hover menu for clamped-title Edit/Open actions and stacked opening for related cards
+- Card links in notes, rendered with the same preview, labels, and metadata as Kanban cards when alone in a paragraph or list item and as compact links inline, with a 300ms hover menu for clamped-title Edit/Open actions and stacked opening for related cards
+- Optional card titles with stable filename-based display fallbacks; explicit title edits never rename the underlying Markdown card file
 - Syntax-highlighted fenced Markdown code blocks in the Vue card editor, including `ts` and `json` language labels
 - Native text editing context menus in editable fields, plus a Kanban card right-click action menu
 - Accessibility support for keyboard-operable cards/list actions, modal focus handling, live status announcements, reduced motion, and forced-colors mode
 - Keyboard result/menu navigation for Archive search, current-board card search in the quick board switcher, board tabs, list actions, label/filter popovers, and Settings sections; the header board search control opens the quick switcher and transfers focus to it
 - Keyboard shortcuts for Quick Add card creation across open boards, creating lists, switching and closing open boards, cycling colors, moving open cards, archiving, and opening Archive
+- Stable board tabs that prioritize the last active board once on startup and stay in place as you switch during the session
 - CLI setup, board discovery, board creation, command reference, filters, age sorting, timestamp JSON output, card duplication/template workflows, dry-run previews, archive workflows, settings, and imports
 - MCP trusted/open board discovery, trusted-root behavior, and board-name lookup
 

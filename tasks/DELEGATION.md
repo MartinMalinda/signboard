@@ -9,21 +9,20 @@ Two execution tiers:
 
 General rules for smaller-model runs:
 
-1. Hand the subagent the task file + `vue-styleguide.md` + the specific legacy
+1. Hand the subagent the task file + `vue-styleguide.md` + the specific Vue
    source files named in the task. Nothing else; keep context narrow.
 2. The task file's acceptance criteria are the contract — the subagent must run
    them and paste results.
 3. Large model reviews diffs for the parity-sensitive areas listed below before
    merging. Presentational-only diffs get a light review.
-4. Subagents never edit legacy `app/**` (side-build strategy) except the single
-   `main.js` loader branch in Task 01.
+4. Subagents edit only the canonical Vue source and shared libraries in scope.
 
 ## Per-task assignment
 
 ### Task 01 — Vue scaffold → **smaller model** (with large-model review)
 - Mechanical: deps, Vite config, scripts, `.gitignore`, `signboard-vue/index.html`.
-- Review points (large): the `main.js` loader branch (only legacy-side edit),
-  CSP meta copied verbatim, runtime-only Vue alias, Playwright env passthrough.
+- Review points (large): the `main.js` Vue loader, CSP meta, runtime-only Vue
+  alias, and Playwright startup behavior.
 - Escalate if `file://` asset loading or preload availability misbehaves —
   that's debugging, not assembly.
 

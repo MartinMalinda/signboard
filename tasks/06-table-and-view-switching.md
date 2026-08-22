@@ -37,9 +37,9 @@ legacy table DOM vocabulary and use the existing transactional bridge APIs.
 - Focused legacy tests — passed: task-list parser, board snapshot, board card
   metadata, card timestamps, card ordering, and archive.
 - `git diff --check` — passed.
-- `npm run test:board-views` — known unrelated baseline failure at
+- Renderer smoke coverage — blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638`, the existing add-list shortcut-hint
   assertion in modified `app/lists/listActionsPopover.js`.
-- `npm run test:playwright:vue` — not green in this environment because
+- `npm run test:playwright` — not green in this environment because
   Electron aborts with SIGABRT during launch before page interaction; no Vue
   E2E rows are claimed.

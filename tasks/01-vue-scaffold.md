@@ -1,7 +1,7 @@
 # Task 01 — Standalone Vue renderer scaffold (side-by-side)
 
 Status: **DONE** (2026-07-25). Kept as record + reference for the wiring.
-Strategy: [vue-migration.md](../vue-migration.md) §4.
+Strategy: canonical Vue renderer architecture in `vue-styleguide.md`.
 Rules: [vue-styleguide.md](../vue-styleguide.md).
 
 ## What exists (verified)
@@ -21,22 +21,20 @@ Rules: [vue-styleguide.md](../vue-styleguide.md).
   the original plan (bundled imports): bundling broke UMD global attachment
   for Sortable/feather/FDatepicker. Script tags preserve exact legacy
   semantics.
-- `main.js` — single branch: `SIGNBOARD_RENDERER=vue` loads
-  `signboard-vue/dist/index.html`; legacy `index.html` stays default.
+- `main.js` — loads the canonical `signboard-vue/dist/index.html` entry.
   (Only legacy-side edit.)
 - Root `package.json` — `build:vue`, `watch:vue`, `dev:vue`,
-  `test:playwright:vue` scripts.
+  `test:playwright` script.
 - `electron-builder.json` — `signboard-vue/dist/**` added to packaged files.
 - Playwright — no config change needed: the spec fixture spreads
-  `...process.env`, so `SIGNBOARD_RENDERER=vue playwright test` passes through.
+  `...process.env`, so Playwright receives the normal development environment.
 - `.gitignore` — no change needed: existing `dist` pattern already covers
   `signboard-vue/dist`.
 
 ## Verified acceptance criteria
 
-- `npm start` = unchanged legacy app (smoke-tested: legacy `index.html`
-  loads with empty `SIGNBOARD_RENDERER`).
-- `SIGNBOARD_RENDERER=vue electron .` boots the Vue shell: marker set,
+- `npm start` builds and boots the Vue shell.
+- `electron .` boots the Vue shell:
   `#boardName`/`#board` mounted, `window.board`/`chooser`/`electronAPI`
   present, all 5 vendor globals loaded, no console errors.
 - `npm run build` in `signboard-vue/` = vue-tsc type-check + Vite build, green.

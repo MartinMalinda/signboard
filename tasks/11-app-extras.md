@@ -41,7 +41,7 @@ preload/main contracts and legacy DOM vocabulary.
 - `npm run test:due-notifications`, `npm run test:external-calendar`,
   `npm run test:app-settings`, and `npm run test:ai-task-suggestions` — passed.
 - `git diff --check` — passed.
-- `npm run test:board-views` remains a known unrelated baseline failure at
+- Renderer smoke coverage remains blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638` on the existing add-list shortcut-hint
   assertion in `app/lists/listActionsPopover.js`.
 - Vue Electron Playwright is not claimed as passing: Electron aborts with

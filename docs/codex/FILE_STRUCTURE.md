@@ -4,178 +4,98 @@ This map focuses on source and operational files. Large generated/vendor folders
 
 ## Top level
 
-- `main.js` - Electron main process window + IPC handlers + trusted board-root/path validation + last-known open-board state persistence for MCP/CLI discovery + filesystem watchers + opt-in localhost External Published Calendar server + native menu/accelerators (including board switcher/settings/theme shortcuts plus required-action validation/rebuild on focus) + optional Quick Add global shortcut registration + Smart Card Action/Ollama model-list IPC + renderer right-click text editing context menu with deferred native popup handling + archive browse/restore + top-of-list card move IPC + board duplication IPC + linked-object add/open/drop/status/recreate/relink IPC with URL favicon caching + Obsidian outbound/deep-link IPC and `signboard://` protocol dispatch for card and validated board opening. Board activation ensures a managed Obsidian Base when applicable without sweeping card Markdown; full metadata reconciliation remains on write/import/move/explicit Base flows. Also owns GitHub-release auto-update flow (`electron-updater`), including release-note formatting that strips a `## Downloads` section from in-app update dialogs.
-- `lib/rendererSelection.js` - Pure default/legacy renderer selection used by `main.js` and its startup regression test.
+- `main.js` - Electron main process window + IPC handlers + trusted board-root/path validation + filesystem watchers + native menus/accelerators + update flow + MCP/CLI startup + external calendar server.
+- `preload.js` - Thin renderer bridge (`window.board`, `window.chooser`, `window.electronAPI`) that forwards allowed operations to main-process IPC and main-process-triggered renderer events.
+- `signboard-vue/` - Canonical Vue renderer source, framework-free helpers, unit tests, Vite configuration, and generated `dist/` output.
+- `lib/` - Main-process, CLI, MCP, filesystem, import, archive, ordering, metadata, and shared application helpers.
+- `shared/` - UMD-compatible helpers shared by main-process code and renderer modules.
 - `CODEX.md` - Canonical Codex-specific repo instructions and maintenance rules.
 - `AGENTS.md` - Cross-tool compatibility entrypoint that points agents to `CODEX.md`.
-- `DESIGN.md` - Design.md-compatible default theme tokens and visual rationale for Signboard's UI.
+- `DESIGN.md` - Default theme tokens and visual rationale for Signboard's UI.
 - `MCP_README.md` - Dedicated setup guide for Signboard MCP server mode (`--mcp-server`).
-- `preload.js` - Thin renderer bridge (`window.board`, `window.chooser`, `window.electronAPI`) that forwards allowed operations to main-process IPC and main-process-triggered renderer events, including board switcher/view/settings/Quick Add/signboard-card-link/signboard-board-link events, clipboard text copy, Smart Card Actions, Ollama model inspection, archive browse/read/restore, board snapshot reads, board duplication, Obsidian actions, dropped-file path extraction for linked objects, and transactional card/list reorder plus top-of-list card move calls.
-- `index.html` - Deprecated legacy app shell retained for `SIGNBOARD_RENDERER=legacy`; the canonical shell is built from `signboard-vue/`.
 - `readme.md` - Human-facing project README.
 - `docs/release-template.md` - Curated GitHub release-body template for public download links.
-- `package.json` - Runtime/build scripts and dependencies.
-- `package-lock.json` - NPM lockfile.
-- `.gitignore` - Ignores `node_modules`, `dist`, `.env`, etc.
-- `buildjs.sh` - Deprecated legacy-only build that concatenates shared renderer schema and renderer modules into `app/signboard.js` for `SIGNBOARD_RENDERER=legacy`.
-- `electron-builder.json` - Build targets/artifact settings.
+- `package.json` - Runtime, development, test, and packaging scripts.
+- `electron-builder.json` - Build targets and artifact settings.
 - `LICENSE` - MIT license.
-- `obsidian-plugin/` - Optional desktop-only Obsidian companion plugin source (`manifest.json`, self-contained `main.js`, helper/tested conversion/link/delete-cleanup utilities, styles, and plugin README) for opening/copying canonical ID and ad-hoc relative-path Signboard links, attaching active notes, asking before removing links to deleted notes, creating Signboard boards from folders, and handling `obsidian://signboard?...`.
-- `skills/signboard-mcp/SKILL.md` - Optional agent skill instructions for safe/consistent Signboard MCP tool usage.
-- `skills/signboard-mcp/agents/openai.yaml` - UI metadata for clients that support skill lists/chips.
-
-## Renderer source (`app/`)
-
-- `app/signboard.js` - Generated legacy renderer file loaded only by the explicit `SIGNBOARD_RENDERER=legacy` rollback path.
-- `app/utilities/santizeFileName.js` - Filename sanitization + random suffix helper.
-- `app/utilities/taskList.js` - Task checklist parser, start/due marker helpers, all/open task date sets, task-summary counters, and task progress badge creation.
-- `app/utilities/dueNotifications.js` - Due-notification collection + message formatting for card due dates and incomplete task due markers, skipping completed workflow lists.
-- `app/utilities/accessibility.js` - Shared renderer accessibility helpers for modal focus restoration/trapping, background inert state, live status announcements, stable DOM IDs, reduced-motion checks, and deferring DOM mutations until native menu/select popup tracking settles on macOS.
-- `app/utilities/cardDragTilt.js` - Shared card Sortable fallback options, drag tilt, reduced-motion handling, and drag text-selection lock used by Kanban card drag/drop.
-- `app/utilities/cardTimestamps.js` - Renderer card timestamp formatting helpers for editor metadata and Table age columns.
-- `app/utilities/linkedObjects.js` - Shared renderer helpers for counting structured `linked_objects` and legacy `related` links, plus paperclip count badge creation for Kanban/Table.
-- `app/appSettings.js` - Renderer app-settings state, app-wide General/Notifications/Smart Actions controls, drag-reorderable accordion Smart Card Action prompt/target rows, tooltip/notification/Quick Add global shortcut/AI assistance/External Published Calendar persistence scheduling, and one-time migration from legacy board settings; shared defaults/normalizers come from `shared/appSettingsSchema.js`.
-- `app/board/boardLabels.js` - Board-label state, completed-list workflow settings, shared shortcut-label helpers, label-only header filter UI, keyboard-operable card label popovers with inline label creation and Labels settings shortcut, new-card label selection helpers, Settings modal app/current-board panel nav, General board rename/move/duplicate controls, Obsidian Base generation controls, and Trello/Obsidian import panel wiring + summary rendering.
-- `app/board/boardSearch.js` - Board search state, input handling for title/body filtering, and keyboard navigation from the search field through visible card results.
-- `app/board/boardSnapshot.js` - Renderer adapter for batched `readBoardSnapshot` results, with fallback to legacy per-list/per-card reads for tests or older bridges.
-- `app/board/boardViews.js` - Bottom Kanban/Table workspace dock state, direct workspace view transitions, and Kanban/Table board view state.
-- `app/board/tableView.js` - Board-scoped Table view rendering, ordered Card/List/Tasks/Labels/Links/dependency/V2-score columns, linked-object counts, board filter/search reuse, Table list filter and sort controls, checkbox/shift-range bulk selection, bulk archive/move/label/date actions, and list-column card moves through the top-of-list move IPC path.
-- `app/board/archiveBrowser.js` - Dedicated Archive modal UI, search-first archived card/list browsing with keyboard result navigation, detail-pane rendering, incremental result loading, and restore flows.
-- `app/board/boardTabs.js` - Open-board tab session state (restore/add/close/reorder), last-known open/active board snapshot sync to main process, keyboard navigation/close behavior for visible tabs, responsive `N more` overflow for unbounded open boards, plus the shared safe board-switch helper used by tab clicks and the switcher.
-- `app/board/boardSwitcher.js` - Legacy quick board switcher overlay for `Cmd/Ctrl + K`, filtering and closing currently open boards and delegating selected board changes to the shared switch helper; the canonical Vue switcher also searches current-board cards and opens them from the palette.
-- `app/cards/createCardElement.js` - Card DOM rendering, compact start/due date metadata popover, task progress and linked-object badge display, list-item/card-title button semantics, and click behavior.
-- `app/cards/processAddNewCard.js` - New card creation flow, including open-board targeting and optional create-and-open behavior.
-- `app/cards/processAddNewList.js` - New list creation flow.
-- `app/lists/listActionsPopover.js` - List action popover rendering for adding cards/lists, moving lists left/right, archiving cards/lists, keyboard option navigation, shortcut hints, and status announcements.
-- `app/lists/createListElement.js` - List DOM rendering with labelled section/list semantics, sanitized rename, card DnD handling, and cross-list move lifecycle logging.
-- `app/board/renderBoard.js` - Whole-board render using batched board snapshots, active Kanban/Table view dispatch, and Kanban list DnD handling through main-process transactional reorder.
-- `app/board/openBoard.js` - Board open/init logic and starter content.
-- `app/modals/closeAllModals.js` - Modal close logic + editor cleanup + conditional rerender + board interaction lock/unlock.
-- `app/modals/toggleAddCardModal.js` - Add-card modal position/toggle.
-- `app/modals/toggleAddListModal.js` - Add-list modal position/toggle.
-- `app/modals/toggleAddCardToListModal.js` - Cross-list add-card modal toggle.
-- `app/modals/toggleEditCardModal.js` - Card editor open/save/archive/duplicate logic, compact calendar-based card start/due metadata control, Created/Updated timestamp display, active-card top-of-list moves from the dropdown/directional controls, debounced + serialized saves, clean-editor reloads after external/MCP card edits, fresh duplicate lifecycle metadata, raw body URL detection/open controls, linked-object paperclip controls including inline URL/app-link entry, anchored Smart Card Action previews for title/summary/task-list/auto-label/smart-paste/due-date/attachment/custom/Quick output and read-only Question the Card answers plus a Smart Actions settings shortcut, Obsidian rename reconciliation between `linked_objects` and `related` wikilinks, missing-note status rendering with recreate/relink/remove actions, drag/drop local-file linking, and Open With/Obsidian actions.
-- `app/listeners/window.js` - Keyboard shortcuts, menu/global-command listeners, Quick Add card modal wiring with board/list selection across open boards, Kanban/Table view switching, Settings fallback handling, quick board switcher shortcut handling, color cycling, active-card move/archive shortcuts, active-editor closing for workspace-level shortcuts, and the `Cmd/Ctrl + /` helper modal behavior; keep `#modalKeyboardShortcuts` list in sync when adding/changing shortcuts.
-- `app/init.js` - App bootstrap, folder picker handling, top-level event wiring, Obsidian-vault-required info modal controls, sponsorship modal triggers, and external board-change auto-refresh sync loop, including clean open-editor refreshes.
-- `app/ui/theme.js` - Theme toggle + OverType theme integration, including the theme shortcut hint/state in the board menu.
-- `app/ui/tooltips.js` - Lightweight custom tooltip engine (event delegation + mutation observer) using existing element label attributes.
+- `obsidian-plugin/` - Optional desktop-only Obsidian companion plugin source.
+- `skills/signboard-mcp/` - Optional agent skill instructions for safe/consistent Signboard MCP tool usage.
 
 ## Canonical Vue renderer (`signboard-vue/`)
 
 - `signboard-vue/src/App.vue` - Vue shell bootstrap, session restore, empty/missing board states, and Kanban composition.
-- `signboard-vue/src/components/board/CardItem.vue` - Kanban card rendering, non-default V2 kind signal display (`Task` stays implicit), meaningful derived-state chips (the broad Impact dashboard section is not repeated as a card badge), drag-friendly click behavior, and pointer-positioned right-click card action menu with Duplicate and Archive actions plus keyboard focus handling.
-- `signboard-vue/src/components/DashboardView.vue` - V2 dashboard Priority and Impact sections, shared ranking signals, positive-value sorting over unfinished work, and explainable risk markers on Priority cards.
-- `signboard-vue/src/stores/useBoardsStore.ts` - Open-board tabs, localStorage compatibility, trusted-root authorization, picker/seed flow, and missing-board replacement.
-- `signboard-vue/src/stores/useBoardDataStore.ts` - Race-safe batched board snapshot loading and list/card getters.
-- `signboard-vue/src/stores/useUiStore.ts` - Persisted light/dark theme and minimal board-menu state.
-- `signboard-vue/src/components/` - Header, tabs, workspace dock, minimal board menu, and Kanban columns/cards, including list-header add-card shortcuts and the keyboard-accessible card right-click action menu.
-- `signboard-vue/src/composables/useSortable.ts` - Vue SortableJS setup for lists, cards, and settings reordering, including the click-friendly card drag activation tolerance.
-- `signboard-vue/src/lib/components/` - Shared Button, Tooltip, Dropdown, Modal, Close, and Muuri grid primitives; component smoke tests live beside them.
-- `signboard-vue/src/lib/components/RichTextEditor.vue` - Controlled Tiptap Markdown card-notes editor with native nested task checkboxes, link editing, compact Signboard card-link rendering, 300ms hover Edit/Open menu behavior, stacked related-card opening, raw URL decorations, Shiki-backed fenced-code highlighting, and external-body refresh support.
-- `signboard-vue/src/lib/codeHighlight.ts` - ProseMirror highlight plugin wiring for the Vue Tiptap editor, using fine-grained Shiki language/theme bundles and preserving Markdown code-block language attributes.
-- `signboard-vue/src/components/editor/CardNotesEditor.vue` - Card-editor notes integration boundary for the Tiptap-only notes surface.
-- `signboard-vue/src/styles/_tokens.scss` - Sass compatibility tokens for shared primitives; active theme values remain CSS custom properties in `static/styles.css`.
+- `signboard-vue/src/components/` - Header, tabs, workspace dock, board views, cards, editor, settings, and modal components.
+- `signboard-vue/src/components/BoardTabs.vue` - Stable board-tab windowing for overflow; activating a visible tab does not reorder the strip.
+- `signboard-vue/src/stores/` - Pinia stores for boards, board data, editor state, settings, views, archive, switcher, notifications, and UI state.
+- `signboard-vue/src/composables/` - Sorting, accessibility, shortcuts, dates, native-menu settling, and external-board synchronization.
+- `signboard-vue/src/lib/components/` - Shared Button, Tooltip, Dropdown, Modal, Close, and Muuri grid primitives.
+- `signboard-vue/src/lib/components/RichTextEditor.vue` - Tiptap Markdown editor, raw-URL and standalone-card-link decorations/widgets, card-link actions, and editor integration styles.
+- `signboard-vue/src/components/editor/CardLinkEmbed.vue` - Resolves standalone links against active-board snapshot cards and reuses the canonical Kanban `CardItem` presentation inside the editor.
+- `signboard-vue/lib/` - Framework-free ESM helpers for labels, filters, tasks, dates, timestamps, linked objects, archive, table views, settings, smart actions, and V2 semantics.
+- `signboard-vue/lib/cardTitle.js` - Renderer filename-derived card display title and explicit-title fallback helpers.
 - `signboard-vue/vite.config.ts` - Vue/Vite aliases, relative Electron build base, and Sass preprocessing.
-- `signboard-vue/lib/` - Framework-free ESM pure modules used by the canonical Vue renderer and covered by unit tests.
-- `signboard-vue/dist/` - Vite production output packaged into the Electron app; generated and ignored by source control.
-- `package.json` `dev:vue` / `watch:vue:changes` and `scripts/start-dev.js` - Complete the initial Vue build before Electron startup, then rebuild only after Vue/shared/static source changes while preserving the last complete development `dist` output; preserve an optional directory argument as the initial board path.
+- `signboard-vue/dist/` - Generated Vite production output packaged into the Electron app.
 
 ## Shared/library code
 
-- `shared/appSettingsSchema.js` - Pure app-settings defaults and normalizers shared by the main process and renderer bundle; the single source for built-in Smart Card Action prompts, targets, and saved action order normalization.
-- `lib/atomicFile.js` - Shared durable write helper that writes to a same-directory temp file, fsyncs, renames into place, and best-effort fsyncs the containing directory.
-- `lib/boardSnapshot.js` - Main-process batched board reader used by renderer Kanban/Table views; returns list/card records, opt-in timestamps/task metadata/board settings, and per-card/list read errors.
-- `lib/cardFrontmatter.js` - Card parse/normalize/read/write/update with legacy support, including `start` and `due` date normalization.
-- `lib/cardLifecycle.js` - Shared card lifecycle metadata helper for `createdAt`, compact `activity` trails, archive frontmatter state, moved/restored transitions, and the `statusChangedAt` timestamp recorded on cross-list moves.
-- `lib/cardTimestamps.js` - Shared timestamp resolver for desktop reads, CLI card records/JSON output, and MCP card responses, preferring frontmatter/activity creation data and filesystem modification data.
-- `lib/cardOrdering.js` - Shared transactional ordering helpers used by main-process/MCP restore and move flows to insert a card at the top, reorder cards in a list, and reorder lists by updating per-directory `.board.json` manifests without renaming card files or list directories.
-- `lib/orderManifest.js` - Atomic `.board.json` read/write/migration helpers; maps a board root to list order and each list directory to card order, with compatibility for legacy `.list.json` and `.signboard-order.json` files.
-- `lib/archive.js` - Archive/archive-list filesystem operations plus archive listing/detail/restore helpers and legacy archive fallback handling.
-- `lib/boardLabels.js` - Board-level label/theme/workflow/External Published Calendar inclusion settings read/write/defaults/filter helpers (root `.board.json` `settings`) plus legacy Markdown/app-setting extraction for migration.
-- `lib/boardDuplication.js` - Board folder duplication helper used by desktop Settings; copies board contents, assigns fresh copied-card IDs where canonical filenames support them, refreshes copied Signboard metadata, rewrites internal `signboard://open-card` references, rewrites copied local linked-object paths, and resets copied managed Base state.
-- `lib/appSettings.js` - App-wide tooltip/notification/Quick Add global shortcut/AI assistance and External Published Calendar JSON persistence under Electron `userData`, delegating defaults and normalization to `shared/appSettingsSchema.js`.
-- `lib/aiTaskSuggestions.js` - Ollama `/api/tags` model-list inspection, chat request construction, response parsing, Smart Card Action output parsing including label references, due dates, linked-object attachment suggestions, read-only card-question answers, checklist task cleanup, and card-context prompt helpers for Card Editor Smart Card Actions.
-- `lib/externalPublishedCalendar.js` - External Published Calendar event collection and iCalendar feed generation for card due dates and incomplete task due markers.
-- `lib/obsidianIntegration.js` - Obsidian URI and Signboard deep-link helpers, flat card property normalization, Obsidian vault discovery, managed generated `Signboard Board.base` files with hash-based user-edit protection, linked-note creation/recreation, and linked-note wikilink resolution.
-- `lib/importers/index.js` - Export surface for board importers.
-- `lib/importers/shared.js` - Shared importer helpers for list/card creation, label reuse/creation, metadata section building, and markdown source discovery.
-- `lib/importers/trello.js` - Trello JSON importer.
-- `lib/importers/obsidian.js` - Obsidian importer covering `obsidian-kanban`, generic task scopes, and CardBoard snapshot imports.
-- `lib/cardBodyEdits.js` - Shared Markdown body-edit helpers for replacing heading sections, inserting text below headings, and appending timestamped note list items.
-- `lib/boardCreation.js` - Shared default board scaffolding for MCP and CLI-created boards, including default list folders and the starter card body/frontmatter.
-- `lib/boardDiscovery.js` - Shared known-board discovery for MCP and CLI, including desktop trusted-root reads, last-known desktop open-board state reads, board-looking folder detection, and bounded allowed-root scans.
-- `lib/mcpServer.js` - Headless MCP stdio server for agent access to board/list/card/settings/archive operations inside configured or desktop-trusted roots, safe board discovery/creation, archive browse/read/restore tools, Trello/Obsidian/Tasks.md imports, dry-run card writes, and timestamp/task metadata on card tools.
-- `lib/cliApp.js` - CLI command parsing/output for `use`, `boards`, `lists`, `cards`, `archive`, `settings`, and path-based `import` commands, including board discovery/creation, card duplicate/template commands, `--start` writes, section/note card edits, dry-run previews, JSON timestamp/date output, and `--task-status open|any` for card due filtering.
-- `lib/cliBoard.js` - CLI list/card filesystem operations, plain-name list creation with legacy list-name compatibility, record loading, card duplication/template creation, section/note body edits, explicit label clearing, due/search/label filtering, start/task-date metadata output, and created/updated age sorting; overdue task filtering defaults to incomplete/open task markers unless callers pass `--task-status any`.
-- `lib/cliInstall.js` - User-level CLI shim + shell profile installation; packaged shims run `app.asar/bin/signboard.js` under `ELECTRON_RUN_AS_NODE` instead of launching the desktop lifecycle.
+- `shared/appSettingsSchema.js` - App-settings defaults and normalizers shared by the main process and renderer.
+- `shared/v2StageSemantics.js` - V2 stage resolution shared by main-process consumers.
+- `shared/v2Evaluator.js` - Canonical trimmed V2 normalization, value/risk scoring formulas, ranking-index ranges, gates, and dashboard-section projections.
+- `lib/atomicFile.js` - Durable same-directory temporary-file and atomic replacement helper.
+- `lib/boardSnapshot.js` - Main-process batched board reader used by Kanban/Table views.
+- `lib/cardFrontmatter.js` - Card parse/normalize/read/write/update with older-card compatibility.
+- `lib/cardTitle.js` - Main-process filename-derived card display title and explicit-title fallback helpers.
+- `lib/cardLifecycle.js` - Card lifecycle metadata and archive state helpers.
+- `lib/cardTimestamps.js` - Shared timestamp resolver for desktop, CLI, and MCP card records, including tolerant desktop reads for paths that vanish during reconciliation.
+- `lib/cardOrdering.js` - Transactional card/list ordering helpers backed by `.board.json` manifests.
+- `lib/orderManifest.js` - Atomic ordering manifest read/write/migration helpers.
+- `lib/archive.js` - Archive/list archive operations and browse/restore helpers.
+- `lib/boardLabels.js` - Board-level label/theme/workflow settings and migration helpers.
+- `lib/boardDuplication.js` - Board folder duplication and internal-link rewriting.
+- `lib/appSettings.js` - App-wide settings persistence under Electron `userData`.
+- `lib/aiTaskSuggestions.js` - Ollama model inspection and Smart Card Action processing.
+- `lib/externalPublishedCalendar.js` - External Published Calendar collection and ICS generation.
+- `lib/obsidianIntegration.js` - Obsidian vault, Base, linked-note, and URI/deep-link helpers.
+- `lib/importers/` - Trello, Obsidian, and Tasks.md importers.
+- `lib/mcpServer.js` - Headless MCP stdio server.
+- `lib/cliApp.js` / `lib/cliBoard.js` - CLI command handling and board/card filesystem operations.
+- `lib/cliInstall.js` - User-level CLI shim and shell-profile installation.
 
 ## Scripts (`scripts/`)
 
-- `scripts/test-frontmatter.js` - Node assertions for frontmatter behavior.
-- `scripts/test-board-labels.js` - Node assertions for board label settings defaults/migration/filter logic.
-- `scripts/test-board-snapshot.js` - Node assertions for batched board snapshot list/card reads, task metadata, timestamps, board settings, and archive inclusion behavior.
-- `scripts/test-board-duplication.js` - Node assertions for board folder duplication, copied-card ID refresh, internal Signboard link rewrites, linked-object path rewrites, and copied managed Base reset behavior.
-- `scripts/test-app-settings.js` - Node assertions for app-wide settings persistence, including AI settings, and one-time board-settings migration.
-- `scripts/test-ai-task-suggestions.js` - Node assertions for Ollama model-list/chat request construction, Smart Card Action output parsing including label references, due dates, attachments, answers, and AI checklist suggestion cleanup without live network calls.
-- `scripts/test-board-card-metadata.js` - Board card metadata rendering assertions (compact start/due ranges, labels, task badge behavior).
-- `scripts/test-board-views.js` - Kanban/Table rendering and filter helper assertions.
-- `scripts/test-card-timestamps.js` - Card timestamp normalization assertions for frontmatter, activity, and filesystem fallback behavior.
-- `scripts/test-archive.js` - Archive metadata, archive-browser data, restore flow, empty archived-list cleanup, and legacy archive fallback assertions.
-- `scripts/test-due-notifications.js` - Due-notification assertions for task due item collection and notification body formatting.
-- `scripts/test-external-published-calendar.js` - External Published Calendar assertions for ICS generation, completed-list skipping, checked-task skipping, and board opt-out.
-- `scripts/test-import-trello.js` - Trello importer assertions for order, label reuse, archive routing, and metadata preservation.
-- `scripts/test-import-obsidian.js` - Obsidian importer assertions for kanban/task/CardBoard cases, due conversion, and source-prefix naming.
-- `scripts/test-obsidian-integration.js` - Obsidian outbound integration assertions for canonical ID and ad-hoc relative-path URI/deep-link helpers, flat card properties, managed generated Bases YAML, linked notes, and linked-note resolution.
-- `scripts/test-obsidian-plugin.js` - Pure helper assertions for the optional Obsidian companion plugin.
-- `scripts/test-task-list-parser.js` - Task checklist parser assertions (`completed/total` and task start/due date extraction).
-- `scripts/migrate-legacy-cards.js` - Bulk migration to YAML frontmatter format.
-- `scripts/notarize.js` - electron-builder `afterSign` notarization hook.
-- `scripts/verify-release-assets.js` - Release checklist validator for updater metadata/assets across macOS/Windows/Linux plus curated public-download guidance.
-- `scripts/test-mcp-server.js` - MCP protocol smoke test across header + ndjson stdio transports, including board discovery, trusted-root config/resolution coverage, archive tool coverage, card task metadata assertions, and import-tool coverage.
-- `scripts/test-cli.js` - Node CLI smoke test covering board discovery, list/card/archive flows, duplicate/template card commands, section/note edits, dry-run previews, plus Trello/Obsidian imports.
-- `scripts/test-renderer-selection.js` / `scripts/test-vue-packaging.js` - Cutover checks for default/legacy startup resolution and Electron Builder Vue/static/vendor file coverage.
-- `scripts/test-desktop-cli.js` - Packaged-shim-style Electron Node-mode CLI smoke test, including board creation and import command routing.
+- `scripts/test-frontmatter.js` - Frontmatter behavior assertions.
+- `scripts/test-board-snapshot.js` - Batched board snapshot assertions.
+- `scripts/test-board-duplication.js` - Board duplication assertions.
+- `scripts/test-app-settings.js` - App-settings persistence and migration assertions.
+- `scripts/test-ai-task-suggestions.js` - Smart Card Action parsing assertions.
+- `scripts/test-card-timestamps.js` - Timestamp normalization assertions.
+- `scripts/test-archive.js` - Archive browse/restore assertions.
+- `scripts/test-due-notifications.js` - Due notification assertions using canonical Vue helpers.
+- `scripts/test-external-published-calendar.js` - Published calendar assertions.
+- `scripts/test-task-list-parser.js` - Task checklist/date parsing assertions using canonical Vue helpers.
+- `scripts/test-import-*.js` - Importer assertions.
+- `scripts/test-obsidian-*.js` - Obsidian integration/plugin assertions.
+- `scripts/test-mcp-server.js` - MCP protocol and tool smoke test.
+- `scripts/test-cli.js` / `scripts/test-desktop-cli.js` - CLI smoke tests.
+- `scripts/start-dev.js` - Complete Vue build, source watcher, and Electron dev startup.
 
 ## Playwright tests (`tests/playwright/`)
 
-- `tests/playwright/signboard-smoke.spec.js` - Electron UI smoke tests for board rendering, shortcuts, drag/drop behavior, modals, board switching, archive, settings, and imports. The suite avoids explicit `page.bringToFront()` by default; set `SIGNBOARD_PLAYWRIGHT_FOREGROUND=1` for foreground debugging.
-- `tests/playwright/helpers/fixtureBoard.js` - Temporary board fixture builder used by the Playwright smoke suite.
+- `tests/playwright/signboard-smoke.spec.js` - Electron UI smoke tests for the canonical Vue renderer.
+- `tests/playwright/helpers/fixtureBoard.js` - Temporary board fixture builder.
 
 ## Static assets (`static/`)
 
 - `static/styles.css` - App styling, layout, theme tokens, modal/editor styles, keyboard-only focus affordances, reduced-motion/forced-colors rules, and card drag placeholder visuals.
-- `static/vendor/*.js|*.css` - Vendored third-party libs:
-  - Marked
-  - Turndown
-  - SortableJS
-  - Feather Icons
-  - OverType
-  - FDatepicker
+- `static/vendor/*.js|*.css` - Vendored third-party libraries loaded by the Vue renderer.
 
 ## Build and packaging support
 
-- `build/entitlements.mac.plist` - macOS hardened runtime entitlements.
 - `dist/` - Build outputs and unpacked platform artifacts (generated).
-- `.board.json` (runtime, per board folder) - Root manifest containing list order plus board settings under `settings` for labels/color scheme/workflow/External Published Calendar inclusion data; legacy Markdown and tooltip/notification fields are migrated on rewrite.
-- `app-settings.json` (runtime, Electron `userData`) - App-wide tooltip, notification, Quick Add global shortcut, AI assistance, and External Published Calendar preferences.
-
-## Usually ignored for code tasks
-
-- `node_modules/` - Installed dependencies.
-- `dist/` - Generated binaries/installers.
-- `static/vendor/` - External vendored source (edit only when updating vendored libs).
+- `.board.json` (runtime, per board folder) - Root manifest containing list order and board settings.
+- `app-settings.json` (runtime, Electron `userData`) - App-wide preferences.
 
 ## Codex doc maintenance rule
 
-- When behavior, architecture, or tooling changes, update agent docs in the same change set:
-  - `CODEX.md`
-  - `AGENTS.md`
-  - `docs/codex/PROJECT_CONTEXT.md`
-  - `docs/codex/FILE_STRUCTURE.md`
-
-- When user-facing behavior, setup, or CLI flows change, update release-facing docs in the same change set:
-  - `readme.md`
-  - `docs/README.md`
-  - `docs/using-signboard.md`
-  - `docs/signboard-cli.md`
-  - `MCP_README.md` (when MCP setup or behavior changes)
+- When behavior, architecture, or tooling changes, update `CODEX.md`, `AGENTS.md`, `docs/codex/PROJECT_CONTEXT.md`, and this file.
+- When user-facing behavior, setup, or CLI flows change, update `readme.md`, `docs/README.md`, `docs/using-signboard.md`, `docs/signboard-cli.md`, and `MCP_README.md` when relevant.

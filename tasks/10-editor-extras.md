@@ -27,8 +27,8 @@ save queue and Task 09’s modal/accessibility primitives intact.
 - `npm --prefix signboard-vue run test:unit -- --run` — passed, 14 files / 42
   tests, including five focused Task 10 tests.
 - `npm run test:ai-task-suggestions`, `npm run test:obsidian-integration`, and
-  `npm run test:board-card-metadata` — passed.
-- `npm run test:board-views` remains a known unrelated baseline failure at
+  the canonical Vue unit suite — passed.
+- Renderer smoke coverage remains blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638` on the existing add-list shortcut-hint
   assertion in `app/lists/listActionsPopover.js`.
 - Vue Electron Playwright remains limited by the environment’s Electron

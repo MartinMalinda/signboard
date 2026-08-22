@@ -1,9 +1,9 @@
 # Signboard Vue Styleguide
 
-Scope: the Vue 3 renderer introduced by [vue-migration.md](./vue-migration.md).
-Adapted from an external project's guidance; only what fits Signboard was kept
-(see §10 for what was deliberately dropped). Until the migration starts, this
-document is advisory only.
+Scope: the canonical Vue 3 renderer in `signboard-vue/`. Adapted from an
+external project's guidance; only what fits Signboard was kept (see §10 for
+what was deliberately dropped). This document is the renderer architecture
+guide.
 
 The project favors explicit data flow, predictability, and long-term
 maintainability over framework idioms or abstraction-heavy design.
@@ -43,8 +43,8 @@ maintainability over framework idioms or abstraction-heavy design.
 
 ## 3. State
 
-- Pinia stores replace the `window.__*` singletons per the mapping in
-  `vue-migration.md` §4.7. Do not create new ad-hoc module-level reactive
+- Pinia stores own the `window.__*` singleton responsibilities. Do not create
+  new ad-hoc module-level reactive
   state outside stores.
 - localStorage persistence (board tabs, active board, theme) lives in exactly
   one store action each — no scattered `localStorage` reads in components.
@@ -122,25 +122,16 @@ These survive the framework change and every component must respect them:
 - Board rendering keeps the batched `readBoardSnapshot` IPC path; do not
   reintroduce per-card IPC reads.
 - The Playwright DOM contract (IDs, classes, roles, `data-*`) is preserved
-  surface-by-surface so the **same suite runs against both renderers**;
+  surface-by-surface so the suite remains a stable UI contract;
   intentional markup changes update tests in the same PR.
 
-## 8. Parallel-period compatibility (side-build)
+## 8. Canonical renderer ownership
 
-- The Vue renderer (`signboard-vue/`) is standalone. **Never import from legacy
-  `app/**`** — share logic only by copying framework-free modules into
-  `signboard-vue/lib/` as ESM. Each copy gets a header comment beginning with
-  `THIS CAN BE REMOVED WHEN` ("...cutover makes this the canonical copy;
-  until then keep in sync with `app/<original>`").
-- During the parallel period, bug fixes in duplicated pure modules must land
-  in **both** copies (legacy `app/**` and `signboard-vue/lib/`).
-- Legacy code stays untouched: no bridge hooks into the legacy renderer, no
-  legacy edits beyond the single `main.js` renderer-selection branch
-  (Task 01). The two renderers never share a DOM.
-- New legacy features shipped during the parallel period must be recorded in
-  `tasks/PARITY.md` in the same PR, so the Vue app can track them.
-- At cutover, `signboard-vue/lib/*` copies become canonical and the legacy
-  duplicates are deleted with `app/**`.
+- The Vue renderer (`signboard-vue/`) is the only desktop renderer.
+- Framework-free helpers in `signboard-vue/lib/` are canonical ESM modules;
+  Vue components and standalone checks import them directly.
+- Keep renderer behavior in `signboard-vue/src/` and `signboard-vue/lib/`, and
+  keep the generated `signboard-vue/dist/` output out of source edits.
 
 ## 9. Testing, failure, performance
 

@@ -39,7 +39,7 @@ archive, switcher, modal, shortcut, and sponsor DOM vocabulary.
 - Focused legacy checks — passed: `npm run test:archive`, board labels, and
   app settings.
 - `git diff --check` — passed.
-- `npm run test:board-views` — known unrelated baseline failure at
+- Renderer smoke coverage — blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638`, the existing add-list shortcut-hint
   assertion in modified `app/lists/listActionsPopover.js`.
 - Vue Electron Playwright was not claimed as passing; the environment’s

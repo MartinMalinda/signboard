@@ -11,11 +11,8 @@ npm run build:vue
 npm run start
 ```
 
-Normal launches use Vue. `SIGNBOARD_RENDERER=vue npm start` is an explicit
-equivalent; `SIGNBOARD_RENDERER=legacy npm start` selects the deprecated legacy
-renderer for rollback/testing. `npm run start:dev` watches the Vue renderer,
-while `npm run start:dev:legacy` watches the compatibility renderer. Pass a
-board directory to the Vue dev command to open it on launch:
+Normal launches use this Vue renderer. `npm run start:dev` watches it. Pass a
+board directory to the dev command to open it on launch:
 
 ```sh
 npm run dev:vue -- /path/to/board

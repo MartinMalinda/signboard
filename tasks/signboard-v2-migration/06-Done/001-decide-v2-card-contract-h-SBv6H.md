@@ -52,74 +52,49 @@ work_type: product
 signboard_v2:
   contract_version: 1
   kind: discovery
-  work_type: product
   priority_class: P2
+  parent: null
   depends_on:
     - 'Current architecture baseline: file-backed boards, snapshots, and views'
-    - 'Framework baseline: gates, value dimensions, and execution policy'
+    - 'Framework baseline: priority, value dimensions, and delivery risk'
+  blocked_by: []
   estimate:
     effort_points: 3
-    implementation_complexity: 2
-    coordination_complexity: 3
-  status_summary: 'Decision accepted: V2 metadata is additive, namespaced, legacy-safe, and list-derived for status.'
-  next_action: Use the accepted contract to define the shared V2 normalizer and migration fixtures.
-  enablement:
-    downstream_value: 5
-    downstream_breadth: 5
-    critical_path: 5
   discovery_value:
     uncertainty_reduction: 5
     decision_importance: 5
     cost_of_wrong_choice: 5
   modifiers:
     confidence: 3
-    strategic_fit: 5
     urgency: 3
     maintenance_delta: -1
-  execution:
-    specification_clarity: 2
-    verification_strength: 2
-    boundedness: 3
-    isolation: 2
-    coordination_complexity: 3
-    autonomous_execution_blocked: true
-    do_not_autorun: true
-  eligibility:
-    readiness: false
-    dependencies: true
-    date_window: false
-    scope: false
-    claim_available: false
-    protected_surface_clear: false
-    mode: general
 ---
 # Candidate first-class attributes
 
 - kind: epic, task, discovery, incident.
-- work_type: product, ux, security, correctness, reliability, engineering health, technical debt, discovery, documentation.
 - priority_class: P0-P3 as a gate.
-- framework_status while list folders remain the current stage source.
+- Optional stable `id`.
+- List-derived stage/status.
 - estimate.effort_points.
-- Separate problem-risk and delivery-risk inputs.
-- Execution clarity, verification, boundedness, isolation, and policy blocks.
-- Dependencies, blockers, evidence, and review dates.
+- Parent, dependency, and blocker relationships.
+- Opportunity, risk-prevention, discovery-value, modifier, and delivery-risk groups.
 
 # Accepted decision
 
-Use an additive `signboard_v2` frontmatter namespace with `contract_version: 1` for opt-in runtime V2 cards. Validate `kind` and `priority_class`; keep the Phase 1 clarity fields canonical but optional (`work_type`, `objective`, `scope`, `acceptance_criteria`, `verification`, `parent`, `depends_on`, `estimate.effort_points`, `status_summary`, and `next_action`). Derive status from the list folder and keep lifecycle/Obsidian fields under their existing owners.
+Use an additive `signboard_v2` frontmatter namespace with `contract_version: 1` for opt-in runtime V2 cards. The namespace contains only the exact trimmed contract: optional `id`, `kind`, `priority_class`, `parent`, `depends_on`, `blocked_by`, `estimate.effort_points`, the three supported value groups, the three supported modifiers, and the three delivery-risk inputs. Narrative content stays in the Markdown body, and status/stage remains list-derived.
 
-Do not infer V2 semantics from arbitrary unnamespaced frontmatter. Legacy cards remain valid and render normally. Scoring, autonomy, delivery-risk, and computed indexes are deferred until a later contract is accepted.
+Do not infer V2 semantics from arbitrary unnamespaced frontmatter. Legacy cards remain valid and render normally. Computed scores and dashboard memberships are derived outputs; they are not additional stored card attributes.
 
 # Deferred questions
 
-Which fields require validation? Which remain generic profile configuration? Should status remain list-derived initially? Which names avoid collisions with lifecycle and Obsidian metadata? Which fields are optional for legacy cards?
+Which score anchors should be calibrated after real board usage? Which dashboard section order is most useful across profiles?
 
 # Acceptance criteria
 
 - [x] Field matrix marks hardcoded, generic, derived, or deferred.
 - [x] Chosen fields have a stable namespace and migration rule.
 - [x] A legacy card with no V2 fields still renders normally.
-- [x] The first computed indexes are explicitly deferred; no score is part of the Phase 1 card contract.
+- [x] Computed indexes are explicitly derived and are not part of the stored card contract.
 
 # Objective
 

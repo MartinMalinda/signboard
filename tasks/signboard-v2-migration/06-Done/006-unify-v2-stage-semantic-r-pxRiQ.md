@@ -52,7 +52,7 @@ signboard_v2:
 ---
 Implement the bounded stage resolver validated by discovery: centralize role-to-list resolution, fail closed for unmapped or ambiguous V2 lists, and use the result in snapshot/dashboard/notifications/calendar consumers while preserving legacy behavior on V2-disabled boards. Do not rename lists or backfill card status.
 
-Development review evidence: shared/v2StageSemantics.js now resolves configured role-to-list mappings with mapped/ambiguous/terminal results; boardSnapshot, dashboard helpers, app/Vue due notifications, and external calendar use V2 semantics while legacy boards keep workflow completion behavior. Focused stage semantics test passes after aligning it with the canonical list-card snapshot shape; npm run test:v2-evaluator, npm run test:board-snapshot, npm run test:due-notifications, npm run test:external-calendar, npm run test:v2-internal-board, npm run test:board-views, focused Vue Dashboard/adapter/Table tests, npm run build:vue, and git diff --check pass. No list renames or card frontmatter backfill.
+Development review evidence: shared/v2StageSemantics.js now resolves configured role-to-list mappings with mapped/ambiguous/terminal results; boardSnapshot, dashboard helpers, Vue due notifications, and external calendar use V2 semantics while older boards keep workflow completion behavior. Focused stage semantics test passes after aligning it with the canonical list-card snapshot shape; npm run test:v2-evaluator, npm run test:board-snapshot, npm run test:due-notifications, npm run test:external-calendar, npm run test:v2-internal-board, focused Vue Dashboard/adapter/Table tests, npm run build:vue, and git diff --check pass. No list renames or card frontmatter backfill.
 
 
 ## Independent review result: revise

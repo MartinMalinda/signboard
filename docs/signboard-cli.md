@@ -18,6 +18,13 @@ This guide covers the Signboard command-line interface.
 
 On macOS and Linux, the desktop app can install the Signboard wrapper from `Help > Install Signboard CLI`. On Windows, use the packaged executable directly or run the CLI from a source checkout/WSL environment.
 
+When using a source checkout exposed with `npm link`, use `signboard run` to open the desktop app. It runs the same build-and-launch flow as `npm start` and accepts an optional board directory:
+
+```bash
+signboard run
+signboard run /Path/To/Board
+```
+
 Once installed, try it out!
 
 ```bash
@@ -97,7 +104,7 @@ Notes:
 
 - `boards list --json` reports the current CLI board plus desktop-open and desktop-trusted boards when Signboard has synced that state.
 - New boards get `To-do`, `Doing`, `Done`, and the internal `XXX-Archive` folder.
-- By default, Signboard seeds `000-hello-stock.md` in the To do list with the same starter guidance used by MCP-created boards.
+- By default, Signboard seeds `hello-stock.md` in the To do list with the same starter guidance used by MCP-created boards.
 - Add `--use` to make the new board the active CLI board for later commands.
 - Add `--no-welcome` to create only the default list folders.
 
@@ -176,7 +183,7 @@ signboard cards create --from-card ab123 --list "Leads" --title "New lead" --rem
 Create options:
 
 - `--list <list-ref>` required
-- `--title <title>` required
+- `--title <title>` optional; when omitted, the card keeps an empty title and uses its filename as the display title
 - `--body <text>`
 - `--body-file <path>`
 - `--from-card <card-ref>` optional source card/template to copy
@@ -231,6 +238,8 @@ Edit options:
 - `--add-label <ref>` repeatable
 - `--remove-label <ref>` repeatable
 - `--clear-labels`
+
+Card filenames are stable references. The title is optional metadata: an empty title displays a cleaned-up filename, while a supplied title is an explicit display override. Use `--title ""` when editing a card to clear the override.
 - `--move-to <list-ref>`
 - `--dry-run`
 

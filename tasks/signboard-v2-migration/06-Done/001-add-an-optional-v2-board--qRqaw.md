@@ -54,46 +54,30 @@ work_type: engineering_health
 signboard_v2:
   contract_version: 1
   kind: task
-  work_type: engineering_health
   priority_class: P2
   depends_on:
     - 'Decide V2 card contract: hardcoded attributes versus generic fields'
     - Define per-board project profile and dashboard contract
     - Choose migration and compatibility strategy for existing boards and cards
+  blocked_by: []
   estimate:
     effort_points: 3
-    implementation_complexity: 2
-    coordination_complexity: 2
-  status_summary: Profile seam verified across desktop/shared settings, MCP, CLI, snapshots, legacy migration, and build tests; absent profile still means current behavior.
-  next_action: Downstream snapshot and settings consumers may rely on the normalized opt-in profile seam.
-  engineering_health:
-    maintenance_reduction: 3
-    complexity_reduction: 2
-    reliability_testability: 4
-    recurring_time_saved: 3
-  enablement:
-    downstream_value: 5
-    downstream_breadth: 5
-    critical_path: 5
+  opportunity:
+    reach: 3
+    benefit: 4
+    frequency: 2
+  discovery_value:
+    uncertainty_reduction: 4
+    decision_importance: 4
+    cost_of_wrong_choice: 3
   modifiers:
     confidence: 3
-    strategic_fit: 5
     urgency: 3
     maintenance_delta: 0
-  execution:
-    specification_clarity: 4
-    verification_strength: 4
-    boundedness: 4
-    isolation: 4
-    coordination_complexity: 2
-  eligibility:
-    readiness: false
-    dependencies: true
-    date_window: false
-    scope: false
-    claim_available: false
-    protected_surface_clear: false
-    mode: general
+  delivery:
+    regression_likelihood: 2
+    change_blast_radius: 3
+    reversibility: 3
 ---
 # Scope
 
@@ -109,9 +93,9 @@ Persist the normalized profile under `.board.json` at `settings.v2`:
 - `stages` with `inbox`, `shaping`, `ready`, `active`, `review`, `blocked`, `done`, and `dropped` list-name arrays.
 - `dashboard.sections`, `dashboard.title`, and `dashboard.description`.
 - `cardDefaults.kind`, `cardDefaults.workType`, and `cardDefaults.priorityClass`.
-- `validationPolicy` and `retainPlanner`.
+- `retainPlanner`.
 
-Defaults are disabled/empty profile metadata, the five stable sections `critical`, `next_best_work`, `low_hanging_fruit`, `agent_loops`, and `blocked`, card defaults `task`/`product`/`P2`, `validationPolicy: framework_v1`, and `retainPlanner: true`. Only `enabled: true` activates V2. Unknown manifest keys remain intact; invalid or missing profile data fails closed without card writes or backfill.
+Defaults are disabled/empty profile metadata, the four stable sections `critical`, `next_best_work`, `low_hanging_fruit`, and `blocked`, card defaults `task`/`P2`, and `retainPlanner: true`. Only `enabled: true` activates V2. Unknown manifest keys remain intact; invalid or missing profile data fails closed without card writes or backfill.
 
 # Acceptance criteria
 

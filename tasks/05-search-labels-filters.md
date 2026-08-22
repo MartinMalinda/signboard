@@ -87,7 +87,7 @@ popover reach parity with legacy `app/board/boardLabels.js` +
 - Focused legacy tests — passed: task-list parser, board snapshot, board card
   metadata, card timestamps, card ordering, and archive.
 - `git diff --check` — passed.
-- `npm run test:board-views` — known unrelated baseline failure at
+- Renderer smoke coverage — blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638`, the existing add-list shortcut-hint
   assertion in modified `app/lists/listActionsPopover.js`.
 - Vue Electron Playwright remains unavailable: Electron aborts with SIGABRT

@@ -1,6 +1,11 @@
 ---
 title: Render missing Impact breakdown terms as unavailable
+status: Ready
 statusChangedAt: 2026-08-04T21:14:07.853Z
+signboard_id: jb0ZA
+signboard_board: signboard-v2-migration
+signboard_list: Ready
+signboard_uri: signboard://open-card?id=jb0ZA
 createdAt: 2026-08-04T21:11:07.789Z
 activity:
   - type: created
@@ -39,4 +44,4 @@ signboard_v2:
 ---
 Implement the bounded provenance-aware Impact breakdown display validated by discovery card 001. Keep explicit valid zero values as `0.0`, but render missing or invalid breakdown terms as `Unavailable` or `Incomplete` using existing evaluator provenance passed through snapshots. Do not alter evaluator formulas, ranking, or introduce a not_applicable schema; preserve the existing aggregate-score guard.
 
-## Development attempt\n\nA developer agent confirmed the required provenance is already available through missing_fields, defaults_applied, and warnings, but made no changes because ImpactScorePopover.vue, DashboardView.vue, evaluator, snapshot types, and tests are already mixed with unrelated dirty-worktree changes. Keep this card Ready until a cleanly attributable display hunk can be isolated; no formulas or ranking changes are authorized.
+## Development attempt\\n\\nA developer agent confirmed the required provenance is already available through missing_fields, defaults_applied, and warnings, but made no changes because ImpactScorePopover.vue, DashboardView.vue, evaluator, snapshot types, and tests are already mixed with unrelated dirty-worktree changes. Keep this card Ready until a cleanly attributable display hunk can be isolated; no formulas or ranking changes are authorized.

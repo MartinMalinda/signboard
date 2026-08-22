@@ -1,7 +1,7 @@
 # Task 12 — Accessibility and full shortcut parity
 
-Depends on: Tasks 01–11. Side-build only; no unrelated legacy renderer files
-were changed.
+Depends on: Tasks 01–11. This task defines the canonical Vue accessibility and
+shortcut behavior.
 
 ## Scope
 
@@ -49,9 +49,9 @@ accessibility and shortcut contracts:
 - `npm --prefix signboard-vue run type-check` — passed.
 - `npm --prefix signboard-vue run build` — passed; retains the existing Vite
   CommonJS `module` warning from `lib/appSettingsSchema.js`.
-- Targeted `npm run test:playwright:vue -- --grep "shortcut|keyboard|modal" --reporter=line` — attempted 21 tests; all failed before interaction because Electron launch exited with `SIGABRT` at `tests/playwright/signboard-smoke.spec.js:506`.
+- Targeted `npm run test:playwright -- --grep "shortcut|keyboard|modal" --reporter=line` — attempted 21 tests; all failed before interaction because Electron launch exited with `SIGABRT` at `tests/playwright/signboard-smoke.spec.js:506`.
 - Focused legacy parity suites remain green from the prior task run; the known
-  unrelated `npm run test:board-views` failure remains at
+  unrelated renderer smoke failure remains at
   `scripts/test-board-views.js:638` on the existing add-list shortcut-hint
   assertion in `app/lists/listActionsPopover.js`.
 - `git diff --check` — passed.

@@ -130,9 +130,13 @@ Import tools also take absolute external source paths, and those paths must reso
 
 `signboard_read_card`, `signboard_create_card`, `signboard_update_card`, and `signboard_duplicate_card` return:
 
+- `card.displayTitle`: the explicit title when present, otherwise a cleaned-up version of `cardFile`
+
 - `card.timestamps.createdAt`: ISO timestamp for when the card was created, preferring Signboard card metadata and falling back to filesystem timestamps for older cards
 - `card.timestamps.updatedAt`: ISO timestamp from the card file's filesystem modification time when available
 - `taskSummary`: `{ total, completed, remaining }`
+
+Card titles are optional. Omit `title` when creating a card to keep its title empty and use the filename as its display title. Pass an empty title to `signboard_update_card` to clear an override. Use the exact `cardFile` value when referring to a card.
 - `card.start`: optional card start/scheduled date (`YYYY-MM-DD`) when present
 - `card.due`: optional card due date (`YYYY-MM-DD`) when present
 - `taskStartDates`: sorted unique ISO start/scheduled dates found in task lines (`YYYY-MM-DD`)

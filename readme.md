@@ -28,7 +28,7 @@ Signboard is free for personal use. If you are using Signboard for your work, it
 - 🗄️ Linked files and URLs on cards
 - ✨ Optional local Ollama Smart Card Actions for titles, summaries, task lists, auto-labeling, smart paste, due dates, linked objects, one-off quick prompts, read-only card questions, and drag-reorderable custom actions
 - 🧲 Drag-and-drop card movement
-- ⚡ Unlimited open boards with overflow tabs and a quick switcher
+- ⚡ Unlimited open boards with stable overflow tabs and a quick switcher; the last active board is prioritized once at startup, then tabs stay in place while switching
 - 🧬 Board duplication from Settings with fresh copied-card IDs
 - ⌨️ Keyboard shortcuts
 - ♿ Keyboard, screen reader, reduced-motion, and forced-colors improvements
@@ -51,10 +51,8 @@ For standard releases, Signboard intentionally promotes a smaller public downloa
 - Windows: single installer
 - Linux: separate `x64` and `ARM64` packages
 
-The Vue renderer is the default in normal desktop launches. For rollback or
-diagnostics, launch with `SIGNBOARD_RENDERER=legacy npm start`; the legacy
-renderer is retained as a compatibility boundary. Packaged builds include the
-Vue `dist` output, shared styles, and vendored renderer libraries.
+The Vue renderer is the only desktop renderer. Packaged builds include the Vue
+`dist` output, shared styles, and vendored renderer libraries.
 
 ## Documentation
 
@@ -94,9 +92,13 @@ You can also open the shortcut helper from `Help > Keyboard Shortcuts`.
 
 Editable fields, including the card title and body editor, support the native right-click text editing menu for cut, copy, paste, delete, and select all.
 
+Card titles are optional. When the title is empty, Signboard displays a cleaned-up version of the stable Markdown filename, such as `fix-login-Ab12c.md` as `Fix login`. Typing in the title field creates an explicit title override; clearing it restores the filename-based title. Editing a title never renames the file.
+
 On Kanban cards, right-click the card surface to open its action menu and choose `Duplicate card` or `Archive card`. Right-clicking labels, metadata controls, or editable fields keeps their existing interaction menus.
 
 Raw `http://`, `https://`, and `www.` URLs typed in the card body are visually marked in the editor. Use the inline open-link control or Cmd/Ctrl-click the URL to open it in your default browser without changing the card's Markdown.
+
+Links to other Signboard cards stay compact inside sentences. When a card link is the only content in a paragraph or list item, the editor reuses the Kanban card presentation—including available preview, labels, and metadata—without changing the stored Markdown.
 
 Fenced Markdown code blocks with `ts` or `json` language labels receive syntax highlighting in the Vue card editor without changing the stored Markdown.
 
@@ -118,6 +120,7 @@ Signboard includes a terminal CLI for direct board management without going thro
 - Full guide: [docs/signboard-cli.md](./docs/signboard-cli.md)
 
 - In the desktop app on macOS/Linux: `Help` -> `Install Signboard CLI`
+- From a source checkout linked with `npm link`: `signboard run` opens the desktop app
 - Use `signboard boards list --json` to list known boards before choosing one
 - Use `signboard use /Path/to/Board` once to remember the active board for later commands
 - Use `signboard boards create /Path/to/NewBoard --use` to create and select a new board from the terminal
@@ -229,7 +232,6 @@ npm run test:board-snapshot
 npm run test:board-duplication
 npm run test:app-settings
 npm run test:ai-task-suggestions
-npm run test:board-card-metadata
 npm run test:due-notifications
 npm run test:task-list
 npm run test:obsidian-integration
@@ -238,11 +240,12 @@ npm run test:cli
 npm run test:cli-install
 npm run test:desktop-cli
 npm run test:card-ordering
-npm run test:board-views
 npm run test:card-timestamps
 npm run test:timestamp
 npm run test:external-calendar
 npm run test:archive
+npm run test:vue-packaging
+npm --prefix signboard-vue run test:unit -- --run
 npm run test:playwright
 npm run test:import-trello
 npm run test:import-obsidian

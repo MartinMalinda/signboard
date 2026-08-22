@@ -100,7 +100,7 @@ signboard_v2:
 ## Read path
 
 - lib/boardSnapshot.js batches list/card reads and can opt into timestamps, task items, and board settings.
-- app/board/boardSnapshot.js adapts the main-process result for the legacy renderer.
+- The Vue board-data store adapts the main-process snapshot for renderer consumers.
 - signboard-vue/src/stores/useBoardDataStore.ts owns the canonical Vue snapshot and refresh flow.
 
 ## View path

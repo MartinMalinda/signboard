@@ -70,7 +70,7 @@ OverType fallback is not loaded by the canonical Vue renderer.
 - Replacing `useEditorStore` or the existing save queue.
 - Adding a general-purpose rich-text destination/FormKit abstraction.
 - Persisting Tiptap JSON in card files.
-- Reworking unrelated legacy renderer behavior.
+- Reworking unrelated renderer behavior.
 
 ## Implementation phases
 
@@ -177,9 +177,9 @@ After parity is demonstrated:
 
 - make Tiptap the default implementation;
 - remove the feature switch and unused OverType-specific integration code;
-- update `tasks/PARITY.md`, `vue-migration.md`, and the relevant project
+- update `tasks/PARITY.md` and the relevant project
   documentation;
-- keep the legacy renderer untouched during the Vue migration.
+- keep unrelated renderer behavior outside the Tiptap migration unchanged.
 
 ## Acceptance criteria
 

@@ -50,39 +50,24 @@ priority_class: P2
 signboard_v2:
   contract_version: 1
   kind: epic
-  work_type: enablement
   priority_class: P2
+  parent: null
+  depends_on: []
+  blocked_by: []
   estimate:
     effort_points: 5
-    implementation_complexity: 2
-    coordination_complexity: 3
-  status_summary: 'First implementation phase complete: the migration board is enabled for the V2 pilot, new boards default to the product profile, and profile, evaluator, snapshot, and Dashboard seams are implemented and tested.'
-  next_action: Phase 1 card-clarity gate is complete. Review the Phase 2 score/dashboard fixture task before broadening the pilot.
-  enablement:
-    downstream_value: 5
-    downstream_breadth: 5
-    critical_path: 5
+  opportunity:
+    reach: 3
+    benefit: 4
+    frequency: 2
   modifiers:
     confidence: 4
-    strategic_fit: 5
     urgency: 3
     maintenance_delta: -1
-  execution:
-    specification_clarity: 4
-    verification_strength: 3
-    boundedness: 3
-    isolation: 2
-    coordination_complexity: 3
-    ceiling: supervised_implementation
-    background_selection: false
-  eligibility:
-    readiness: true
-    dependencies: true
-    date_window: false
-    scope: false
-    claim_available: false
-    protected_surface_clear: false
-    mode: general
+  delivery:
+    regression_likelihood: 2
+    change_blast_radius: 3
+    reversibility: 3
 status_summary: 'First implementation phase complete: the migration board is enabled for the V2 pilot, new boards default to the product profile, and profile, evaluator, snapshot, and Dashboard seams are implemented and tested.'
 work_type: enablement
 ---

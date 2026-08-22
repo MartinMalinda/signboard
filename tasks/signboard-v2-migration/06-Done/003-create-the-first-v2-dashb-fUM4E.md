@@ -57,48 +57,27 @@ work_type: product
 signboard_v2:
   contract_version: 1
   kind: task
-  work_type: product
   priority_class: P2
   parent: 'V2 UI contract: dashboard, Kanban signals, and editor details'
   depends_on:
     - Define the V2 dashboard information hierarchy and first sections
     - 'Define V2 workspace navigation: Dashboard, Kanban, Table, and Planner boundary'
     - Extend the batched board snapshot with an opt-in V2 card projection
+  blocked_by: []
   estimate:
     effort_points: 5
-    implementation_complexity: 3
-    coordination_complexity: 3
-  status_summary: Dashboard shell passed independent review; V2-enabled boards now have the first projection-driven Dashboard surface with persisted Dashboard-first navigation.
-  next_action: Hand off to the compact V2 card signal row and metadata popover card.
   opportunity:
     reach: 4
     benefit: 4
     frequency: 5
-  enablement:
-    downstream_value: 4
-    downstream_breadth: 4
-    critical_path: 4
   modifiers:
     confidence: 3
-    strategic_fit: 5
     urgency: 3
     maintenance_delta: -1
-  execution:
-    specification_clarity: 3
-    verification_strength: 3
-    boundedness: 3
-    isolation: 2
-    coordination_complexity: 3
-    autonomous_execution_blocked: true
-    do_not_autorun: true
-  eligibility:
-    readiness: false
-    dependencies: true
-    date_window: false
-    scope: false
-    claim_available: false
-    protected_surface_clear: false
-    mode: general
+  delivery:
+    regression_likelihood: 3
+    change_blast_radius: 3
+    reversibility: 4
 ---
 # Role in the V2 implementation slice
 
@@ -109,7 +88,7 @@ This is the implementation parent for the first V2 board dashboard. The UI contr
 - Add Dashboard as the first item in the existing bottom workspace dock for V2-enabled boards.
 - Keep Kanban as the main manipulation surface and Table as the dense scan/bulk-edit surface.
 - Do not make Planner a required V2 view.
-- Use a compact summary row followed by Critical, Next best work, Low-hanging fruit, Agent loops, and conditional Blocked sections.
+- Use a compact summary row followed by Critical, Next best work, Low-hanging fruit, and conditional Blocked sections.
 - Limit each section to three cards initially, with View all opening a filtered existing view.
 
 # Card presentation inside the dashboard

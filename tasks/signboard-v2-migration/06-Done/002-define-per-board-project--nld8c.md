@@ -52,51 +52,31 @@ work_type: product
 signboard_v2:
   contract_version: 1
   kind: discovery
-  work_type: product
   priority_class: P2
+  parent: null
   depends_on:
     - 'Decide V2 card contract: hardcoded attributes versus generic fields'
+  blocked_by: []
   estimate:
     effort_points: 3
-    implementation_complexity: 2
-    coordination_complexity: 3
-  status_summary: 'Decision accepted: V2 is opt-in per board with shared dashboard sections and custom stage mappings.'
-  next_action: Implement the normalized opt-in profile seam and preserve disabled-board behavior.
-  enablement:
-    downstream_value: 5
-    downstream_breadth: 4
-    critical_path: 5
   discovery_value:
     uncertainty_reduction: 5
     decision_importance: 5
     cost_of_wrong_choice: 4
   modifiers:
     confidence: 3
-    strategic_fit: 5
     urgency: 3
     maintenance_delta: -1
-  execution:
-    specification_clarity: 2
-    verification_strength: 2
-    boundedness: 3
-    isolation: 2
-    coordination_complexity: 3
-    autonomous_execution_blocked: true
-    do_not_autorun: true
-  eligibility:
-    readiness: false
-    dependencies: true
-    date_window: false
-    scope: false
-    claim_available: false
-    protected_surface_clear: false
-    mode: general
+  delivery:
+    regression_likelihood: 2
+    change_blast_radius: 3
+    reversibility: 3
 ---
 # Accepted decision
 
-Store the opt-in profile under `.board.json` `settings.v2`. The minimum profile contains `enabled`, `profileId`, `version`, title/description, semantic stage-to-list mappings, dashboard section IDs/order, card defaults, shared `validationPolicy`, and explicit `retainPlanner` compatibility behavior. Missing or invalid profiles fail closed to current behavior. Profiles contain configuration only; scores and dashboard results remain derived.
+Store the opt-in profile under `.board.json` `settings.v2`. The minimum profile contains `enabled`, `profileId`, `version`, title/description, semantic stage-to-list mappings, dashboard section IDs/order, card defaults, and explicit `retainPlanner` compatibility behavior. Missing or invalid profiles fail closed to current behavior. Profiles contain configuration only; scores and dashboard results remain derived.
 
-The first stable section IDs are `critical`, `next_best_work`, `low_hanging_fruit`, `agent_loops`, and `blocked`, with a fixed initial limit of three results per section. Unmapped lists remain visible but are unshaped for ranking; terminal stages are excluded. The internal migration board is the first profile fixture, with a generic product profile as the second example.
+The first stable section IDs are `critical`, `next_best_work`, `low_hanging_fruit`, and `blocked`, with a fixed initial limit of three results per section. Unmapped lists remain visible but do not participate in ranking; terminal stages are excluded. The internal migration board is the first profile fixture, with a generic product profile as the second example.
 
 # Profile responsibilities
 
@@ -110,7 +90,7 @@ The first stable section IDs are `critical`, `next_best_work`, `low_hanging_frui
 
 # Candidate sections
 
-Critical; Best overall investments; Low-hanging fruit; Suitable for agent loops; Human-led high leverage; Engineering health; Unlockers; Validate before building; Blocked; Stale assumptions.
+Critical; Best overall investments; Low-hanging fruit; Blocked.
 
 # Constraints
 

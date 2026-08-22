@@ -24,8 +24,8 @@ Signboard.
   - `useBoardsStore` — open board paths, active board, tab restore from
     `localStorage` (`openBoardPaths`, `activeBoardPath`, legacy `boardPath`
     fallback), trusted-board re-authorization on restore, `open-boards.json`
-    mirror via the same preload method the legacy renderer uses
-    (`window.electronAPI` sync — find it in `app/board/boardTabs.js`).
+    mirror via the same preload method the canonical renderer uses
+    (`window.electronAPI` sync — see `useBoardsStore.ts`).
   - `useBoardDataStore` — `readBoardSnapshot` via `window.board`, race-safe
     `loadBoard()` action (port the request-ID guard idea as a simple action
     token), lists/cards getters.
@@ -74,7 +74,7 @@ Signboard.
    **legacy** renderer — same tabs must appear (shared localStorage semantics
    must be byte-compatible).
 6. Update `tasks/PARITY.md`: tick shell + read-only Kanban items; note which
-   Playwright specs now pass under `test:playwright:vue`.
+   Playwright specs now run under `test:playwright`.
 
 ## Acceptance criteria
 

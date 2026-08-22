@@ -28,7 +28,7 @@ legacy Settings DOM vocabulary and uses the existing preload/main-process APIs.
   intact; Quick Smart Action and Question the Card remain non-editable,
   reorderable built-ins.
 - Labels, workflow lists, color schemes, board operations, and import results
-  are visible and persisted without modifying unrelated legacy renderer code.
+  are visible and persisted without modifying unrelated renderer code.
 
 ## Verification
 
@@ -40,7 +40,7 @@ legacy Settings DOM vocabulary and uses the existing preload/main-process APIs.
 - Focused legacy tests — passed: app settings, board labels, Obsidian
   importer, Tasks.md importer, Trello importer, and Obsidian integration.
 - `git diff --check` — passed.
-- `npm run test:board-views` — known unrelated baseline failure at
+- Renderer smoke coverage — blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638`, the existing add-list shortcut-hint
   assertion in modified `app/lists/listActionsPopover.js`.
 - Vue Electron Playwright remains blocked before page interaction because

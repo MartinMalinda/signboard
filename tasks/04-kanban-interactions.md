@@ -86,9 +86,9 @@ actions popover, and Quick Add across open boards.
 - `npm --prefix signboard-vue run test:unit -- --run` — passed (5 files, 11 tests).
 - Focused legacy tests — passed: task-list parser, board snapshot, board card
   metadata, card timestamps, card ordering, and archive.
-- `npm run test:playwright:vue` — not green: all 76 tests abort during Electron
+- `npm run test:playwright` — not green: all 76 tests abort during Electron
   launch with SIGABRT before page interaction (environment limitation).
-- `npm run test:board-views` — known baseline failure only at
+- Renderer smoke coverage — blocked by the environment's Electron launch failure.
   `scripts/test-board-views.js:638`, the existing add-list shortcut-hint
   assertion in modified `app/lists/listActionsPopover.js`; not changed here.
 

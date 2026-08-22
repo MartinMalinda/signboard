@@ -109,7 +109,7 @@ Outline the next release notes draft.
 
 Use these conventions:
 
-- `title` is the card title. A filename is only an identity/container hint; changing the title does not require renaming the file.
+- `title` is optional display metadata. When it is empty or omitted, use the cleaned-up filename as the display title. A supplied title is an explicit override; changing it does not rename the stable card file.
 - `start` and `due` are optional card-level dates in `YYYY-MM-DD` format. Use `start` for scheduled/start date and `due` for deadline. Remove the key, or use the CLI’s `none`, to clear it.
 - `labels` is a de-duplicated array of label IDs.
 - `signboard_id`, `createdAt`, `activity`, `archive`, `related`, `linked_objects`, and flat Obsidian properties may be present. Preserve them unless the requested operation specifically changes them.
@@ -127,27 +127,43 @@ V2 card metadata is additive and namespaced under `signboard_v2`:
 ```yaml
 signboard_v2:
   contract_version: 1
+  id: optional-stable-id
   kind: task                 # task, discovery, epic, or incident
-  work_type: product         # profile-supported work category
-  priority_class: P2        # P0, P1, P2, or P3
-  estimate:
-    effort_points: 3
+  priority_class: P2         # P0, P1, P2, or P3
+  parent: null
   depends_on: []             # related card titles
   blocked_by: []             # related card titles
-  objective: ""
-  scope: ""
-  acceptance_criteria: []
-  verification: ""
-  parent: null
-  status_summary: ""
-  next_action: ""
+  blocked_on_decision: false # decision context belongs in the body
+  estimate:
+    effort_points: 3
+  opportunity:
+    reach: 3
+    benefit: 4
+    frequency: 2
+  risk_prevented:
+    likelihood: 2
+    harm: 4
+    blast_radius: 3
+    mitigation_effectiveness: 4
+  discovery_value:
+    uncertainty_reduction: 4
+    decision_importance: 5
+    cost_of_wrong_choice: 3
+  modifiers:
+    confidence: 3
+    urgency: 4
+    maintenance_delta: 0
+  delivery:
+    regression_likelihood: 2
+    change_blast_radius: 2
+    reversibility: 4
 ```
 
-The scoring/evaluator surface may also contain optional `opportunity`, `risk_prevented`, `delivery`, `modifiers`, and `execution` groups. Preserve these and any unknown V2 keys when editing. V2 relations currently use card titles as strings; preserve the existing spelling and do not silently convert them to IDs.
+This is the complete V2 card contract. Narrative content—outcomes, context, boundaries, acceptance details, verification notes, progress, decisions, and follow-ups—belongs in the Markdown body, which is the source of truth. Use labels for additional classification. V2 relations currently use card titles as strings; preserve the existing spelling and do not silently convert them to IDs.
 
-V2 stage/status remains list-derived. Move a card between list directories with the normal move operation; do not invent or overwrite a separate status field in `signboard_v2`. When editing an existing card, preserve both legacy frontmatter and its `signboard_v2` namespace unless the requested migration explicitly changes them. V2 fields remain optional, and incomplete or legacy cards must stay readable.
+V2 stage/status remains list-derived. Move a card between list directories with the normal move operation; do not invent or overwrite a separate status field in `signboard_v2`. When editing an existing card, preserve legacy frontmatter and body content while keeping newly written V2 metadata inside the exact contract above. V2 fields remain optional, and incomplete or legacy cards must stay readable.
 
-For the complete V2 operating model—card shaping, scoring, priority gates, delivery risk, QA, autonomy classes, specialized views, agent selection, and governance—read [references/v2-framework.md](references/v2-framework.md) before ranking or claiming work.
+For the complete V2 operating model—card shaping, scoring, priority classes, delivery risk, and dashboard views—read [references/v2-framework.md](references/v2-framework.md) before ranking or reporting on work.
 
 ## Choose the safest mutation path
 

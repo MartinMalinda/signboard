@@ -44,7 +44,7 @@ If the directory is empty, Signboard creates a starter board with:
 
 It also creates a starter card that explains the basics and includes a few upcoming checklist due-date examples. 👋
 
-You can switch between multiple projects using the board tabs across the top of the window. Signboard does not cap the number of open boards; when they no longer fit, the tab strip shows an `N more` control that opens the quick board switcher.
+You can switch between multiple projects using the board tabs across the top of the window. On startup, the board that was active when you last quit is placed first. After that, tabs stay in place as you switch boards. Signboard does not cap the number of open boards; when they no longer fit, the tab strip shows an `N more` control that opens the quick board switcher. Choosing a hidden board reveals it without scrambling the relative order of the tabs.
 
 Press `Cmd/Ctrl + K` from any screen to open the quick board switcher, then type an open board name and press `Enter`. The same field searches card titles and body text in the current board; select a card result and press `Enter` to open it. You can also close open boards from the switcher result list.
 
@@ -91,21 +91,23 @@ You can create a card by:
 - Pressing `Cmd/Ctrl + N` to open Quick Add for any currently open board
 - Using the `Add new card` button for a specific list
 
-Use the plus button in a Kanban list header to open Add Card directly for that list, or use the header `Card` button / `Cmd/Ctrl + N` for the cross-board Quick Add modal. In the Quick Add card modal, choose the board and list before creating the card. Press `Shift + Enter` after typing the title to create the card, open it immediately, and focus the notes field.
+Use the plus button in a Kanban list header to open Add Card directly for that list, or use the header `Card` button / `Cmd/Ctrl + N` for the cross-board Quick Add modal. In the Quick Add card modal, choose the board and list before creating the card. The name seeds the stable filename; the card title remains optional. Press `Shift + Enter` after entering the name to create the card, open it immediately, and focus the notes field.
 
-Card filenames are chosen based on the name or title you first give it, with a random card ID suffix (to help with name collisions). Older cards may still have numeric prefixes, but those prefixes are no longer rewritten for ordering. Card order is stored in each list's `.board.json` file, and the filename stays the same even if you rename or reorder the card.
+Card filenames are chosen based on the name you first give the card, with a random card ID suffix (to help with name collisions). New cards do not receive numeric ordering prefixes; older cards may still have them for compatibility. New cards are inserted at position 0 of the target list. Card order is stored in each list's `.board.json` file, and the filename stays the same even if you edit the title or reorder the card.
 
 ### Open and edit a card
 
-Click a card to open it. In the card editor you can:
+Click a card to open it. A blank title uses a cleaned-up version of the filename, such as `fix-login-Ab12c.md` displayed as `Fix login`. Type into the title field to set an explicit title override. Clear the field to return to the filename-based title. Changing the title does not rename the file.
 
-- Rename the card
+In the card editor you can:
+
+- Set or clear its optional title
 - Edit the Markdown body
 - Set start and due dates
 - Add or remove labels
 - Move the card to another list
 - Move it to the next list
-- Duplicate it
+- Use the `...` menu to copy the complete Markdown file to your clipboard
 - Share it
 - Open it in Obsidian or the default Markdown app
 - Open raw web URLs from the card body
@@ -131,9 +133,9 @@ While dragging, the board shows an empty insertion slot where the card would lan
 
 The arrow action and card-move keyboard shortcuts in the editor place moved cards at the top of the destination list.
 
-### Duplicate a card
+### Copy or duplicate a card
 
-Use the duplicate action in the card editor when you want a copy of the card, including its content and metadata. You can use this to make it quick and easy to create new cards from templates. That's what I do!
+Use the card editor's `...` menu and choose `Copy` to put the complete Markdown file, including frontmatter, into the clipboard. Use the Kanban card context menu when you want a new card with the same content and metadata. You can use this to make it quick and easy to create new cards from templates. That's what I do!
 
 The CLI can also duplicate cards and create cards from templates with `cards duplicate` and `cards create --from-card`, including dry-run previews for automation.
 
@@ -151,7 +153,7 @@ The same paperclip menu can link local files, folders, web URLs, app deep links,
 
 Linked objects appear in the card editor as removable chips. Click the object name to open it, or click its remove control to unlink it from the card without deleting the underlying file, folder, or note. If a linked Obsidian note cannot be found, Signboard keeps the link, marks the chip as missing, and offers controls to recreate the note, relink it to another Markdown note, or remove the link. Cards with linked objects also show a small paperclip count in Kanban and Table views.
 
-Links to other Signboard cards in card notes render as compact card links. Hover over one for 300ms to show its clamped title and Edit/Open actions. Clicking the chip opens the related card immediately on top of the current editor, so closing it returns to the previous card. Canonical `signboard://open-card` links and relative Markdown card links are supported.
+Links to other Signboard cards in card notes render as compact links when they appear inside a sentence. Put a card link by itself in a paragraph or list item to show it with the same title, body preview, labels, dates, task progress, linked-object count, and work signals used by Kanban cards; this richer presentation does not change the stored Markdown. Hover over either form for 300ms to show its clamped title and Edit/Open actions. Clicking the link opens the related card immediately on top of the current editor, so closing it returns to the previous card. Canonical `signboard://open-card` links and relative Markdown card links are supported. Links outside the active board use the link title until their card data is available.
 
 New or edited cards include flat Obsidian-friendly properties such as `title`, `signboard_board`, `signboard_list`, `status`, `signboard_uri`, and `related`, plus structured `linked_objects` when the card has linked files, folders, URLs, app links, or Obsidian notes. Canonical Signboard-generated filenames also include `signboard_id`; existing Markdown files with ad-hoc names do not need a custom ID and use a relative-path Signboard link instead. When a board is inside a vault, Signboard automatically creates `Signboard Board.base` for Obsidian Bases and keeps it current while it is still Signboard-managed. If you customize the Base in Obsidian, Signboard leaves it alone until you choose `Settings > Obsidian > Generate Base` again.
 
@@ -238,8 +240,9 @@ Table is an active-board view for scanning and bulk-managing cards in board/list
 Use the bottom view dock to switch to Table. Click a card title or row to open the normal card editor. Use the row's list dropdown to move a card to another list; moved cards land at the top of the destination list.
 
 Table columns are ordered `Card`, `List`, `Tasks`, `Labels`, `Links`, `Depends on`, `Blocked By`, then the V2 score columns when available. Card and V2 score headers support PrimeVue sorting; the dashboard's `Dashboard priority` preset uses the same tie-break order as the Dashboard and can be cleared back to board order. Filter to one list, all completed lists, or all lists. Label and dashboard section filters apply before the table sort.
-The Dashboard's Priority queue may show explainable `High Risk`, `High Damage`, `Wide Impact`, and `Tail Risk` markers. These are informational signals; risk and security value contribute to Priority ordering. The Impact view sorts all unfinished work by positive opportunity, engineering, enablement, and discovery value, with effort weighted lightly; cards without enough positive-value signal fall lower rather than being filtered out.
-Impact is a broad dashboard view, not a label repeated on every Kanban or Dashboard card; derived chips are reserved for more specific states such as Blocked, Agent-ready, and Quick win.
+The Dashboard's Priority queue may show explainable `High Risk`, `High Damage`, and `Wide Impact` markers. These are informational signals; risk-prevention value contributes to Priority ordering and the separate Risk reduction score. The Impact view sorts unfinished work by positive opportunity and discovery value, with effort weighted lightly; risk-prevention value is intentionally excluded from that positive-value view.
+In expanded card Work details, Priority and Impact are shown as tie-aware percentiles among scored cards on the active board. Risk reduction retains its meaningful absolute 0–145 scale. Hovering a score reveals its raw index and theoretical range.
+Impact is a broad dashboard view, not a label repeated on every Kanban or Dashboard card; derived chips are reserved for more specific states such as Blocked and Quick win.
 
 Use the row checkboxes to select visible cards for bulk actions. After selecting one card, hold `Shift` while checking another row to select the range between them. The header checkbox selects the currently visible rows only. Bulk actions can archive selected cards, move them to another list, add or remove labels, set or clear start dates, and set or clear due dates.
 
@@ -368,13 +371,10 @@ Imports copy data into Signboard and leave the original source files where they 
 
 Signboard keeps common board work available from the keyboard. Card titles are native buttons, list titles are editable textboxes, list actions are native buttons, and modals move focus into the active dialog and restore focus when closed.
 
-### Renderer updates and rollback
+### Renderer updates
 
-Signboard normally starts with the packaged Vue renderer. If a release needs
-diagnosis or rollback, quit the app and run `SIGNBOARD_RENDERER=legacy npm start`
-from a source checkout. This compatibility path uses the older renderer and
-the same board files and main-process bridge; it can be removed in a future
-release after the rollback window closes.
+Signboard starts with the packaged Vue renderer in both development and
+production. Renderer changes are built with `npm run build:vue`.
 
 Status changes such as creating, moving, archiving, restoring, and switching views are announced through a polite status region for screen readers. The app also respects reduced-motion and forced-colors preferences.
 
