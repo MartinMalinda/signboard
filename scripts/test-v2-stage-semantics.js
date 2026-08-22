@@ -2,7 +2,6 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const vm = require('vm');
 
 const { readBoardSnapshot } = require('../lib/boardSnapshot');
 const { updateBoardSettings } = require('../lib/boardLabels');
@@ -10,21 +9,8 @@ const { writeCard } = require('../lib/cardFrontmatter');
 const { collectExternalPublishedCalendarEvents } = require('../lib/externalPublishedCalendar');
 const stageSemantics = require('../shared/v2StageSemantics');
 
-function loadDueNotificationUtilities() {
-  const context = {
-    console,
-    SignboardV2StageSemantics: stageSemantics,
-    normalizeBoardPath: (value) => {
-      const normalized = String(value || '').trim();
-      return normalized ? (normalized.endsWith('/') ? normalized : `${normalized}/`) : '';
-    },
-    isBoardListCompletedByWorkflow: () => false,
-  };
-  vm.createContext(context);
-  for (const fileName of ['dueDateStatus.js', 'taskList.js', 'dueNotifications.js']) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '../app/utilities', fileName), 'utf8'), context);
-  }
-  return context;
+async function loadDueNotificationUtilities() {
+  return import('../signboard-vue/lib/dueNotifications.js');
 }
 
 const profile = {
@@ -54,9 +40,9 @@ async function testResolverAndSnapshot() {
   try {
     await Promise.all([activeList, terminalList, unmappedList].map((listPath) => fs.promises.mkdir(listPath)));
     await Promise.all([
-      writeCard(path.join(activeList, 'active.md'), { frontmatter: { title: 'Active', signboard_v2: { contract_version: 1, kind: 'task', work_type: 'product', priority_class: 'P2' } }, body: '' }),
-      writeCard(path.join(terminalList, 'terminal.md'), { frontmatter: { title: 'Terminal', signboard_v2: { contract_version: 1, kind: 'task', work_type: 'product', priority_class: 'P2' } }, body: '' }),
-      writeCard(path.join(unmappedList, 'unmapped.md'), { frontmatter: { title: 'Unmapped', signboard_v2: { contract_version: 1, kind: 'task', work_type: 'product', priority_class: 'P2' } }, body: '' }),
+      writeCard(path.join(activeList, 'active.md'), { frontmatter: { title: 'Active', signboard_v2: { contract_version: 1, kind: 'task', priority_class: 'P2' } }, body: '' }),
+      writeCard(path.join(terminalList, 'terminal.md'), { frontmatter: { title: 'Terminal', signboard_v2: { contract_version: 1, kind: 'task', priority_class: 'P2' } }, body: '' }),
+      writeCard(path.join(unmappedList, 'unmapped.md'), { frontmatter: { title: 'Unmapped', signboard_v2: { contract_version: 1, kind: 'task', priority_class: 'P2' } }, body: '' }),
     ]);
     await updateBoardSettings(boardRoot, { v2: profile });
     const snapshot = await readBoardSnapshot(boardRoot, { includeV2: true });
@@ -72,7 +58,7 @@ async function testResolverAndSnapshot() {
 }
 
 async function testDueAndCalendarConsumers() {
-  const context = loadDueNotificationUtilities();
+  const context = await loadDueNotificationUtilities();
   const root = '/tmp/v2-stage-board/';
   const lists = ['Custom Active', 'Custom Terminal', 'Unmapped'];
   const cards = new Map(lists.map((listName) => [

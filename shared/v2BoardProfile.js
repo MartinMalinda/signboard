@@ -25,16 +25,13 @@
         dropped: ['XXX-Archive'],
       },
       dashboard: {
-        sections: ['priority', 'impact', 'low_hanging_fruit', 'agent_loops', 'blocked'],
+        sections: ['priority', 'impact', 'low_hanging_fruit', 'blocked'],
         title: 'Project dashboard',
         description: 'What deserves attention next, with unshaped work kept visible.',
       },
       cardDefaults: {
         kind: 'task',
-        workType: 'product',
         priorityClass: 'P2',
-        executionCeiling: 'human_only',
-        backgroundSelection: false,
       },
       validationPolicy: 'framework_v1',
     };

@@ -37,7 +37,6 @@ export const V2_DASHBOARD_SECTION_OPTIONS = Object.freeze([
   { id: 'priority', label: 'Priority', description: 'Ranked work with enough shape to act on, including risk and security value.' },
   { id: 'impact', label: 'Impact', description: 'Unfinished work sorted by positive value, with effort having a lighter effect on ranking.' },
   { id: 'low_hanging_fruit', label: 'Low-hanging fruit', description: 'Small, bounded, reversible work.' },
-  { id: 'agent_loops', label: 'Agent loops', description: 'Ready P2 work that passes autonomous policy.' },
   { id: 'blocked', label: 'Blocked', description: 'Work waiting on a dependency.' },
 ] as const)
 
@@ -247,7 +246,7 @@ export const useSettingsStore = defineStore('settings', () => {
       if (typeof window.confirm === 'function' && !window.confirm(`Delete "${label.name}"?\n\nDeleting this label will remove it from every card in this board.`)) return
       if (window.board.listLists && window.board.listCards) {
         for (const listName of await window.board.listLists(boardRoot.value)) for (const cardName of await window.board.listCards(`${boardRoot.value}${listName}/`)) {
-          const cardPath = `${boardRoot.value}${listName}/${cardName}`; const card = await window.board.readCard(cardPath); const current = Array.isArray(card.frontmatter.labels) ? card.frontmatter.labels.map(String) : []
+          const cardPath = `${boardRoot.value}${listName}/${cardName}`; const card = await window.board.readCard(cardPath); if (!('frontmatter' in card)) continue; const current = Array.isArray(card.frontmatter.labels) ? card.frontmatter.labels.map(String) : []
           if (current.includes(id)) await window.board.updateFrontmatter(cardPath, { labels: current.filter((candidate) => candidate !== id) })
         }
       }

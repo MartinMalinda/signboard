@@ -181,7 +181,7 @@ onMounted(async () => {
   syncBodyState()
   dueNotifications.start()
   externalSync.start({
-    refreshEditor: async () => { await editorModal.value?.refreshFromExternalChange() },
+    refreshEditor: async (reconcileMissing = false) => { await editorModal.value?.refreshFromExternalChange(reconcileMissing) },
     isBlocked: () => Boolean(document.querySelector('[role="dialog"]:not([hidden]):not([aria-hidden="true"]), .app-popover:not(.hidden)')),
   })
 })

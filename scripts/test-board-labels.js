@@ -50,11 +50,11 @@ async function run() {
         dropped: [],
       },
       dashboard: {
-        sections: ['priority', 'impact', 'low_hanging_fruit', 'agent_loops', 'blocked'],
+        sections: ['priority', 'impact', 'low_hanging_fruit', 'blocked'],
         title: '',
         description: '',
       },
-      cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2', executionCeiling: 'human_only', backgroundSelection: false },
+      cardDefaults: { kind: 'task', priorityClass: 'P2' },
       validationPolicy: 'framework_v1',
     });
 
@@ -139,7 +139,7 @@ async function run() {
           title: 'V2 dashboard',
           customDashboardKey: { preserved: true },
         },
-        cardDefaults: { kind: 'discovery', priorityClass: 42, executionCeiling: 'not-a-ceiling', backgroundSelection: 'false' },
+        cardDefaults: { kind: 'discovery', priorityClass: 42, workType: 'ux', executionCeiling: 'not-a-ceiling', backgroundSelection: 'false' },
         validationPolicy: 'framework_v1',
         customProfileKey: { preserved: true },
         dashboardExtra: { preserved: true },
@@ -152,8 +152,9 @@ async function run() {
     assert.deepStrictEqual(v2Settings.v2.dashboard.sections, ['priority', 'impact', 'blocked']);
     assert.strictEqual(v2Settings.v2.cardDefaults.kind, 'discovery');
     assert.strictEqual(v2Settings.v2.cardDefaults.priorityClass, 'P2');
-    assert.strictEqual(v2Settings.v2.cardDefaults.executionCeiling, 'human_only');
-    assert.strictEqual(v2Settings.v2.cardDefaults.backgroundSelection, false);
+    assert(!Object.prototype.hasOwnProperty.call(v2Settings.v2.cardDefaults, 'workType'));
+    assert(!Object.prototype.hasOwnProperty.call(v2Settings.v2.cardDefaults, 'executionCeiling'));
+    assert(!Object.prototype.hasOwnProperty.call(v2Settings.v2.cardDefaults, 'backgroundSelection'));
     assert.deepStrictEqual(v2Settings.v2.customProfileKey, { preserved: true });
     assert.deepStrictEqual(v2Settings.v2.dashboard.customDashboardKey, { preserved: true });
 

@@ -1301,7 +1301,7 @@ body:not(.board-empty) main#board.board-view-week {
   text-transform: inherit;
 }
 
-.board-table-datatable .p-datatable-column-header-content {
+.board-table-datatable [data-pc-section="columnheadercontent"] {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1312,18 +1312,18 @@ body:not(.board-empty) main#board.board-view-week {
   white-space: nowrap;
 }
 
-.board-table-datatable .p-datatable-column-header-content > span {
+.board-table-datatable [data-pc-section="columnheadercontent"] > span {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
 }
 
-.board-table-datatable .p-datatable-column-header-content > .p-datatable-column-title {
-  flex: 0 1 auto;
+.board-table-datatable [data-pc-section="columnheadercontent"] > [data-pc-section="columntitle"] {
+  flex: 0 0 auto;
   min-width: 0;
 }
 
-.board-table-datatable .p-datatable-column-sorter {
+.board-table-datatable [data-pc-section="sort"] {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -1332,13 +1332,13 @@ body:not(.board-empty) main#board.board-view-week {
   white-space: nowrap;
 }
 
-.board-table-datatable .p-datatable-sort-icon {
+.board-table-datatable [data-pc-section="sorticon"] {
   display: block;
   width: 12px;
   height: 12px;
 }
 
-.board-table-datatable .p-datatable-column-title {
+.board-table-datatable [data-pc-section="columntitle"] {
   white-space: nowrap;
 }
 
@@ -1529,15 +1529,9 @@ body:not(.board-empty) main#board.board-view-week {
 .board-table-heading-priority_index,
 .board-table-heading-risk_reduction_index,
 .board-table-heading-impact_index,
-.board-table-heading-autonomy_score,
-.board-table-heading-quick_win_index,
-.board-table-heading-human_leverage_index,
 .board-table-cell-priority_index,
 .board-table-cell-risk_reduction_index,
-.board-table-cell-impact_index,
-.board-table-cell-autonomy_score,
-.board-table-cell-quick_win_index,
-.board-table-cell-human_leverage_index {
+.board-table-cell-impact_index {
   min-width: 110px;
   text-align: right;
 }
@@ -2140,6 +2134,9 @@ body.board-empty main#board {
   border-color: color-mix(in oklab, var(--border) 70%, var(--paynes-gray));
   box-shadow: 0 6px 18px var(--shadow-card);
 }
+.card.card-blocked > .card-drag-frame {
+  border-color: color-mix(in oklab, var(--danger, #d92d20) 28%, var(--border));
+}
 
 .card-sortable--chosen > .card-drag-frame,
 .lazy-card.card-sortable--chosen > .card > .card-drag-frame {
@@ -2494,6 +2491,16 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   -webkit-line-clamp: 2;
 }
 
+/* V2 framework definitions should wrap into a readable popover instead of spanning the editor. */
+.v-popper--theme-tooltip.v2-editor-tooltip .v-popper__inner {
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 6px 9px;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2622,7 +2629,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #modalAddList form.modal-content label,
-#modalAddCard form.modal-content label,
+#modalAddCard form.modal-content > label,
 #modalAddCardToList form.modal-content > label {
   color: var(--muted);
   font-size: var(--font-xs);
@@ -2632,7 +2639,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 }
 
 #modalAddList form.modal-content input,
-#modalAddCard form.modal-content input,
+#modalAddCard form.modal-content > input,
 #modalAddCardToList form.modal-content input:not([type="checkbox"]):not([type="radio"]) {
   min-height: 46px;
   margin-top: -2px;
@@ -2756,6 +2763,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   font-size: var(--font-md);
 }
 
+#modalAddCard .quick-add-labels,
 #modalAddCardToList .quick-add-labels {
   min-width: 0;
   margin: 5px 0 1px;
@@ -2765,6 +2773,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   background: color-mix(in oklab, var(--bg-card) 94%, var(--bg));
 }
 
+#modalAddCard .quick-add-labels legend,
 #modalAddCardToList .quick-add-labels legend {
   padding: 0 6px;
   color: var(--text);
@@ -2774,6 +2783,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   text-transform: none;
 }
 
+#modalAddCard .quick-add-labels legend span,
 #modalAddCardToList .quick-add-labels legend span {
   margin-left: 5px;
   color: var(--muted);
@@ -2781,11 +2791,13 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   font-weight: 500;
 }
 
+#modalAddCard .quick-add-label-options,
 #modalAddCardToList .quick-add-label-options {
   display: grid;
   gap: 5px;
 }
 
+#modalAddCard .quick-add-label-option,
 #modalAddCardToList .quick-add-label-option {
   display: flex;
   align-items: center;
@@ -2804,16 +2816,19 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
+#modalAddCard .quick-add-label-option:hover,
 #modalAddCardToList .quick-add-label-option:hover {
   border-color: color-mix(in oklab, var(--accent) 24%, var(--border));
   background: color-mix(in oklab, var(--accent) 6%, var(--bg-card));
 }
 
+#modalAddCard .quick-add-label-option.is-selected,
 #modalAddCardToList .quick-add-label-option.is-selected {
   border-color: color-mix(in oklab, var(--accent) 30%, var(--border));
   background: color-mix(in oklab, var(--accent) 10%, var(--bg-card));
 }
 
+#modalAddCard .quick-add-label-option input[type="checkbox"],
 #modalAddCardToList .quick-add-label-option input[type="checkbox"] {
   flex: 0 0 16px;
   width: 16px;
@@ -2824,6 +2839,7 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   accent-color: var(--accent);
 }
 
+#modalAddCard .quick-add-label-option input[type="checkbox"]:focus-visible,
 #modalAddCardToList .quick-add-label-option input[type="checkbox"]:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--accent) 55%, var(--bg-card));
   outline-offset: 2px;
@@ -4023,16 +4039,27 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   white-space: nowrap;
 }
 
+#modalEditCard #cardEditorTitle.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  font-weight: 500;
+  pointer-events: none;
+}
+
 #modalBoardSettings {
+  --board-settings-top: max(54px, calc(env(safe-area-inset-top) + 12px));
   position: fixed;
-  top: max(54px, calc(env(safe-area-inset-top) + 12px));
+  top: var(--board-settings-top);
   left: 50%;
   transform: translateX(-50%);
   width: min(980px, calc(100vw - 30px));
   max-width: 980px;
-  min-height: min(760px, calc(100vh - 26px));
-  max-height: calc(100vh - 26px);
+  height: min(760px, calc(100vh - var(--board-settings-top) - 12px));
+  min-height: min(760px, calc(100vh - var(--board-settings-top) - 12px));
+  max-height: calc(100vh - var(--board-settings-top) - 12px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 12px 36px;
   z-index: 50;
   padding: 24px 24px 30px;
 }
@@ -4770,9 +4797,11 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   }
 
   #modalBoardSettings {
-    top: max(12px, env(safe-area-inset-top));
-    min-height: calc(100vh - 16px);
-    max-height: calc(100vh - 16px);
+    --board-settings-top: max(12px, env(safe-area-inset-top));
+    top: var(--board-settings-top);
+    height: calc(100vh - var(--board-settings-top) - 4px);
+    min-height: calc(100vh - var(--board-settings-top) - 4px);
+    max-height: calc(100vh - var(--board-settings-top) - 4px);
     width: calc(100vw - 14px);
   }
 
@@ -5401,6 +5430,7 @@ body:not(.board-empty) #labelFilterButton,
 }
 #modalEditCard .cardEditorHeaderActions > a,
 #modalEditCard .cardEditorHeaderActions > button,
+#modalEditCard .cardEditorHeaderActions > .card-editor-actions-menu-wrap,
 #modalEditCard .cardEditorHeaderActions > .card-editor-linked-objects,
 #modalEditCard .cardEditorHeaderActions > .card-editor-open-with-wrap {
   width: 30px;
@@ -5412,6 +5442,7 @@ body:not(.board-empty) #labelFilterButton,
 #modalEditCard .cardEditorListControl > button { color: var(--muted); }
 #modalEditCard .cardEditorHeaderActions > a button,
 #modalEditCard .cardEditorHeaderActions > button,
+#modalEditCard .cardEditorHeaderActions > .card-editor-actions-menu-wrap button,
 #modalEditCard .cardEditorHeaderActions > .card-editor-linked-objects button,
 #modalEditCard .cardEditorHeaderActions > .card-editor-open-with-wrap button,
 #modalEditCard .cardEditorListControl > a,
@@ -5442,6 +5473,7 @@ body:not(.board-empty) #labelFilterButton,
   transform: none;
 }
 .card-editor-open-with-popover,
+.card-editor-actions-popover,
 .card-editor-linked-objects-popover,
 .card-editor-ai-tasks-popover,
 .card-editor-smart-actions-popover {
@@ -5450,6 +5482,31 @@ body:not(.board-empty) #labelFilterButton,
   width: max-content;
   max-width: calc(100vw - 16px);
 }
+.card-editor-actions-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  padding: 6px;
+}
+.card-editor-actions-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.card-editor-actions-menu button:hover,
+.card-editor-actions-menu button:focus-visible {
+  background: color-mix(in oklab, var(--bg-card) 86%, var(--border));
+}
+.card-editor-actions-menu button:last-child { color: color-mix(in oklab, #dc2626 72%, var(--text)); }
 .card-editor-open-with-action {
   min-height: 36px;
 }

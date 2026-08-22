@@ -5,28 +5,20 @@ const { atomicWriteFile } = require('../lib/atomicFile');
 
 const BOARD_ROOT = path.resolve(__dirname, '..', 'tasks', 'signboard-v2-migration');
 const V2_FIELDS = [
+  'id',
   'kind',
-  'work_type',
   'priority_class',
-  'objective',
-  'scope',
-  'acceptance_criteria',
-  'verification',
   'parent',
   'depends_on',
+  'blocked_by',
+  'blocked_on_decision',
   'estimate',
-  'status_summary',
-  'next_action',
   'opportunity',
   'risk_prevented',
-  'engineering_health',
-  'enablement',
   'discovery_value',
   'modifiers',
   'delivery',
-  'execution',
 ];
-const ACTIVE_STATUSES = new Set(['ready', 'active', 'review']);
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -60,19 +52,7 @@ function parseCard(raw, filePath) {
   return { frontmatter, frontmatterSource: match[1], headerEnd: match[0].length };
 }
 
-function buildTitleIndex(cards) {
-  return new Map(cards.map((card) => [String(card.frontmatter.title || '').trim(), card]));
-}
-
-function dependenciesAreResolved(frontmatter, titleIndex) {
-  const dependencies = Array.isArray(frontmatter.depends_on) ? frontmatter.depends_on : [];
-  return dependencies.every((dependency) => {
-    const dependencyCard = titleIndex.get(String(dependency || '').trim());
-    return dependencyCard && dependencyCard.frontmatter.framework_status === 'done';
-  });
-}
-
-function buildV2Metadata(frontmatter, titleIndex) {
+function buildV2Metadata(frontmatter) {
   const metadata = { contract_version: 1 };
   for (const field of V2_FIELDS) {
     if (Object.prototype.hasOwnProperty.call(frontmatter, field)) {
@@ -80,15 +60,6 @@ function buildV2Metadata(frontmatter, titleIndex) {
     }
   }
 
-  metadata.eligibility = {
-    readiness: ACTIVE_STATUSES.has(frontmatter.framework_status),
-    dependencies: dependenciesAreResolved(frontmatter, titleIndex),
-    date_window: false,
-    scope: typeof frontmatter.scope === 'string' && frontmatter.scope.trim().length > 0,
-    claim_available: false,
-    protected_surface_clear: false,
-    mode: 'general',
-  };
   return metadata;
 }
 
@@ -111,7 +82,7 @@ function validateMetadata(metadata, filePath) {
   if (!isObject(metadata) || metadata.contract_version !== 1) {
     throw new Error(`Invalid signboard_v2 contract: ${filePath}`);
   }
-  for (const field of ['kind', 'work_type', 'priority_class']) {
+  for (const field of ['kind', 'priority_class']) {
     if (typeof metadata[field] !== 'string' || !metadata[field].trim()) {
       throw new Error(`Missing signboard_v2.${field}: ${filePath}`);
     }
@@ -127,7 +98,6 @@ async function main() {
     const raw = await fs.readFile(filePath, 'utf8');
     cards.push({ filePath, raw, ...parseCard(raw, filePath) });
   }
-  const titleIndex = buildTitleIndex(cards);
   let migrated = 0;
   let alreadyCurrent = 0;
 
@@ -143,7 +113,7 @@ async function main() {
       throw new Error(`Missing signboard_v2 metadata: ${card.filePath}`);
     }
 
-    const metadata = buildV2Metadata(card.frontmatter, titleIndex);
+    const metadata = buildV2Metadata(card.frontmatter);
     validateMetadata(metadata, card.filePath);
     migrated += 1;
     if (shouldWrite) {

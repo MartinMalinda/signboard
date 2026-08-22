@@ -3,26 +3,23 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { vTooltip } from 'floating-vue'
 import DashboardView from '../components/DashboardView.vue'
-import ImpactScorePopover from '../components/board/ImpactScorePopover.vue'
 import Tooltip from '../lib/components/Tooltip.vue'
 import { useBoardDataStore } from '../stores/useBoardDataStore'
 
-function projectedCard(index: number, section: string, included = true, shaped = true, scored = true, status = 'ready', risk_prevented: Record<string, unknown> = {}, score = 10 - index) {
+function projectedCard(index: number, section: string, included = true, shaped = true, scored = true, status = 'ready', risk_prevented: Record<string, unknown> = {}, score = 10 - index, listName = '001-Ready') {
   return {
     score_version: 1,
-    normalized: { status, risk_prevented, credible_tail: risk_prevented.credible_tail === true },
+    normalized: { status, risk_prevented },
     metadata: { priority_class: 'P2', kind: 'task', present: shaped, valid: shaped },
     scores: { priority_index: scored ? 10 - index : null, impact_index: scored ? score : null },
     explanations: { impact_index: null },
-    eligibility: {},
-    classes: { autonomy: 'A2' },
     sections: [{ name: section, included, reason_codes: [`SECTION_${section.toUpperCase()}`], tie_break_inputs: { priority_rank: index, score, status_rank: 0 } }],
     missing_fields: scored ? [] : ['estimate.effort_points'],
     defaults_applied: {},
     warnings: [],
-    listName: '001-Ready',
+    listName,
     cardName: `card-${index}.md`,
-    cardPath: `/board/001-Ready/card-${index}.md`,
+    cardPath: `/board/${listName}/card-${index}.md`,
   }
 }
 
@@ -39,12 +36,10 @@ describe('DashboardView', () => {
       lists: [],
       errors: [],
       v2: {
-        profile: { enabled: true, title: 'Product', dashboard: { sections: ['priority', 'blocked', 'agent_loops'] } },
+        profile: { enabled: true, title: 'Product', dashboard: { sections: ['priority', 'blocked'] } },
         cards: [
           ...Array.from({ length: 9 }, (_, index) => projectedCard(index + 1, 'priority')),
           projectedCard(10, 'blocked'),
-          projectedCard(11, 'agent_loops', false, false),
-          projectedCard(12, 'agent_loops', false, true, false),
         ],
       },
     }
@@ -53,9 +48,9 @@ describe('DashboardView', () => {
     const wrapper = mount(DashboardView, { props: { onOpen, onViewAll }, global: { directives: { tooltip: vTooltip } } })
 
     expect(wrapper.find('h1').exists()).toBe(false)
-    expect(wrapper.findAll('[data-dashboard-section]')).toHaveLength(3)
+    expect(wrapper.findAll('[data-dashboard-section]')).toHaveLength(2)
     expect(wrapper.find('[data-dashboard-section="priority"]').findAll('.dashboard-card')).toHaveLength(8)
-    expect(wrapper.find('[data-dashboard-section="blocked"]').find('.dashboard-card-title').text()).toBe('card-10')
+    expect(wrapper.find('[data-dashboard-section="blocked"]').find('.dashboard-card-title').text()).toBe('Card 10')
     const whySignal = wrapper.find('[data-dashboard-section="priority"]').find('.dashboard-card-signal-why')
     expect(whySignal.attributes('title')).toBeUndefined()
     expect(whySignal.attributes('aria-label')).toContain('Ranked #1 in Priority')
@@ -93,7 +88,7 @@ describe('DashboardView', () => {
     expect(onViewAll).toHaveBeenCalledWith('priority')
   })
 
-  it('shows risk markers in Priority, while Impact remains a broad value-sorted view', () => {
+  it('shows stage on Impact cards while keeping risk markers scoped to Priority', () => {
     const data = useBoardDataStore()
     data.snapshot = {
       ok: true,
@@ -105,46 +100,39 @@ describe('DashboardView', () => {
       v2: {
         profile: { enabled: true, dashboard: { sections: ['priority', 'impact'] } },
         cards: [
-          projectedCard(1, 'priority', true, true, true, 'ready', { likelihood: 5, harm: 5, blast_radius: 4, credible_tail: true }),
-          projectedCard(2, 'impact', false, true, true, 'blocked', { likelihood: 5, harm: 5, blast_radius: 5, credible_tail: true }),
+          projectedCard(1, 'priority', true, true, true, 'ready', { likelihood: 5, harm: 5, blast_radius: 4 }),
+          projectedCard(2, 'impact', false, true, true, 'blocked', { likelihood: 5, harm: 5, blast_radius: 5 }, 8, '003-Staging-stock'),
+          projectedCard(3, 'impact', false, true, true, 'review', {}, 50, '004-Review-stock'),
         ],
       },
     }
     const wrapper = mount(DashboardView)
     const priorityCard = wrapper.find('[data-dashboard-section="priority"] .dashboard-card')
     const impactCard = wrapper.find('[data-dashboard-section="impact"] .dashboard-card')
+    const impactBlockedCard = wrapper.find('[data-dashboard-section="impact"] .dashboard-card[data-path="/board/003-Staging-stock/card-2.md"]')
 
     expect(priorityCard.text()).toContain('High Risk')
     expect(priorityCard.text()).toContain('High Damage')
     expect(priorityCard.text()).toContain('Wide Impact')
-    expect(priorityCard.text()).toContain('Tail Risk')
     expect(impactCard.exists()).toBe(true)
-    expect(impactCard.find('.dashboard-card-signal-why').exists()).toBe(false)
     expect(impactCard.find('.dashboard-card-signal-rank').text()).toBe('9.0')
     expect(impactCard.text()).not.toContain('High Risk')
     expect(impactCard.text()).not.toContain('High Damage')
+    expect(impactBlockedCard.find('.dashboard-card-signal-why').text()).toContain('Staging')
+    expect(impactBlockedCard.find('.dashboard-card-signal-why').classes()).toContain('dashboard-card-signal-stage-blocked')
+    expect(wrapper.find('[data-dashboard-section="impact"] .dashboard-card[data-path="/board/004-Review-stock/card-3.md"]').exists()).toBe(false)
   })
 
-  it('opens the Impact score breakdown popover', async () => {
+  it('shows the trimmed Impact score without removed score breakdown fields', async () => {
     const data = useBoardDataStore()
     const card = projectedCard(1, 'impact', true, true, true, 'ready', {}, 36.7) as any
     card.metadata.priority_class = 'P0'
     card.normalized = {
       ...card.normalized,
-      modifiers: { confidence: 4, strategic_fit: 4 },
+      modifiers: { confidence: 4 },
       estimate: { effort_points: 5 },
     }
     card.scores = { ...card.scores, positive_impact: 51.2, impact_index: 51.2 * 0.9 / Math.pow(5, 0.20) }
-    card.explanations = {
-      impact_index: {
-        positive_impact: 51.2,
-        confidence_multiplier: 0.9,
-        strategic_multiplier: 1,
-        effort_points: 5,
-        effort_factor: Math.pow(5, 0.20),
-        result: 51.2 * 0.9 / Math.pow(5, 0.20),
-      },
-    }
     data.snapshot = {
       ok: true,
       boardRoot: '/board',
@@ -159,26 +147,13 @@ describe('DashboardView', () => {
     }
 
     const wrapper = mount(DashboardView, { attachTo: document.body })
-    const breakdown = wrapper.findComponent(ImpactScorePopover)
-    expect(breakdown.exists()).toBe(true)
-    expect(breakdown.find('.dashboard-card-signal-rank').text()).toBe('33.4')
-    expect(breakdown.find('.impact-score-trigger').attributes('aria-label')).toBe('Impact score 33.4, show score breakdown')
-    await breakdown.find('.impact-score-trigger').trigger('click')
-
-    const popovers = document.querySelectorAll('.impact-score-popover')
-    const popover = popovers[popovers.length - 1]
-    expect(popover?.querySelector('.impact-score-breakdown-header strong')?.textContent).toBe('33.4')
-    expect(popover?.textContent).toContain('Positive value')
-    expect(popover?.textContent).toContain('Opportunity0.0')
-    expect(popover?.textContent).toContain('Engineering health0.0')
-    expect(popover?.textContent).toContain('51.2')
-    expect(popover?.textContent).toContain('Confidence×0.90')
-    expect(popover?.textContent).toContain('Strategic fit×1.00')
-    expect(popover?.textContent).toContain('Effort factor÷1.38')
+    expect(wrapper.find('[data-dashboard-section="impact"] .dashboard-card-signal-rank').text()).toBe('33.4')
+    expect(wrapper.text()).not.toContain('Engineering health')
+    expect(wrapper.text()).not.toContain('Strategic fit')
     wrapper.unmount()
   })
 
-  it('keeps Priority populated with non-terminal work when strict eligibility has no matches', () => {
+  it('keeps Priority populated with non-terminal work when strict section gates have no matches', () => {
     const data = useBoardDataStore()
     data.snapshot = {
       ok: true,
@@ -200,7 +175,7 @@ describe('DashboardView', () => {
     const wrapper = mount(DashboardView)
 
     expect(wrapper.find('[data-dashboard-section="priority"]').findAll('.dashboard-card')).toHaveLength(2)
-    expect(wrapper.find('.dashboard-card-title').text()).toBe('card-1')
+    expect(wrapper.find('.dashboard-card-title').text()).toBe('Card 1')
   })
 
   it('uses stage colors without an icon for Priority stage signals', () => {
@@ -215,8 +190,8 @@ describe('DashboardView', () => {
       v2: {
         profile: { enabled: true, dashboard: { sections: ['priority'] } },
         cards: [
-          projectedCard(1, 'priority', true, true, true, 'active'),
-          projectedCard(2, 'priority', true, true, true, 'review'),
+          projectedCard(1, 'priority', true, true, true, 'active', {}, 9, '003-Ongoing-stock'),
+          projectedCard(2, 'priority', true, true, true, 'review', {}, 8, '004-Staging-stock'),
         ],
       },
     }
@@ -225,10 +200,30 @@ describe('DashboardView', () => {
 
     expect(signals).toHaveLength(2)
     expect(signals[0]!.classes()).toContain('dashboard-card-signal-stage-active')
-    expect(signals[0]!.text()).toContain('Active')
+    expect(signals[0]!.text()).toContain('Ongoing')
     expect(signals[0]!.find('.feather-icon').exists()).toBe(false)
     expect(signals[1]!.classes()).toContain('dashboard-card-signal-stage-review')
-    expect(signals[1]!.text()).toContain('Review')
+    expect(signals[1]!.text()).toContain('Staging')
     expect(signals[1]!.find('.feather-icon').exists()).toBe(false)
+  })
+
+  it('marks cards blocked by a relationship, decision, or mapped stage', () => {
+    const data = useBoardDataStore()
+    const relationship = projectedCard(1, 'priority')
+    ;(relationship.metadata as Record<string, unknown>).blocked_by = ['Other card']
+    const decision = projectedCard(2, 'priority')
+    ;(decision.metadata as Record<string, unknown>).blocked_on_decision = true
+    const stage = projectedCard(3, 'priority', true, true, true, 'blocked')
+    data.snapshot = {
+      ok: true,
+      boardRoot: '/board',
+      boardName: 'Board',
+      boardSettings: null,
+      lists: [],
+      errors: [],
+      v2: { profile: { enabled: true, dashboard: { sections: ['priority'] } }, cards: [relationship, decision, stage] },
+    }
+    const wrapper = mount(DashboardView)
+    expect(wrapper.findAll('.dashboard-card-blocked')).toHaveLength(3)
   })
 })

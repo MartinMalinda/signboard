@@ -25,7 +25,6 @@ async function testReadBoardSnapshot() {
         signboard_v2: {
           contract_version: 1,
           kind: 'task',
-          work_type: 'product',
           priority_class: 'P1',
           estimate: { effort_points: 2 },
         },
@@ -83,6 +82,8 @@ async function testReadBoardSnapshot() {
     assert.strictEqual(v2TodoCard.v2.normalized.status, 'ready');
     assert.strictEqual(v2TodoCard.v2.metadata.status, 'ready');
     assert(v2TodoCard.v2.scores.risk_reduction_index > 0 || v2TodoCard.v2.scores.risk_reduction_index === 0);
+    assert.strictEqual(v2TodoCard.v2.score_ranges.priority_index.max, 166.75);
+    assert.strictEqual(v2TodoCard.v2.score_ranges.impact_index.max, 100);
     assert.strictEqual(v2TodoCard.v2.explanations.impact_index, null);
     assert(v2TodoCard.v2.sections.find((section) => section.name === 'priority'));
     const legacyV2Card = v2Snapshot.lists.find((list) => list.listName === '001-Done-stock').cards[0];
@@ -120,36 +121,13 @@ function completeV2Metadata(overrides = {}) {
     contract_version: 1,
     id: 'v2-card',
     kind: 'task',
-    work_type: 'product',
     priority_class: 'P2',
     opportunity: { reach: 3, benefit: 3, frequency: 3 },
-    risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1, mitigation_effectiveness: 1, credible_tail: false },
-    engineering_health: { maintenance_reduction: 4, complexity_reduction: 4, reliability_testability: 4, recurring_time_saved: 4 },
-    enablement: { downstream_value: 2, downstream_breadth: 2, critical_path: 2 },
+    risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1, mitigation_effectiveness: 1 },
     discovery_value: { uncertainty_reduction: 2, decision_importance: 2, cost_of_wrong_choice: 2 },
-    modifiers: { confidence: 5, strategic_fit: 4, urgency: 3, maintenance_delta: 1 },
-    estimate: { effort_points: 2, coordination_complexity: 1 },
-    delivery: { regression_likelihood: 1, change_blast_radius: 1, reversibility: 5, behavior_surface: 1, data_sensitivity: 1 },
-    execution: {
-      specification_clarity: 5,
-      verification_strength: 5,
-      boundedness: 5,
-      isolation: 5,
-      ceiling: 'autonomous_pull_request',
-      background_selection: true,
-      rollback_straightforward: false,
-      ci_deterministic: false,
-      ci_comprehensive: false,
-    },
-    eligibility: {
-      readiness: true,
-      dependencies: true,
-      date_window: true,
-      scope: true,
-      claim_available: true,
-      protected_surface_clear: true,
-      mode: 'general',
-    },
+    modifiers: { confidence: 5, urgency: 3, maintenance_delta: 1 },
+    estimate: { effort_points: 2 },
+    delivery: { regression_likelihood: 1, change_blast_radius: 1, reversibility: 5 },
     ...overrides,
   };
 }
@@ -179,7 +157,7 @@ async function testOptInV2Projection() {
       body: 'Legacy body',
     });
     await cardFrontmatter.writeCard(path.join(readyList, '004-malformed.md'), {
-      frontmatter: { title: 'Malformed', signboard_v2: { contract_version: 1, kind: 99, work_type: 42, priority_class: 99, execution: { ceiling: 'unknown', background_selection: 'false' } } },
+      frontmatter: { title: 'Malformed', signboard_v2: { contract_version: 1, kind: 99, priority_class: 99, execution: { ceiling: 'unknown' } } },
       body: 'Malformed body',
     });
     await cardFrontmatter.writeCard(path.join(readyList, '005-invalid-version.md'), {
@@ -210,16 +188,13 @@ async function testOptInV2Projection() {
     assert.strictEqual(cards['000-ready.md'].v2.metadata.status, 'ready');
     assert(cards['000-ready.md'].v2.scores.priority_index > 0);
     assert.strictEqual(cards['000-ready.md'].v2.eligibility.eligible, true);
-    assert(cards['000-ready.md'].v2.sections.find((section) => section.name === 'agent_loops').included);
+    assert(!cards['000-ready.md'].v2.sections.some((section) => section.name === 'agent_loops'));
 
     for (const name of ['001-p0.md', '002-p1.md']) {
       const projection = cards[name].v2;
       assert(projection.sections.find((section) => section.name === 'priority'));
-      assert.strictEqual(projection.explanations.impact_index.strategic_multiplier, 1);
+      assert.strictEqual(projection.explanations.impact_index.strategic_multiplier, undefined);
       assert.strictEqual(projection.scores.impact_index, projection.explanations.impact_index.result);
-      assert(projection.scores.autonomy_score <= 74);
-      assert.strictEqual(projection.eligibility.agent_eligible, false);
-      assert(projection.eligibility.reason_codes.includes('PRIORITY_AUTONOMY_CAP'));
     }
 
     assert(cards['000-blocked.md'].v2.sections.find((section) => section.name === 'blocked').included);
@@ -231,21 +206,10 @@ async function testOptInV2Projection() {
     assert(cards['003-legacy.md'].v2.missing_fields.length > 0);
     assert.strictEqual(cards['005-invalid-version.md'].v2.metadata.valid, false);
     assert(cards['005-invalid-version.md'].v2.warnings.includes('V2_METADATA_MISSING'));
-    assert.strictEqual(cards['004-malformed.md'].v2.eligibility.eligible, false);
-    assert(cards['004-malformed.md'].v2.warnings.some((warning) => warning.startsWith('INVALID_')));
-    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_PRIORITY'));
-    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_KIND'));
-    assert(!cards['004-malformed.md'].v2.warnings.includes('INVALID_WORK_TYPE'));
-    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_EXECUTION_CEILING:execution.ceiling'));
-    assert(cards['004-malformed.md'].v2.warnings.includes('INVALID_BOOLEAN:execution.background_selection'));
-    assert.strictEqual(cards['004-malformed.md'].v2.defaults_applied['execution.ceiling'], 'human_only');
-    assert.strictEqual(cards['004-malformed.md'].v2.defaults_applied['execution.background_selection'], false);
-    assert.strictEqual(cards['004-malformed.md'].v2.metadata.execution.ceiling, 'unknown');
-    assert.strictEqual(cards['004-malformed.md'].v2.metadata.execution.background_selection, 'false');
-    assert(!cards['004-malformed.md'].v2.eligibility.reason_codes.includes('METADATA_GATE_FAILED'));
-    assert(cards['004-malformed.md'].v2.eligibility.reason_codes.includes('READINESS_FAILED'));
+    assert.strictEqual(cards['004-malformed.md'].v2.eligibility.eligible, true);
+    assert(!Object.prototype.hasOwnProperty.call(cards['004-malformed.md'].v2.metadata, 'execution'));
     assert.strictEqual(cards['006-sparse.md'].v2.scores.priority_index, null);
-    assert.strictEqual(cards['006-sparse.md'].v2.eligibility.eligible, false);
+    assert.strictEqual(cards['006-sparse.md'].v2.eligibility.eligible, true);
     assert(cards['006-sparse.md'].v2.missing_fields.includes('estimate.effort_points'));
 
     const noRequest = await readBoardSnapshot(boardRoot);

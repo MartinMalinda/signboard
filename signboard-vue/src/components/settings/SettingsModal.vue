@@ -67,7 +67,7 @@ function renameBoardFromInput() { const input = document.getElementById('boardSe
 </script>
 
 <template>
-  <Modal id="modalBoardSettings" :is-open="settings.isOpen" :on-close="settings.close" positioning="fixed" :show-chrome="false" modal-class="board-settings-modal" labelled-by="boardSettingsTitle" :initial-focus="`#boardSettingsNav${navId(settings.activePanel)}`">
+  <Modal id="modalBoardSettings" :is-open="settings.isOpen" :on-close="settings.close" positioning="fixed" :overflow="false" :show-chrome="false" modal-class="board-settings-modal" labelled-by="boardSettingsTitle" :initial-focus="`#boardSettingsNav${navId(settings.activePanel)}`">
     <div class="boardSettingsHeader"><h2 id="boardSettingsTitle">Settings</h2><button id="boardSettingsClose" type="button" class="board-settings-close-button" title="Close settings" aria-label="Close settings" @click="settings.close"><FeatherIcon name="x" /></button></div>
     <div class="board-settings-layout">
       <nav class="board-settings-nav" role="tablist" aria-orientation="vertical" aria-label="Settings sections">

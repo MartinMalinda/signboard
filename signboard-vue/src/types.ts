@@ -14,6 +14,7 @@ export interface TaskSummary {
 export interface CardSnapshot {
   cardName: string
   cardPath: string
+  displayTitle?: string
   frontmatter: Record<string, unknown>
   body: string
   taskSummary: TaskSummary
@@ -32,12 +33,14 @@ export interface V2CardProjection {
   normalized: Record<string, unknown>
   metadata: Record<string, unknown>
   scores: Record<string, number | null>
+  score_ranges?: Record<string, { min: number; max: number }>
   explanations?: {
     impact_index?: V2ImpactExplanation | null
     [key: string]: unknown
   }
-  eligibility: Record<string, unknown>
-  classes: Record<string, string | null>
+  // Computed compatibility projections; they are not stored V2 card fields.
+  eligibility?: Record<string, unknown>
+  classes?: Record<string, string | null>
   sections: Array<Record<string, unknown>>
   missing_fields: string[]
   defaults_applied: Record<string, unknown>
@@ -54,7 +57,6 @@ export interface V2StageSemantics {
 export interface V2ImpactExplanation {
   positive_impact: number
   confidence_multiplier: number
-  strategic_multiplier: number
   effort_points: number
   effort_factor: number
   result: number
@@ -63,7 +65,13 @@ export interface V2ImpactExplanation {
 export interface CardRead {
   frontmatter: Record<string, unknown>
   body: string
+  displayTitle?: string
   timestamps?: { createdAt?: string; updatedAt?: string; createdAtSource?: string; updatedAtSource?: string }
+}
+
+export interface MissingCardRead {
+  missing: true
+  requestedPath: string
 }
 
 export interface BoardListSnapshot {
@@ -95,10 +103,7 @@ export interface V2BoardProfile {
   }
   cardDefaults?: {
     kind?: string
-    workType?: string
     priorityClass?: string
-    executionCeiling?: string
-    backgroundSelection?: boolean
     [key: string]: unknown
   }
   validationPolicy?: string
@@ -278,7 +283,8 @@ export interface BoardBridge {
   reorderCardsInList?(listPath: string, orderedCardPaths: string[]): Promise<unknown>
   reorderLists?(orderedListPaths: string[]): Promise<unknown>
   deleteList?(listPath: string): Promise<unknown>
-  readCard(filePath: string): Promise<CardRead>
+  readCard(filePath: string): Promise<CardRead | MissingCardRead>
+  copyCardMarkdown?(filePath: string): Promise<{ ok?: boolean; error?: string }>
   listArchiveEntries?(): Promise<{ cards?: ArchiveEntry[]; lists?: ArchiveEntry[] }>
   readArchiveEntry?(entryPath: string): Promise<{ entry?: ArchiveDetail }>
   restoreArchivedCard?(archivedCardPath: string, targetListPath: string): Promise<unknown>

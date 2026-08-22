@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useBoardDataStore } from '../stores/useBoardDataStore'
+import { getCardDisplayTitle } from '../../lib/cardTitle.js'
 import type { BoardV2Snapshot, CardSnapshot } from '../types'
 import {
   compareDashboardCards,
@@ -10,13 +11,13 @@ import {
 } from '../../lib/dashboardSections'
 import { formatImpactScore } from '../../lib/impactScore'
 import Tooltip from '../lib/components/Tooltip.vue'
-import ImpactScorePopover from './board/ImpactScorePopover.vue'
 import V2SignalChip from './board/V2SignalChip.vue'
+import { getListDisplayName } from '../../lib/listNaming.js'
 
 const props = defineProps<{ onOpen?: (path: string) => void; onViewAll?: (section: string) => void }>()
 const data = useBoardDataStore()
 
-const SECTION_ORDER = ['priority', 'impact', 'low_hanging_fruit', 'agent_loops', 'blocked'] as const
+const SECTION_ORDER = ['priority', 'impact', 'low_hanging_fruit', 'blocked'] as const
 const MAX_DASHBOARD_CARDS = 8
 type SectionId = typeof SECTION_ORDER[number]
 type DashboardCard = BoardV2Snapshot['cards'][number]
@@ -26,7 +27,6 @@ const SECTION_LABELS: Record<SectionId, string> = {
   priority: 'Priority',
   impact: 'Impact',
   low_hanging_fruit: 'Low-hanging fruit',
-  agent_loops: 'Agent loops',
   blocked: 'Blocked',
 }
 
@@ -34,7 +34,6 @@ const SECTION_ICONS: Record<SectionId, string> = {
   priority: '',
   impact: 'trending-up',
   low_hanging_fruit: 'zap',
-  agent_loops: 'repeat',
   blocked: 'pause-circle',
 }
 
@@ -74,10 +73,17 @@ function cardMetadata(card: DashboardCard) {
   const normalized = objectValue(card.normalized)
   return {
     kind: String(metadata.kind || normalized.kind || '').trim(),
-    workType: String(metadata.work_type || normalized.work_type || '').trim(),
     priority: String(metadata.priority_class || normalized.priority_class || '').trim().toUpperCase(),
     status: String(normalized.status || '').trim().toLowerCase(),
   }
+}
+
+function isBlockedCard(card: DashboardCard) {
+  const metadata = objectValue(card.metadata)
+  const normalized = objectValue(card.normalized)
+  return String(normalized.status || '').trim().toLowerCase() === 'blocked' ||
+    metadata.blocked_on_decision === true ||
+    (Array.isArray(metadata.blocked_by) && metadata.blocked_by.length > 0)
 }
 
 function cardStage(card: DashboardCard) {
@@ -92,10 +98,8 @@ function cardStage(card: DashboardCard) {
 
 function sectionSignalLabel(card: DashboardCard, sectionId: SectionId) {
   const details = cardMetadata(card)
-  if (sectionId === 'priority') return displayValue(cardStage(card))
-  if (sectionId === 'impact') return 'Impact'
+  if (sectionId === 'priority' || sectionId === 'impact') return getListDisplayName(card.listName)
   if (sectionId === 'low_hanging_fruit') return 'Quick win'
-  if (sectionId === 'agent_loops') return String(card.classes?.autonomy || 'Agent-ready')
   return 'Blocked'
 }
 
@@ -130,9 +134,6 @@ function riskMarkers(card: DashboardCard) {
   if (Number(risk.blast_radius) >= highThreshold) {
     markers.push({ icon: 'maximize-2', label: 'Wide Impact', tone: 'risk', tooltip: 'Blast radius is 4/5 or higher.' })
   }
-  if (normalized.credible_tail === true || risk.credible_tail === true) {
-    markers.push({ icon: 'shield', label: 'Tail Risk', tone: 'risk', tooltip: 'This card is flagged for a credible high-impact tail risk.' })
-  }
   return markers
 }
 
@@ -145,9 +146,12 @@ function cardSignals(card: DashboardCard, sectionId: SectionId, rank: number) {
     : typeof tieBreak.score === 'number' ? Math.round(tieBreak.score) : null
   const formattedScore = score === null ? '' : sectionId === 'impact' ? formatImpactScore(score) : String(score)
   const riskSignals = sectionId === 'priority' ? riskMarkers(card).map((signal) => ({ ...signal, stage: '' })) : []
-  const stage = sectionId === 'priority' ? cardStage(card) : ''
+  const stage = sectionId === 'priority' || sectionId === 'impact' ? cardStage(card) : ''
+  const sectionSignal = sectionId === 'impact'
+    ? (stage ? [{ icon: '', label: sectionSignalLabel(card, sectionId), tone: 'why', stage, tooltip: sectionTooltip(card, sectionId, rank) }] : [])
+    : [{ icon: SECTION_ICONS[sectionId], label: sectionSignalLabel(card, sectionId), tone: 'why', stage, tooltip: sectionTooltip(card, sectionId, rank) }]
   return [
-    ...(sectionId === 'impact' ? [] : [{ icon: SECTION_ICONS[sectionId], label: sectionSignalLabel(card, sectionId), tone: 'why', stage, tooltip: sectionTooltip(card, sectionId, rank) }]),
+    ...sectionSignal,
     ...riskSignals,
     ...(details.priority && sectionSignalLabel(card, sectionId) !== details.priority ? [{ icon: 'flag', label: details.priority, tone: 'priority', stage: '', tooltip: `Priority class ${details.priority}. A lower priority rank places this card nearer the top of its section.` }] : []),
     ...(score !== null ? [{ icon: 'bar-chart-2', label: formattedScore, tone: 'rank', stage: '', tooltip: `${SECTION_LABELS[sectionId]} ranking uses this card's priority, score (${formattedScore}), and status tie-breakers.` }] : []),
@@ -171,7 +175,6 @@ const summary = computed(() => ({
   priority: dashboardCardsForSection(dashboardCards.value, 'priority', data.snapshot?.v2?.profile).length,
   impact: dashboardCardsForSection(dashboardCards.value, 'impact', data.snapshot?.v2?.profile).length,
   blocked: dashboardCardsForSection(dashboardCards.value, 'blocked', data.snapshot?.v2?.profile).length,
-  agent: dashboardCardsForSection(dashboardCards.value, 'agent_loops', data.snapshot?.v2?.profile).length,
 }))
 
 function legacyCard(card: DashboardCard): CardSnapshot | undefined {
@@ -179,8 +182,8 @@ function legacyCard(card: DashboardCard): CardSnapshot | undefined {
 }
 
 function cardTitle(card: DashboardCard) {
-  const title = legacyCard(card)?.frontmatter?.title
-  return String(title || '').replace(/^#\s*/, '').trim() || card.cardName.replace(/\.md$/i, '') || 'Untitled'
+  const source = legacyCard(card)
+  return source?.displayTitle || getCardDisplayTitle(source?.frontmatter?.title, card.cardName)
 }
 
 </script>
@@ -192,7 +195,6 @@ function cardTitle(card: DashboardCard) {
         <span><strong>{{ summary.priority }}</strong> Priority</span>
         <span><strong>{{ summary.impact }}</strong> Impact</span>
         <span><strong>{{ summary.blocked }}</strong> Blocked</span>
-        <span><strong>{{ summary.agent }}</strong> Agent-ready</span>
       </div>
       <div v-if="unshapedCards.length" class="dashboard-unshaped" role="status">
         <button type="button" class="dashboard-unshaped-link" @click="props.onViewAll?.('unshaped')">Open unshaped cards</button>
@@ -206,14 +208,13 @@ function cardTitle(card: DashboardCard) {
           <button v-if="props.onViewAll" class="dashboard-view-all" type="button" @click="props.onViewAll(section.id)">View all</button>
         </header>
         <div v-if="section.cards.length" class="dashboard-card-list" role="list">
-          <div v-for="(card, index) in section.cards" :key="`${section.id}-${card.cardPath}`" class="dashboard-card" role="listitem" :data-path="card.cardPath" @click="props.onOpen?.(card.cardPath)">
+          <div v-for="(card, index) in section.cards" :key="`${section.id}-${card.cardPath}`" class="dashboard-card" :class="{ 'dashboard-card-blocked': isBlockedCard(card) }" role="listitem" :data-path="card.cardPath" @click="props.onOpen?.(card.cardPath)">
             <button class="dashboard-card-open" type="button" @click.stop="props.onOpen?.(card.cardPath)">
               <span class="dashboard-card-title">{{ cardTitle(card) }}</span>
             </button>
             <span class="dashboard-card-signals" aria-label="Why this card is featured">
               <template v-for="signal in cardSignals(card, section.id, index + 1)" :key="`${signal.tone}-${signal.label}`">
-                <ImpactScorePopover v-if="section.id === 'impact' && signal.tone === 'rank'" :card="card" :score="impactScore(card) ?? Number(signal.label)" />
-                <Tooltip v-else as="span" class="dashboard-card-signal-tooltip" popper-class="dashboard-card-tooltip" :content="signal.tooltip" placement="top">
+                <Tooltip as="span" class="dashboard-card-signal-tooltip" popper-class="dashboard-card-tooltip" :content="signal.tooltip" placement="top">
                   <V2SignalChip class="dashboard-card-signal" :class="[ `dashboard-card-signal-${signal.tone}`, signal.stage ? `dashboard-card-signal-stage-${signal.stage}` : '' ]" :label="signal.label" :icon="signal.icon" :tone="signal.tone" :aria-label="signal.tooltip" />
                 </Tooltip>
               </template>
@@ -244,6 +245,7 @@ function cardTitle(card: DashboardCard) {
 .dashboard-card-list { display: grid; gap: 8px; }
 .dashboard-card { display: grid; gap: 7px; width: 100%; padding: 10px; border: 1px solid var(--border, #e6e8ec); border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .dashboard-card:hover, .dashboard-card:focus-visible { border-color: var(--primary, #0b5fff); }
+.dashboard-card-blocked { border-color: color-mix(in srgb, var(--danger, #d92d20) 28%, var(--border, #e6e8ec)); }
 .dashboard-card-open { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .dashboard-card-open:focus-visible { outline: 2px solid var(--primary, #0b5fff); outline-offset: 2px; border-radius: 4px; }
 .dashboard-card-title { font-weight: 650; }

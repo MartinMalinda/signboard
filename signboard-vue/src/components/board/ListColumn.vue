@@ -10,6 +10,7 @@ import ListColumnHeader from './ListColumnHeader.vue'
 import { useUiStore } from '../../stores/useUiStore'
 import { getListDisplayName } from '../../../lib/listNaming.js'
 import { getCardBodyPreviewText } from '../../lib/cardPreview'
+import { getCardDisplayTitle } from '../../../lib/cardTitle.js'
 
 const props = defineProps<{ list: BoardListSnapshot; labels?: BoardLabel[]; visibleCardPaths?: Set<string>; onOpen?: (path: string) => void; onAddCard?: (path: string) => void; onArchiveCard?: (path: string) => void; onDuplicateCard?: (path: string) => void; onListChanged?: () => void }>()
 const displayName = computed(() => getListDisplayName(props.list.listName))
@@ -20,7 +21,7 @@ const data = useBoardDataStore()
 const ui = useUiStore()
 
 function estimateCardHeight(card: BoardListSnapshot['cards'][number]) {
-  const title = String(card.frontmatter?.title || '').replace('# ', '') || 'Untitled'
+  const title = card.displayTitle || getCardDisplayTitle(card.frontmatter?.title, card.cardName)
   const preview = getCardBodyPreviewText(card.body)
   const titleLines = Math.max(1, Math.ceil(title.length / 30))
   const previewLines = preview ? Math.min(2, Math.max(1, Math.ceil(preview.length / 38))) : 0

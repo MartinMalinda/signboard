@@ -37,7 +37,7 @@ describe('table view model', () => {
   it('uses the requested table column order and omits card dates', () => {
     expect(TABLE_COLUMNS.map((column) => column.id)).toEqual([
       'select', 'title', 'list', 'tasks', 'labels', 'links', 'depends_on', 'blocked_by',
-      'priority_index', 'risk_reduction_index', 'impact_index', 'autonomy_score', 'quick_win_index', 'human_leverage_index',
+      'priority_index', 'risk_reduction_index', 'impact_index',
     ])
     expect(TABLE_COLUMNS.map((column) => column.label)).not.toContain('Start')
     expect(TABLE_COLUMNS.map((column) => column.label)).not.toContain('Due')
@@ -55,11 +55,11 @@ describe('table view model', () => {
       }],
     }], () => false, [{
       cardPath: '/board/000-To-do-stock/v2.md',
-      scores: { priority_index: 4, risk_reduction_index: 8, impact_index: 12, autonomy_score: 6 },
+      scores: { priority_index: 4, risk_reduction_index: 8, impact_index: 12 },
       cardName: 'v2.md',
       sections: [{ name: 'priority', tie_break_inputs: { priority_rank: 2, score: 9, status_rank: 1 } }],
     }])
-    expect(entries[0]).toMatchObject({ dependsOn: ['Alpha'], blockedBy: ['Beta'], priority_index: 4, risk_reduction_index: 8, impact_index: 12, autonomy_score: 6, dashboardPriorityRank: 2, dashboardScore: 9, dashboardStatusRank: 1, dashboardCardName: 'v2.md' })
+    expect(entries[0]).toMatchObject({ dependsOn: ['Alpha'], blockedBy: ['Beta'], priority_index: 4, risk_reduction_index: 8, impact_index: 12, dashboardPriorityRank: 2, dashboardScore: 9, dashboardStatusRank: 1, dashboardCardName: 'v2.md' })
     expect(sortTableEntries(entries, 'dashboard-priority')[0].title).toBe('V2 card')
   })
 

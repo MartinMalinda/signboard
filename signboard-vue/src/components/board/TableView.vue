@@ -16,6 +16,7 @@ import {
   TABLE_LIST_FILTERS,
   createTableEntries,
   filterTableEntries,
+  formatTableScore,
   pruneTableSelection,
   selectTableEntryRange,
   selectVisibleTableEntries,
@@ -141,7 +142,6 @@ function tableSortKeyFromMeta(meta: any[]) {
     && meta[1]?.field === 'dashboardSectionStatusRank' && meta[1]?.order === 1
     && meta[2]?.field === 'dashboardSectionPriorityRank' && meta[2]?.order === 1
     && meta[3]?.field === 'dashboardSectionCardName' && meta[3]?.order === 1) {
-    if (view.dashboardSectionFilter === 'agent_loops') return DASHBOARD_PRIORITY_SORT_KEY
     return DASHBOARD_IMPACT_SORT_KEY
   }
   if (meta.length >= 3
@@ -314,7 +314,7 @@ async function updateSelectedDate(field: 'start' | 'due', value: string) {
           <template #body="slotProps"><div v-if="slotProps.data.blockedBy.length" class="board-table-card-references"><span v-for="reference in slotProps.data.blockedBy" :key="reference" class="board-table-card-reference" :title="reference"><span class="board-table-card-reference-text">{{ reference }}</span></span></div><span v-else class="board-table-empty-value">None</span></template>
         </Column>
         <Column v-for="column in TABLE_SCORE_COLUMNS" :key="column.id" :field="column.field" :header="column.label" sortable :header-class="`board-table-heading board-table-heading-${column.id}`" :body-class="`board-table-cell board-table-cell-${column.id}`">
-          <template #body="slotProps"><span :class="{ 'board-table-empty-value': slotProps.data[column.field] === null }">{{ slotProps.data[column.field] === null ? 'None' : slotProps.data[column.field] }}</span></template>
+          <template #body="slotProps"><span :class="{ 'board-table-empty-value': slotProps.data[column.field] === null }">{{ formatTableScore(slotProps.data[column.field]) }}</span></template>
         </Column>
       </DataTable>
     </div>

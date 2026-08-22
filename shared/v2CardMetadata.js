@@ -1,11 +1,28 @@
 const V2_KINDS = new Set(['task', 'discovery', 'epic', 'incident']);
-const V2_WORK_TYPES = new Set([
-  'product', 'ux', 'security', 'correctness', 'data_integrity', 'reliability',
-  'performance', 'compliance', 'privacy', 'engineering_health', 'technical_debt',
-  'observability', 'operations', 'enablement', 'discovery', 'documentation',
-]);
 const V2_PRIORITIES = new Set(['P0', 'P1', 'P2', 'P3']);
-const { isExecutionCeiling } = require('./v2ExecutionPolicy');
+const V2_TOP_LEVEL_FIELDS = [
+  'id',
+  'kind',
+  'priority_class',
+  'parent',
+  'depends_on',
+  'blocked_by',
+  'blocked_on_decision',
+  'estimate',
+  'opportunity',
+  'risk_prevented',
+  'discovery_value',
+  'modifiers',
+  'delivery',
+];
+const V2_GROUP_FIELDS = {
+  estimate: ['effort_points'],
+  opportunity: ['reach', 'benefit', 'frequency'],
+  risk_prevented: ['likelihood', 'harm', 'blast_radius', 'mitigation_effectiveness'],
+  discovery_value: ['uncertainty_reduction', 'decision_importance', 'cost_of_wrong_choice'],
+  modifiers: ['confidence', 'urgency', 'maintenance_delta'],
+  delivery: ['regression_likelihood', 'change_blast_radius', 'reversibility'],
+};
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -16,23 +33,52 @@ function cleanList(value) {
   return [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))];
 }
 
+const REMOVED_FIELDS = [
+  'work_type',
+  'objective',
+  'scope',
+  'acceptance_criteria',
+  'verification',
+  'status_summary',
+  'next_action',
+  'eligibility',
+  'engineering_health',
+  'enablement',
+  'execution',
+  'manual_override',
+];
+
 function normalizeV2CardMetadata(value) {
   if (!isObject(value)) return undefined;
-  const next = { ...value, contract_version: 1 };
+  const next = { contract_version: 1 };
+  for (const field of V2_TOP_LEVEL_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value, field)) next[field] = value[field];
+  }
 
   if (typeof next.kind !== 'string' || !V2_KINDS.has(next.kind.trim())) delete next.kind;
   else next.kind = next.kind.trim();
-  if (typeof next.work_type !== 'string' || !V2_WORK_TYPES.has(next.work_type.trim())) delete next.work_type;
-  else next.work_type = next.work_type.trim();
   if (typeof next.priority_class !== 'string' || !V2_PRIORITIES.has(next.priority_class.trim().toUpperCase())) delete next.priority_class;
   else next.priority_class = next.priority_class.trim().toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(next, 'blocked_on_decision') && typeof next.blocked_on_decision !== 'boolean') delete next.blocked_on_decision;
+
+  for (const field of REMOVED_FIELDS) delete next[field];
 
   if (isObject(next.estimate)) {
     const estimate = { ...next.estimate };
     if (Number.isFinite(Number(estimate.effort_points)) && Number(estimate.effort_points) > 0) estimate.effort_points = Math.min(99, Math.round(Number(estimate.effort_points)));
     else delete estimate.effort_points;
+    delete estimate.coordination_complexity;
+    for (const field of Object.keys(estimate)) {
+      if (!V2_GROUP_FIELDS.estimate.includes(field)) delete estimate[field];
+    }
     if (Object.keys(estimate).length) next.estimate = estimate;
     else delete next.estimate;
+  }
+  for (const groupName of ['opportunity', 'risk_prevented', 'discovery_value', 'modifiers', 'delivery']) {
+    if (!isObject(next[groupName])) continue;
+    const allowed = V2_GROUP_FIELDS[groupName];
+    next[groupName] = Object.fromEntries(Object.entries(next[groupName]).filter(([field]) => allowed.includes(field)));
+    if (Object.keys(next[groupName]).length === 0) delete next[groupName];
   }
   for (const field of ['depends_on', 'blocked_by']) {
     if (field in next) {
@@ -41,14 +87,23 @@ function normalizeV2CardMetadata(value) {
       else delete next[field];
     }
   }
-  if (isObject(next.execution)) {
-    const execution = { ...next.execution };
-    if (Object.prototype.hasOwnProperty.call(execution, 'ceiling') && isExecutionCeiling(execution.ceiling)) {
-      execution.ceiling = execution.ceiling.trim().toLowerCase();
-    }
-    for (const field of ['agent_execution_blocked', 'autonomous_execution_blocked', 'do_not_autorun', 'policy_autonomous_merge_allowed']) delete execution[field];
-    if (Object.keys(execution).length) next.execution = execution;
-    else delete next.execution;
+  if (isObject(next.modifiers)) {
+    const modifiers = { ...next.modifiers };
+    delete modifiers.strategic_fit;
+    if (Object.keys(modifiers).length) next.modifiers = modifiers;
+    else delete next.modifiers;
+  }
+  if (isObject(next.risk_prevented)) {
+    const risk = { ...next.risk_prevented };
+    delete risk.credible_tail;
+    next.risk_prevented = risk;
+  }
+  if (isObject(next.delivery)) {
+    const delivery = { ...next.delivery };
+    delete delivery.behavior_surface;
+    delete delivery.data_sensitivity;
+    if (Object.keys(delivery).length) next.delivery = delivery;
+    else delete next.delivery;
   }
   return next;
 }

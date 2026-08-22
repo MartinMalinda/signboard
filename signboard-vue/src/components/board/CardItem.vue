@@ -7,12 +7,13 @@ import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import type { BoardLabel, CardSnapshot } from '../../types'
 import FeatherIcon from '../FeatherIcon.vue'
 import V2SignalChip from './V2SignalChip.vue'
+import { getCardDisplayTitle } from '../../../lib/cardTitle.js'
 
-const props = withDefaults(defineProps<{ card: CardSnapshot; labels?: BoardLabel[]; isVisible?: boolean; onOpen?: (path: string) => void; onArchive?: (path: string) => void; onDuplicate?: (path: string) => void }>(), { isVisible: true, labels: () => [] })
+const props = withDefaults(defineProps<{ card: CardSnapshot; labels?: BoardLabel[]; isVisible?: boolean; presentationOnly?: boolean; onOpen?: (path: string) => void; onArchive?: (path: string) => void; onDuplicate?: (path: string) => void }>(), { isVisible: true, presentationOnly: false, labels: () => [] })
 const labelsStore = useLabelsStore()
 const boardData = useBoardDataStore()
 const frontmatter = computed(() => props.card.frontmatter || {})
-const title = computed(() => String(frontmatter.value.title || '').replace('# ', '') || 'Untitled')
+const title = computed(() => props.card.displayTitle || getCardDisplayTitle(frontmatter.value.title, props.card.cardName))
 const cardLabels = computed(() => readCardLabelIds(frontmatter.value.labels).map((id) => props.labels.find((label) => label.id === id) || { id, name: 'Unknown label' }))
 const visibleCardLabels = computed(() => cardLabels.value.slice(0, 2))
 const additionalCardLabelCount = computed(() => Math.max(0, cardLabels.value.length - visibleCardLabels.value.length))
@@ -27,18 +28,22 @@ const v2ProfileEnabled = computed(() => boardData.snapshot?.v2?.profile?.enabled
 const v2WorkSignalVisible = computed(() => v2ProfileEnabled.value && v2Projection.value?.metadata?.present === true && v2Projection.value?.metadata?.valid === true && v2Display.value.showSignals !== false)
 const v2Kind = computed(() => String(v2Metadata.value.kind || '').trim())
 const v2Priority = computed(() => String(v2Metadata.value.priority_class || '').trim().toUpperCase())
+const v2Blocked = computed(() => {
+  if (!v2WorkSignalVisible.value) return false
+  const status = String(v2Projection.value?.normalized?.status || '').trim().toLowerCase()
+  const blockedBy = Array.isArray(v2Metadata.value.blocked_by) && v2Metadata.value.blocked_by.length > 0
+  return status === 'blocked' || blockedBy || v2Metadata.value.blocked_on_decision === true
+})
 const v2DerivedBadge = computed(() => {
   if (!v2WorkSignalVisible.value || v2Display.value.showDerivedBadges === false) return ''
   const sections = Array.isArray(v2Projection.value?.sections) ? v2Projection.value.sections : []
   const included = (name: string) => sections.some((section) => isObject(section) && section.name === name && section.included === true)
   if (included('blocked')) return 'Blocked'
-  if (included('agent_loops')) return 'Agent-ready'
   if (included('low_hanging_fruit')) return 'Quick win'
   return ''
 })
 const v2DerivedBadgeIcon = computed(() => ({
   Blocked: 'pause-circle',
-  'Agent-ready': 'repeat',
   'Quick win': 'zap',
 } as Record<string, string>)[v2DerivedBadge.value] || '')
 const CARD_CLICK_DRAG_TOLERANCE_PX = 6
@@ -94,6 +99,7 @@ function isNonCardActivationTarget(target: EventTarget | null) {
 }
 
 function handlePointerDown(event: PointerEvent) {
+  if (props.presentationOnly) return
   if (event.isPrimary === false || (typeof event.button === 'number' && event.button !== 0) || isNonCardActivationTarget(event.target)) return
   pointerState = {
     pointerId: typeof event.pointerId === 'number' ? event.pointerId : null,
@@ -129,6 +135,7 @@ function handlePointerCancel() {
 }
 
 function handleCardClick() {
+  if (props.presentationOnly) return
   if (suppressNextClick) {
     suppressNextClick = false
     if (suppressClickTimer !== null) {
@@ -156,6 +163,7 @@ function positionContextMenu() {
 }
 
 function openContextMenu(event: MouseEvent) {
+  if (props.presentationOnly) return
   if (isNativeContextMenuTarget(event.target)) return
   event.preventDefault()
   event.stopPropagation()
@@ -224,6 +232,7 @@ function handleContextMenuKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
+  if (props.presentationOnly) return
   document.addEventListener('pointermove', handlePointerMove, true)
   document.addEventListener('pointerup', handlePointerUp, true)
   document.addEventListener('pointercancel', handlePointerCancel, true)
@@ -247,9 +256,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="card" :class="{ 'card-filtered-out': !props.isVisible }" :data-path="card.cardPath" role="listitem" @pointerdown.capture="handlePointerDown" @click="handleCardClick" @contextmenu="openContextMenu">
+  <div class="card" :class="{ 'card-filtered-out': !props.isVisible, 'card-presentation-only': props.presentationOnly, 'card-blocked': v2Blocked }" :data-path="card.cardPath" :role="props.presentationOnly ? 'presentation' : 'listitem'" @pointerdown.capture="handlePointerDown" @click="handleCardClick" @contextmenu="openContextMenu">
     <div class="card-drag-frame">
-      <h3><button class="card-title-button" type="button" :aria-label="`Open card: ${title}`">{{ title }}</button></h3>
+      <h3><span v-if="props.presentationOnly" class="card-title-button">{{ title }}</span><button v-else class="card-title-button" type="button" :aria-label="`Open card: ${title}`">{{ title }}</button></h3>
       <div class="card-body"><p v-if="preview" class="card-body-preview">{{ preview }}</p>
         <div class="metadata">
           <span v-if="cardLabels.length" class="card-labels-inline">
@@ -267,7 +276,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
-    <Teleport to="body">
+    <Teleport v-if="!props.presentationOnly" to="body">
       <div v-if="contextMenuOpen" ref="contextMenu" class="card-context-menu label-popover" role="menu" aria-label="Actions" :style="{ left: `${contextMenuPosition.left}px`, top: `${contextMenuPosition.top}px` }" @contextmenu.prevent.stop>
         <button class="list-actions-option" type="button" role="menuitem" @click="duplicateFromContextMenu"><FeatherIcon name="copy" /><span class="list-actions-option-label">Duplicate</span></button>
         <div class="label-popover-separator" aria-hidden="true" />

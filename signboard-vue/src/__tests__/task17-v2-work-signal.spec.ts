@@ -26,18 +26,17 @@ const shapedCard = {
     signboard_v2: {
       contract_version: 1,
       kind: 'task',
-      work_type: 'product',
       priority_class: 'P2',
       estimate: { effort_points: 3 },
     },
   },
   v2: {
     score_version: 1,
-    metadata: { present: true, valid: true, kind: 'task', work_type: 'product', priority_class: 'P2' },
+    metadata: { present: true, valid: true, kind: 'task', priority_class: 'P2' },
     normalized: {},
     scores: { priority_index: 20 },
     eligibility: {},
-    classes: { autonomy: 'A2', qa: null },
+    classes: {},
     sections: [{ name: 'low_hanging_fruit', included: true }],
     missing_fields: [],
     defaults_applied: {},
@@ -100,6 +99,32 @@ describe('V2 Kanban work signals', () => {
 
     expect(wrapper.find('.card-v2-signal-kind').text()).toBe('Epic')
     wrapper.unmount()
+  })
+
+  it('marks cards blocked by a relationship, decision, or mapped stage', () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const data = useBoardDataStore()
+    data.snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { v2: { enabled: true } }, lists: [], errors: [], v2: { profile: { enabled: true }, cards: [] } }
+    const variants = [
+      { signboard_v2: { blocked_by: ['Other card'] }, normalized: { status: 'ready' } },
+      { signboard_v2: { blocked_on_decision: true }, normalized: { status: 'ready' } },
+      { signboard_v2: {}, normalized: { status: 'blocked' } },
+    ]
+    for (const variant of variants) {
+      const wrapper = mount(CardItem, {
+        global: { plugins: [pinia] },
+        props: {
+          card: {
+            ...shapedCard,
+            frontmatter: { ...shapedCard.frontmatter, signboard_v2: { ...shapedCard.frontmatter.signboard_v2, ...variant.signboard_v2 } },
+            v2: { ...shapedCard.v2, metadata: { ...shapedCard.v2.metadata, ...variant.signboard_v2 }, normalized: variant.normalized },
+          },
+        },
+      })
+      expect(wrapper.find('.card-blocked').exists()).toBe(true)
+      wrapper.unmount()
+    }
   })
 
   it('does not turn the broad Impact dashboard section into a card badge', () => {

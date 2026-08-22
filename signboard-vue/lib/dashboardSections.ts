@@ -5,7 +5,6 @@ export const DASHBOARD_SECTION_IDS = Object.freeze([
   'priority',
   'impact',
   'low_hanging_fruit',
-  'agent_loops',
   'blocked',
 ] as const)
 
@@ -14,23 +13,15 @@ export type DashboardCard = BoardV2Snapshot['cards'][number]
 export type DashboardSection = DashboardCard['sections'][number]
 
 const NON_ACTIONABLE_STAGES = new Set(['blocked', 'done', 'dropped'])
-const TERMINAL_STAGES = new Set(['done', 'dropped'])
+const NON_IMPACT_STAGES = new Set(['review', 'done', 'dropped'])
 
 const REASON_LABELS: Record<string, string> = {
-  A4_POLICY_NOT_SATISFIED: 'The stricter autonomous-merge policy is not satisfied.',
-  AGENT_POLICY_FAILED: 'The agent execution policy is not satisfied.',
-  AUTONOMY_BELOW_A3: 'Autonomy is below the A3 threshold.',
-  AUTONOMY_LOW: 'Autonomy is low.',
   CONFIDENCE_LOW: 'Confidence is below the section threshold.',
   DEPENDENCY_UNRESOLVED: 'A dependency is unresolved.',
   EFFORT_TOO_LARGE: 'The estimated effort is too large for this section.',
-  EXECUTION_POLICY_FAILED: 'The execution policy is not satisfied.',
-  KIND_NOT_EXECUTABLE: 'This kind of work is not directly executable.',
   METADATA_GATE_FAILED: 'Required work metadata is incomplete.',
   METADATA_INVALID: 'Work metadata is invalid.',
-  PRIORITY_AUTONOMY_CAP: 'Priority limits the autonomy class.',
   PRIORITY_INVALID: 'The priority class is invalid.',
-  PRIORITY_NOT_AGENT_QUEUE: 'The priority class is outside the agent queue.',
   READINESS_FAILED: 'Readiness requirements are incomplete.',
   REVERSIBILITY_LOW: 'The change is not reversible enough for this section.',
   SECTION_INELIGIBLE: 'The card does not meet this section’s requirements.',
@@ -40,7 +31,6 @@ const REASON_LABELS: Record<string, string> = {
   STATUS_NOT_PLANNABLE: 'The status is not currently plannable.',
   STATUS_NOT_READY: 'The card is not in Ready.',
   STATUS_TERMINAL: 'The card is in a terminal status.',
-  VERIFICATION_WEAK: 'Verification is not strong enough for this section.',
 }
 
 function objectValue(value: unknown): Record<string, unknown> {
@@ -87,9 +77,7 @@ function sectionTieBreakInputs(card: DashboardCard, sectionId: string) {
   const section = dashboardSectionFor(card, sectionId)
   const tieBreak = objectValue(section?.tie_break_inputs)
   const scores = objectValue(card.scores)
-  const fallbackScore = sectionId === 'agent_loops'
-    ? scores.agent_pick_index
-    : sectionId === 'impact'
+  const fallbackScore = sectionId === 'impact'
       ? scores.impact_index
       : scores.priority_index
   return {
@@ -128,7 +116,7 @@ export function isImpactCard(card: DashboardCard, profile?: V2BoardProfile) {
   if (hasUnresolvedStageSemantics(card, profile)) return false
   const status = String(card.normalized?.status || '').trim().toLowerCase()
   const configuredStage = configuredStageForCard(card, profile)
-  return !TERMINAL_STAGES.has(status) && !TERMINAL_STAGES.has(configuredStage)
+  return !NON_IMPACT_STAGES.has(status) && !NON_IMPACT_STAGES.has(configuredStage)
 }
 
 /** Return every card in a section. Presentation limits belong to the caller. */
@@ -146,7 +134,7 @@ export function compareDashboardCards(left: DashboardCard, right: DashboardCard,
 
   const leftKey = sectionTieBreakInputs(left, sectionId)
   const rightKey = sectionTieBreakInputs(right, sectionId)
-  if (sectionId === 'impact' || sectionId === 'agent_loops') {
+  if (sectionId === 'impact') {
     if (leftKey.score !== rightKey.score) return rightKey.score - leftKey.score
     if (leftKey.status !== rightKey.status) return leftKey.status - rightKey.status
     if (leftKey.priority !== rightKey.priority) return leftKey.priority - rightKey.priority
@@ -173,7 +161,7 @@ export function dashboardSectionSortValues(card: DashboardCard, sectionId = 'pri
 }
 
 export function dashboardSectionSortFields(sectionId = 'priority') {
-  if (sectionId === 'impact' || sectionId === 'agent_loops') return [
+  if (sectionId === 'impact') return [
     { field: 'dashboardSectionScore', order: -1 as const },
     { field: 'dashboardSectionStatusRank', order: 1 as const },
     { field: 'dashboardSectionPriorityRank', order: 1 as const },

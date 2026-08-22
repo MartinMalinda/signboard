@@ -11,7 +11,7 @@ import {
 import { SETTINGS_NAVIGATION, useSettingsStore } from '../stores/useSettingsStore'
 import SettingsModal from '../components/settings/SettingsModal.vue'
 
-const snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { labels: [{ id: 'one', name: 'One' }], workflow: { autoDetectCompletedLists: true, completedListNames: [], ignoredCompletedListNames: [] }, v2: { enabled: true, profileId: 'default-product', dashboard: { sections: ['priority', 'impact'] }, cardDefaults: { kind: 'task', workType: 'product', priorityClass: 'P2', executionCeiling: 'human_only', backgroundSelection: false } } }, lists: [], errors: [] }
+const snapshot = { ok: true, boardRoot: '/board/', boardName: 'Board', boardSettings: { labels: [{ id: 'one', name: 'One' }], workflow: { autoDetectCompletedLists: true, completedListNames: [], ignoredCompletedListNames: [] }, v2: { enabled: true, profileId: 'default-product', dashboard: { sections: ['priority', 'impact'] }, cardDefaults: { kind: 'task', priorityClass: 'P2' } } }, lists: [], errors: [] }
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -96,10 +96,8 @@ describe('Settings parity model', () => {
     await vi.waitFor(() => expect(window.board.updateBoardSettings).toHaveBeenCalled())
     expect(window.board.updateBoardSettings).toHaveBeenCalledWith('/board/', expect.objectContaining({ v2: expect.objectContaining({ cardDisplay: expect.objectContaining({ showSignals: false }) }) }))
     expect(settings.v2Profile.cardDefaults?.priorityClass).toBe('P1')
-    const ceilingSelect = document.querySelector('#boardSettingsV2DefaultExecutionCeiling') as HTMLSelectElement
-    ceilingSelect.value = 'autonomous_pull_request'
-    ceilingSelect.dispatchEvent(new Event('change', { bubbles: true }))
-    await vi.waitFor(() => expect(settings.v2Profile.cardDefaults?.executionCeiling).toBe('autonomous_pull_request'))
+    expect(document.querySelector('#boardSettingsV2DefaultWorkType')).toBeNull()
+    expect(document.querySelector('#boardSettingsV2DefaultExecutionCeiling')).toBeNull()
     wrapper.unmount()
   })
 

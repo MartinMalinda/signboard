@@ -26,7 +26,6 @@ function formatScore(value: unknown) {
 const scores = computed(() => objectValue(props.card.scores))
 const explanation = computed(() => objectValue(props.card.explanations?.impact_index))
 const confidenceMultiplier = computed(() => numericValue(explanation.value.confidence_multiplier))
-const strategicMultiplier = computed(() => numericValue(explanation.value.strategic_multiplier))
 const effortPoints = computed(() => numericValue(explanation.value.effort_points))
 const effortFactor = computed(() => numericValue(explanation.value.effort_factor))
 const finalScore = computed(() => {
@@ -38,8 +37,6 @@ const popoverId = computed(() => `impactScoreBreakdownPopover-${props.card.cardP
 
 const valueSources = computed<Array<[string, unknown]>>(() => [
   ['Opportunity', scores.value.opportunity],
-  ['Engineering health', scores.value.engineering_health],
-  ['Enablement', scores.value.enablement],
   ['Discovery', scores.value.discovery],
 ])
 
@@ -101,12 +98,11 @@ function onKeydown(event: KeyboardEvent) {
       <section class="impact-score-breakdown-section" aria-labelledby="impactScoreAdjustmentTitle">
         <h3 id="impactScoreAdjustmentTitle">Adjustments</h3>
         <div class="impact-score-row"><span>Confidence</span><strong>×{{ confidenceMultiplier.toFixed(2) }}</strong></div>
-        <div class="impact-score-row"><span>Strategic fit</span><strong>×{{ strategicMultiplier.toFixed(2) }}</strong></div>
         <div class="impact-score-row"><span>Effort factor</span><strong>÷{{ effortFactor.toFixed(2) }} <small>({{ effortPoints }} pts)</small></strong></div>
       </section>
 
       <div class="impact-score-formula" aria-label="Impact score formula">
-        {{ formatScore(explanation.positive_impact) }} × {{ confidenceMultiplier.toFixed(2) }} × {{ strategicMultiplier.toFixed(2) }} ÷ {{ effortFactor.toFixed(2) }}
+        {{ formatScore(explanation.positive_impact) }} × {{ confidenceMultiplier.toFixed(2) }} ÷ {{ effortFactor.toFixed(2) }}
       </div>
     </div>
   </AppPopover>
