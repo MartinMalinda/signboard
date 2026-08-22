@@ -12,9 +12,9 @@ const fsPromises = fs.promises;
 const http = require('http');
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { resolveRendererFile } = require('./lib/rendererSelection');
 const cardFrontmatter = require('./lib/cardFrontmatter');
-const { readCardWithTimestamps } = require('./lib/cardTimestamps');
+const { getCardDisplayTitle } = require('./lib/cardTitle');
+const { readCardIfPresent, readCardWithTimestamps } = require('./lib/cardTimestamps');
 const { insertCardFileAtTop, reorderCardFilesInList, reorderListDirectories } = require('./lib/cardOrdering');
 const { listOrderedEntries, moveOrderManifestEntry, writeOrderManifest } = require('./lib/orderManifest');
 const { readBoardSnapshot } = require('./lib/boardSnapshot');
@@ -60,7 +60,6 @@ const MCP_SERVER_ARG = '--mcp-server';
 const MCP_CONFIG_ARG = '--mcp-config';
 const RUNTIME_APP_ICON_PATH = path.join(__dirname, 'build', 'icon-macos.png');
 const SIGNBOARD_USER_DATA_DIR = String(process.env.SIGNBOARD_USER_DATA_DIR || '').trim();
-const APP_ENTRY_URL = pathToFileURL(path.join(__dirname, 'index.html'));
 const VUE_ENTRY_URL = pathToFileURL(path.join(__dirname, 'signboard-vue', 'dist', 'index.html'));
 const TRUSTED_BOARD_ROOTS_FILE = 'trusted-board-roots.json';
 const LINKED_OBJECT_ICON_DIRECTORY = 'linked-object-icons';
@@ -1777,7 +1776,7 @@ async function sanitizeImportedCardFileName(rawName) {
   const finalBase = truncatedBase.replace(/[ .]+$/g, '');
   const finalName = finalBase.slice(0, 25) + ext;
 
-  return finalName || '999-untitled.md';
+  return finalName || 'untitled.md';
 }
 
 function importedRandomSuffix() {
@@ -2578,8 +2577,8 @@ function createWindow() {
   const isTrustedAppNavigation = (url) => {
     try {
       const parsed = new URL(url);
-      return parsed.protocol === APP_ENTRY_URL.protocol
-        && [APP_ENTRY_URL.pathname, VUE_ENTRY_URL.pathname].includes(parsed.pathname);
+      return parsed.protocol === VUE_ENTRY_URL.protocol
+        && parsed.pathname === VUE_ENTRY_URL.pathname;
     } catch {
       return false;
     }
@@ -2716,9 +2715,7 @@ function createWindow() {
     });
   });
 
-  // Vue is the default renderer. SIGNBOARD_RENDERER=legacy is the supported
-  // rollback/testing boundary; SIGNBOARD_RENDERER=vue remains compatible.
-  win.loadFile(resolveRendererFile(process.env.SIGNBOARD_RENDERER, __dirname));
+  win.loadFile(path.join(__dirname, 'signboard-vue', 'dist', 'index.html'));
   return win;
 }
 
@@ -4214,7 +4211,7 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
     case 'getCardTitle': {
       const filePath = requireReadablePath(event.sender, args[0]);
       const card = await cardFrontmatter.readCard(filePath);
-      return card.frontmatter.title;
+      return card.displayTitle || getCardDisplayTitle(card.frontmatter.title, filePath);
     }
 
     case 'formatDueDate': {
@@ -4367,7 +4364,14 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
 
     case 'readCard': {
       const filePath = requireReadablePath(event.sender, args[0]);
-      return readCardWithTimestamps(filePath);
+      return readCardIfPresent(filePath);
+    }
+
+    case 'copyCardMarkdown': {
+      const filePath = requireReadablePath(event.sender, args[0]);
+      const markdown = await fsPromises.readFile(filePath, 'utf8');
+      clipboard.writeText(markdown);
+      return { ok: true };
     }
 
     case 'listArchiveEntries': {
@@ -4456,11 +4460,12 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
         ? createOptions.frontmatter
         : {};
       const lines = content.split(/\r?\n/);
-      const title = (lines.shift() || '').trim();
+      const contentTitle = (lines.shift() || '').trim();
       const body = lines.join('\n').replace(/^\n+/, '');
+      const hasExplicitTitle = Object.prototype.hasOwnProperty.call(initialFrontmatter, 'title');
       const frontmatter = normalizeCardFrontmatterForBoardPath(event.sender, filePath, prepareNewCardFrontmatter({
         ...initialFrontmatter,
-        title: title || 'Untitled',
+        title: hasExplicitTitle ? String(initialFrontmatter.title || '').trim() : contentTitle,
       }));
 
       await cardFrontmatter.writeCard(filePath, {
@@ -4472,9 +4477,11 @@ ipcMain.handle('board-call', async (event, payload = {}) => {
         listPath,
         (entry) => entry.isFile() && entry.name.endsWith('.md'),
       );
-      if (!orderedCards.includes(path.basename(filePath))) {
-        await writeOrderManifest(listPath, [...orderedCards, path.basename(filePath)]);
-      }
+      const createdCardFile = path.basename(filePath);
+      await writeOrderManifest(listPath, [
+        createdCardFile,
+        ...orderedCards.filter((cardFile) => cardFile !== createdCardFile),
+      ]);
       await autoSyncManagedObsidianBaseForCardPath(event.sender, filePath);
 
       return { ok: true };
@@ -5152,7 +5159,7 @@ if (isCliMode) {
     setupAutoUpdater();
 
     if (process.env.SIGNBOARD_DEV_WATCH) {
-      const watchedRendererFile = resolveRendererFile(process.env.SIGNBOARD_RENDERER, __dirname);
+      const watchedRendererFile = path.join(__dirname, 'signboard-vue', 'dist', 'index.html');
       const watchedRendererDirectory = path.dirname(watchedRendererFile);
       const watchedRendererBasename = path.basename(watchedRendererFile);
       let reloadTimer = null;

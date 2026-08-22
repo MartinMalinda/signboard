@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('board', {
   getCardExternalLinks: async (filePath) => invokeBoard('getCardExternalLinks', filePath),
   shareCard: async (filePath) => ipcRenderer.invoke('share-file', filePath),
   readCard: async (filePath) => invokeBoard('readCard', filePath),
+  copyCardMarkdown: async (filePath) => invokeBoard('copyCardMarkdown', filePath),
   listArchiveEntries: async () => invokeBoard('listArchiveEntries'),
   readArchiveEntry: async (entryPath) => invokeBoard('readArchiveEntry', entryPath),
   writeCard: async (filePath, card) => invokeBoard('writeCard', filePath, card),

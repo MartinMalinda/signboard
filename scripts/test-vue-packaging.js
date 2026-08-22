@@ -21,6 +21,6 @@ const builderConfig = JSON.parse(fs.readFileSync(path.join(root, 'electron-build
 const packageFiles = builderConfig.files || [];
 assert.ok(packageFiles.includes('signboard-vue/dist/**'), 'electron-builder must package the Vue dist');
 assert.ok(packageFiles.includes('static/**'), 'electron-builder must package shared and vendor assets');
-assert.ok(packageFiles.includes('index.html'), 'electron-builder must retain the legacy rollback renderer');
+assert.ok(!packageFiles.includes('index.html'), 'electron-builder must not package a retired root renderer shell');
 
 console.log('Vue packaging checks passed.');

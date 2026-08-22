@@ -22,7 +22,7 @@ function track(child) {
 
 async function buildVue() {
   return new Promise((resolve, reject) => {
-    const build = spawn(npmCommand, ['run', 'build:vue'], {
+    const build = spawn(npmCommand, ['run', 'build:vue:dev'], {
       stdio: 'inherit',
       env: process.env,
     });

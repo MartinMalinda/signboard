@@ -3,6 +3,5 @@ node_modules
 .env
 certificate.p12
 dist
-app/signboard.js
 output/playwright
 .codegraph

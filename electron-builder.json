@@ -3,13 +3,11 @@
   "productName": "Signboard",
   "artifactName": "signboard_${version}_${os}_${arch}.${ext}",
   "files": [
-    "app/**",
     "lib/**",
     "static/**",
     "static/vendor/**",
     "signboard-vue/dist/**",
     "signboard-vue/dist/assets/**",
-    "index.html",
     "main.js",
     "preload.js",
     "build/icon-macos.png",
