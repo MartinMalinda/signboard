@@ -4,6 +4,7 @@ import { getBoardDisplayName, normalizeBoardPath, useBoardsStore } from './useBo
 import { useBoardDataStore } from './useBoardDataStore'
 import { matchesSearch } from '../../lib/cardFilters.js'
 import { getListDisplayName } from '../../lib/listNaming.js'
+import { getCardDisplayTitle } from '../../lib/cardTitle.js'
 
 type BoardOption = {
   kind: 'board'
@@ -24,10 +25,10 @@ type CardOption = {
 
 type SwitcherOption = BoardOption | CardOption
 
-function cardSearchScore(card: { frontmatter?: { title?: unknown }; body?: unknown }, query: string) {
+function cardSearchScore(card: { cardName?: unknown; frontmatter?: { title?: unknown }; body?: unknown }, query: string) {
   const normalizedQuery = String(query || '').trim().toLowerCase()
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
-  const title = String(card.frontmatter?.title || '').toLowerCase()
+  const title = getCardDisplayTitle(card.frontmatter?.title, card.cardName).toLowerCase()
   const body = String(card.body || '').toLowerCase()
   const titleTokenMatches = tokens.filter((token) => title.includes(token)).length
   const bodyTokenMatches = tokens.filter((token) => body.includes(token)).length
@@ -114,7 +115,7 @@ export const useBoardSwitcherStore = defineStore('boardSwitcher', () => {
         kind: 'card' as const,
         path: card.cardPath,
         cardPath: card.cardPath,
-        label: String(card.frontmatter?.title || '').replace(/^#\s*/, '').trim() || 'Untitled',
+        label: card.displayTitle || getCardDisplayTitle(card.frontmatter?.title, card.cardName),
         listLabel: getListDisplayName(list.listName),
         excerptParts: cardExcerptParts(card, query.value),
         isCurrent: true as const,

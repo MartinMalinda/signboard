@@ -1,39 +1,11 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
 
-function loadDueNotificationUtilities() {
-  const context = {
-    console,
-    normalizeBoardPath: (value) => {
-      const normalized = String(value || '').trim();
-      if (!normalized) {
-        return '';
-      }
-      return normalized.endsWith('/') ? normalized : `${normalized}/`;
-    },
-    isBoardListCompletedByWorkflow: (listName, workflowSettings) => {
-      return Boolean(workflowSettings && workflowSettings.autoDetectCompletedLists !== false && /Done/i.test(String(listName || '')));
-    },
-  };
-
-  vm.createContext(context);
-
-  const dueDateSource = fs.readFileSync(path.join(__dirname, '../app/utilities/dueDateStatus.js'), 'utf8');
-  vm.runInContext(dueDateSource, context);
-
-  const taskListSource = fs.readFileSync(path.join(__dirname, '../app/utilities/taskList.js'), 'utf8');
-  vm.runInContext(taskListSource, context);
-
-  const dueNotificationSource = fs.readFileSync(path.join(__dirname, '../app/utilities/dueNotifications.js'), 'utf8');
-  vm.runInContext(dueNotificationSource, context);
-
-  return context;
+async function loadDueNotificationUtilities() {
+  return import('../signboard-vue/lib/dueNotifications.js');
 }
 
 async function run() {
-  const context = loadDueNotificationUtilities();
+  const context = await loadDueNotificationUtilities();
   const { collectDueTodayItemsForBoard, buildDueNotificationBody } = context;
   const toPlain = (value) => JSON.parse(JSON.stringify(value));
 

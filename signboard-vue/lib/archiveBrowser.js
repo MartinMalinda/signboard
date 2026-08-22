@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/board/archiveBrowser.js until then.
+// Framework-free archive helpers used by the canonical Vue renderer.
 
 export const ARCHIVE_TABS = Object.freeze({ cards: 'cards', lists: 'lists' })
 
@@ -28,7 +28,7 @@ export function archiveEntrySearchText(entry) {
   if (!entry || typeof entry !== 'object') return ''
   const source = entry.kind === 'list'
     ? [entry.listDisplayName, entry.listDirectoryName, entry.originalListDisplayName, entry.originalListDirectoryName]
-    : [entry.title, entry.cardId, entry.originalListDisplayName, entry.originalListDirectoryName, ...(Array.isArray(entry.labelNames) ? entry.labelNames : [])]
+    : [entry.title, entry.archivedCardFile, entry.cardId, entry.originalListDisplayName, entry.originalListDirectoryName, ...(Array.isArray(entry.labelNames) ? entry.labelNames : [])]
   return source.filter(Boolean).join(' ').toLowerCase()
 }
 

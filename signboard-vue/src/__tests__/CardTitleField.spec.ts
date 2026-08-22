@@ -30,4 +30,13 @@ describe('CardTitleField', () => {
 
     expect(title.element.textContent).toBe('Hello wo')
   })
+
+  it('shows an optional-title placeholder without storing it as text', async () => {
+    const wrapper = mount(CardTitleField, { props: { value: '', placeholder: 'Fix login', onChange: () => {} } })
+    const title = wrapper.find('#cardEditorTitle')
+
+    expect(title.element.textContent).toBe('')
+    expect(title.attributes('data-placeholder')).toBe('Fix login')
+    expect(title.classes()).toContain('is-empty')
+  })
 })

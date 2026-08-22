@@ -34,6 +34,11 @@ function readStoredPaths() {
   }
 }
 
+export function prioritizeActiveBoard(paths: string[], activePath: string) {
+  if (!activePath || !paths.includes(activePath)) return paths
+  return [activePath, ...paths.filter((path) => path !== activePath)]
+}
+
 export function getBoardDisplayName(path: string) {
   return normalizeBoardPath(path).replace(/\/+$/, '').split('/').filter(Boolean).pop() || 'Board'
 }
@@ -126,7 +131,8 @@ export const useBoardsStore = defineStore('boards', () => {
     try {
       const storedPaths = readStoredPaths()
       const storedActive = normalizeBoardPath(localStorage.getItem(ACTIVE_BOARD_KEY) || localStorage.getItem(LEGACY_BOARD_KEY))
-      openBoardPaths.value = storedPaths.length ? storedPaths : storedActive ? [storedActive] : []
+      const restoredPaths = storedPaths.length ? storedPaths : storedActive ? [storedActive] : []
+      openBoardPaths.value = prioritizeActiveBoard(restoredPaths, storedActive)
       activeBoardPath.value = openBoardPaths.value.includes(storedActive) ? storedActive : (openBoardPaths.value[0] || '')
       if (window.board.adoptLegacyBoardRoots && openBoardPaths.value.length) {
         await window.board.adoptLegacyBoardRoots([...openBoardPaths.value])
@@ -167,7 +173,7 @@ export const useBoardsStore = defineStore('boards', () => {
         window.board.createList(`${authorized}Done`),
         window.board.createList(`${authorized}XXX-Archive`),
       ])
-      await window.board.createCard(`${authorized}To-do/000-hello-stock.md`, starterContent())
+      await window.board.createCard(`${authorized}To-do/hello-stock.md`, starterContent())
       await window.board.initializeNewBoard?.(authorized)
     }
     if (!openBoardPaths.value.includes(authorized)) openBoardPaths.value.push(authorized)

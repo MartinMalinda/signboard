@@ -1,6 +1,7 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/board/boardLabels.js and boardViews.js until then.
+// Card-filter helpers used by the canonical Vue renderer.
 import { parseTaskListItems } from './taskList.js';
 import { isCompletedListByWorkflow } from './boardLabels.js';
+import { getCardDisplayTitle } from './cardTitle.js';
 
 const DATE_FILTERS = Object.freeze({ none: '', today: 'today', overdue: 'overdue', next7: 'next:7', next14: 'next:14', next30: 'next:30' });
 const DATE_FILTER_LABELS = Object.freeze({ [DATE_FILTERS.today]: 'Today', [DATE_FILTERS.overdue]: 'Overdue', [DATE_FILTERS.next7]: 'Next 7 days', [DATE_FILTERS.next14]: 'Next 14 days', [DATE_FILTERS.next30]: 'Next 30 days' });
@@ -24,7 +25,7 @@ function matchesDateFilter(card, dateFilter, options = {}) {
   if (filter === DATE_FILTERS.overdue) return dates.some((date) => date < today);
   const days = Number(filter.split(':')[1]); const end = addDays(today, days); return dates.some((date) => date >= today && date <= end);
 }
-function matchesSearch(card, query) { const tokens = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean); if (!tokens.length) return true; const haystack = `${String(card?.frontmatter?.title || '')}\n${String(card?.body || '')}`.toLowerCase(); return tokens.every((token) => haystack.includes(token)); }
+function matchesSearch(card, query) { const tokens = String(query || '').trim().toLowerCase().split(/\s+/).filter(Boolean); if (!tokens.length) return true; const title = card?.displayTitle || getCardDisplayTitle(card?.frontmatter?.title, card?.cardName || card?.cardPath); const haystack = `${String(title || '')}\n${String(card?.frontmatter?.title || '')}\n${String(card?.cardName || '')}\n${String(card?.body || '')}`.toLowerCase(); return tokens.every((token) => haystack.includes(token)); }
 function matchesLabels(card, selectedLabelIds) { const selected = (Array.isArray(selectedLabelIds) ? selectedLabelIds : []).map(String).filter(Boolean); return !selected.length || labelIdsForCard(card).some((id) => selected.includes(id)); }
 function cardMatchesFilters(card, options = {}) { const isCompletedList = options.isCompletedList === true || isCompletedListByWorkflow(options.listName, options.workflowSettings); return matchesLabels(card, options.selectedLabelIds) && matchesDateFilter(card, options.dateFilter, { ...options, isCompletedList }); }
 function getActiveFilterCount(options = {}) { return (normalizeDateFilter(options.dateFilter) ? 1 : 0) + (Array.isArray(options.selectedLabelIds) ? options.selectedLabelIds.length : 0); }

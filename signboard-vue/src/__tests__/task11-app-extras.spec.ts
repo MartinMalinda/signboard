@@ -15,6 +15,7 @@ beforeEach(() => {
   window.board = {
     readCard: vi.fn(async () => ({ frontmatter: { title: 'Original' }, body: 'Original body' })),
     writeCard: vi.fn(async () => undefined),
+    copyCardMarkdown: vi.fn(async () => ({ ok: true })),
     normalizeFrontmatter: vi.fn(async (value) => value),
     readBoardSettings: vi.fn(async () => ({ workflow: { autoDetectCompletedLists: true } })),
     listLists: vi.fn(async () => ['001-Doing-stock', '002-Done-stock']),
@@ -66,6 +67,57 @@ describe('Task 11 app extras', () => {
     editor.setBody('Local draft')
     expect(await editor.refreshFromDiskIfClean()).toBe(false)
     expect(editor.body).toBe('Local draft')
+    await editor.close()
+  })
+
+  it('rebinds a clean editor after an external cross-list move', async () => {
+    const oldPath = '/boards/demo/001-Doing-stock/000-card.md'
+    const nextPath = '/boards/demo/002-Done-stock/000-card.md'
+    const editor = useEditorStore()
+    await editor.open(oldPath)
+    const data = useBoardDataStore()
+    data.snapshot = {
+      ok: true,
+      boardRoot: '/boards/demo/',
+      boardName: 'demo',
+      boardSettings: null,
+      errors: [],
+      lists: [{
+        listName: '002-Done-stock',
+        listPath: '/boards/demo/002-Done-stock',
+        cards: [{ cardName: '000-card.md', cardPath: nextPath, frontmatter: { title: 'Moved' }, body: 'Moved body', taskSummary: { total: 0, completed: 0, remaining: 0 }, taskStartDates: [], incompleteTaskStartDates: [], taskDueDates: [], incompleteTaskDueDates: [] }],
+      }],
+    }
+    window.board.readCard = vi.fn(async (path) => path === oldPath
+      ? { missing: true as const, requestedPath: oldPath }
+      : { frontmatter: { title: 'Moved' }, body: 'Moved body' })
+
+    expect(await editor.refreshFromDiskIfClean({ reconcileMissing: true })).toBe(true)
+    expect(editor.cardPath).toBe(nextPath)
+    expect(editor.title).toBe('Moved')
+    await editor.close()
+  })
+
+  it('closes a clean editor when an external refresh confirms deletion', async () => {
+    const cardPath = '/boards/demo/001-Doing-stock/000-card.md'
+    const editor = useEditorStore()
+    await editor.open(cardPath)
+    const data = useBoardDataStore()
+    data.snapshot = { ok: true, boardRoot: '/boards/demo/', boardName: 'demo', boardSettings: null, errors: [], lists: [] }
+    window.board.readCard = vi.fn(async () => ({ missing: true as const, requestedPath: cardPath }))
+
+    expect(await editor.refreshFromDiskIfClean({ reconcileMissing: true })).toBe(true)
+    expect(editor.isOpen).toBe(false)
+  })
+
+  it('flushes editor changes before copying the Markdown file', async () => {
+    const editor = useEditorStore()
+    await editor.open('/boards/demo/001-Doing-stock/000-card.md')
+    editor.setBody('Pending copy body')
+
+    expect(await editor.copyMarkdown()).toBe(true)
+    expect(window.board.writeCard).toHaveBeenCalled()
+    expect(window.board.copyCardMarkdown).toHaveBeenCalledWith('/boards/demo/001-Doing-stock/000-card.md')
     await editor.close()
   })
 

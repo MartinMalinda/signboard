@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/accessibility.js until then.
+// Accessibility helpers used by the canonical Vue renderer.
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -52,8 +52,8 @@ function focusInitial(modal, initialFocus) {
 }
 
 function openModals() {
-  return Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]'))
-    .filter((element) => element instanceof HTMLElement && !element.classList.contains('hidden') && element.getAttribute('aria-hidden') !== 'true' && visible(element));
+  return Array.from(document.querySelectorAll('[role="dialog"]'))
+    .filter((element) => element instanceof HTMLElement && element.getAttribute('aria-modal') !== 'false' && !element.classList.contains('hidden') && element.getAttribute('aria-hidden') !== 'true' && visible(element));
 }
 
 export function getOpenAccessibleModals() {

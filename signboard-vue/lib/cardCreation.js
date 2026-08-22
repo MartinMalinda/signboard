@@ -12,8 +12,9 @@ function listRoot(listPath) {
 }
 
 async function buildCardPath(listPath, cardName, cardCount) {
+  void cardCount;
   const base = `${String(cardName || '').trim().slice(0, 25).toLowerCase().replace(/\s+/g, '-')}-${await rand5()}.md`;
-  return `${normalizeRoot(listPath)}${String(Number(cardCount || 0) + 1).padStart(3, '0')}-${await sanitizeFileName(base)}`;
+  return `${normalizeRoot(listPath)}${await sanitizeFileName(base)}`;
 }
 
 async function buildListPath(boardRoot, listName, listCount) {

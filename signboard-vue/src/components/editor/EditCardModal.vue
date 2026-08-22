@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useBoardDataStore } from '../../stores/useBoardDataStore'
-import { useViewStore } from '../../stores/useViewStore'
 import Modal from '../../lib/components/Modal.vue'
 import CardTitleField from './CardTitleField.vue'
 import CardNotesEditor from './CardNotesEditor.vue'
@@ -13,7 +12,6 @@ import FeatherIcon from '../FeatherIcon.vue'
 
 const editor = useEditorStore()
 const boardData = useBoardDataStore()
-const view = useViewStore()
 const v2Enabled = computed(() => boardData.snapshot?.v2?.profile?.enabled === true)
 const listPaths = ref<string[]>([])
 const status = ref('')
@@ -36,8 +34,8 @@ async function close() {
 }
 async function closeAll() { await editor.closeAll() }
 
-async function refreshFromExternalChange() {
-  const changed = await editor.refreshFromDiskIfClean()
+async function refreshFromExternalChange(reconcileMissing = true) {
+  const changed = await editor.refreshFromDiskIfClean({ reconcileMissing })
   if (changed) notes.value?.setExternalBody(editor.body)
   return changed
 }
@@ -48,12 +46,11 @@ async function move(path: string) {
   return moved
 }
 
-async function duplicate() {
-  const path = await editor.duplicate()
-  if (path) { await openCard(path); status.value = 'Duplicated card.' }
-}
-
 async function archive() { await editor.archive() }
+
+async function copyMarkdown() {
+  if (await editor.copyMarkdown()) status.value = 'Copied Markdown file.'
+}
 
 async function moveAdjacent(direction: -1 | 1) {
   const currentIndex = listPaths.value.findIndex((path) => editor.cardPath.startsWith(`${path}/`))
@@ -62,12 +59,6 @@ async function moveAdjacent(direction: -1 | 1) {
 }
 
 async function archiveActive() { await archive() }
-
-async function openDashboardSection(section: string) {
-  await closeAll()
-  view.setDashboardSectionFilter(section)
-  view.setView('table')
-}
 
 async function handleDrop(event: DragEvent) {
   const files = event.dataTransfer?.files
@@ -91,15 +82,15 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
 <template>
   <Modal :is-open="editor.isOpen" :on-close="close" positioning="fixed" :overflow="true" :show-chrome="false" labelled-by="cardEditorTitle" :initial-focus="editor.focusNotes ? '#cardEditorNotes' : '#cardEditorTitle'">
     <div class="cardEditorHeader">
-      <CardTitleField :value="editor.title" :on-change="editor.setTitle" />
+      <CardTitleField :value="editor.title" :placeholder="editor.displayTitle" :on-change="editor.setTitle" />
       <div class="cardEditorHeaderActions">
         <button v-if="editor.stackDepth" id="cardEditorBack" type="button" title="Back to previous card" aria-label="Back to previous card" @click="close"><FeatherIcon name="arrow-left" /></button>
-        <CardEditorActions :on-archive="archive" :on-duplicate="duplicate" />
+        <CardEditorActions :on-archive="archive" :on-copy="copyMarkdown" />
         <button id="cardEditorClose" type="button" title="Close" aria-label="Close card editor" aria-keyshortcuts="Escape" @click="close"><FeatherIcon name="x" /></button>
       </div>
     </div>
     <div class="card-editor-modal-content" @dragover.prevent @drop.prevent="void handleDrop($event)">
-      <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" :on-open-dashboard="openDashboardSection" />
+      <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" />
       <CardNotesEditor ref="notes" :on-open-card="openCard" :v2-enabled="v2Enabled" :list-paths="listPaths" :on-move="move" />
       <CardTimestamps :timestamps="editor.timestamps" />
       <input id="cardEditorCardPath" type="hidden" :value="editor.cardPath" />

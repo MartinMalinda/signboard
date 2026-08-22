@@ -1,11 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import RichTextEditor from '../lib/components/RichTextEditor.vue'
+import { useBoardDataStore } from '../stores/useBoardDataStore'
+import { useEditorStore } from '../stores/useEditorStore'
+import { useLabelsStore } from '../stores/useLabelsStore'
 
 describe('Task 15 Tiptap card notes editor', () => {
   let mounted: ReturnType<typeof mount> | undefined
 
+  beforeEach(() => setActivePinia(createPinia()))
   afterEach(() => mounted?.unmount())
 
   it('parses Markdown task lists into accessible native checkboxes and serializes changes as Markdown', async () => {
@@ -74,6 +79,69 @@ describe('Task 15 Tiptap card notes editor', () => {
     const visit = Array.from(menu?.querySelectorAll<HTMLButtonElement>('button') || []).find((button) => button.textContent === 'Open')
     visit?.click()
     expect(openExternal).toHaveBeenCalledWith('signboard://open-card?id=Ab123')
+  })
+
+  it('renders standalone card links as rich embeds without changing their Markdown', async () => {
+    const boardData = useBoardDataStore()
+    const editorStore = useEditorStore()
+    const labelsStore = useLabelsStore()
+    editorStore.cardPath = '/boards/Example/To-do/current-card.md'
+    labelsStore.loadFromBoardSettings({ labels: [{ id: 'security', name: 'Security', colorLight: '#16a34a' }] } as never, '/boards/Example/')
+    boardData.snapshot = {
+      boardRoot: '/boards/Example/',
+      boardName: 'Example',
+      boardSettings: {},
+      lists: [{
+        listName: 'Doing',
+        listPath: '/boards/Example/Doing/',
+        cards: [{
+          cardName: 'standalone-card.md',
+          cardPath: '/boards/Example/Doing/standalone-card.md',
+          frontmatter: { title: 'Standalone card', signboard_id: 'Standalone', labels: ['security'] },
+          body: 'Loaded from the same card data as Kanban.',
+          taskSummary: { total: 2, completed: 1, remaining: 1 },
+          taskStartDates: [],
+          incompleteTaskStartDates: [],
+          taskDueDates: [],
+          incompleteTaskDueDates: [],
+        }, {
+          cardName: 'listed-card.md',
+          cardPath: '/boards/Example/Doing/listed-card.md',
+          frontmatter: { title: 'Listed card' },
+          body: 'List embed preview.',
+          taskSummary: { total: 0, completed: 0, remaining: 0 },
+          taskStartDates: [],
+          incompleteTaskStartDates: [],
+          taskDueDates: [],
+          incompleteTaskDueDates: [],
+        }],
+      }],
+    } as never
+    const markdown = [
+      '[Standalone card](signboard://open-card?id=Standalone)',
+      '',
+      '- [Listed card](../Doing/listed-card.md)',
+      '',
+      'Keep [Inline card](signboard://open-card?id=Inline) in this sentence.',
+    ].join('\n')
+    mounted = mount(RichTextEditor, {
+      props: {
+        modelValue: markdown,
+        cardPath: '/boards/Example/To-do/current-card.md',
+      },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const embeds = mounted.findAll('p.card-editor-card-link-embed')
+    expect(embeds).toHaveLength(2)
+    expect(embeds[0]?.attributes('data-card-link-embed')).toBe('signboard://open-card?id=Standalone')
+    expect(mounted.findAll('.card-editor-card-link-embed-widget .card')).toHaveLength(2)
+    expect(embeds[0]?.find('.card-body-preview').text()).toBe('Loaded from the same card data as Kanban.')
+    expect(embeds[0]?.find('.card-label-chip-inline').text()).toBe('Security')
+    expect(embeds[0]?.find('.task-progress-badge-text').text()).toBe('1/2')
+    expect(mounted.find('li p.card-editor-card-link-embed .card-body-preview').text()).toBe('List embed preview.')
+    expect(mounted.find('p:not(.card-editor-card-link-embed) a.card-editor-card-link').text()).toBe('Inline card')
+    expect((mounted.vm as unknown as { getMarkdown: () => string }).getMarkdown()).toContain(markdown)
   })
 
   it('opens the link editor from the card-link menu', async () => {

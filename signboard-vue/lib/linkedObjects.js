@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/linkedObjects.js until then.
+// Linked-object helpers used by the canonical Vue renderer.
 function getLinkedObjectUtilityStringList(value) {
   if (Array.isArray(value)) {
     return value

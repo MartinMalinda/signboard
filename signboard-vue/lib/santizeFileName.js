@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/santizeFileName.js until then.
+// Filename helpers used by the canonical Vue renderer.
 async function sanitizeFileName(rawName) {
   // 1. Split into base name + extension (if any)
   const lastDot = rawName.lastIndexOf('.');
@@ -25,7 +25,7 @@ async function sanitizeFileName(rawName) {
 
   // 5. Return combined result
   const finalName = finalBase + ext;
-  return finalName || '999-untitled.md'; // fallback if everything was stripped
+  return finalName || 'untitled.md'; // fallback if everything was stripped
 }
 
 async function rand5() {
@@ -36,5 +36,3 @@ async function rand5() {
 }
             
 export { sanitizeFileName, rand5 };
-
-

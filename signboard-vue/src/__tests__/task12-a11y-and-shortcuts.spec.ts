@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppPopover from '../lib/components/AppPopover.vue'
+import CardEditorActions from '../components/editor/CardEditorActions.vue'
 import { getOpenAccessibleModals, setBackgroundInert } from '../../lib/accessibility.js'
 import { createShortcutHandler } from '../composables/useShortcuts'
 import { isKeyboardNavigationKey } from '../composables/useAccessibility'
@@ -95,6 +96,29 @@ describe('Task 12 accessibility and shortcut parity', () => {
     wrapper.unmount()
   })
 
+  it('keeps card archive and copy actions behind the editor overflow menu', async () => {
+    const onArchive = vi.fn()
+    const onCopy = vi.fn()
+    const wrapper = mount(CardEditorActions, {
+      attachTo: document.body,
+      props: { onArchive, onCopy },
+    })
+
+    expect(wrapper.find('#cardEditorActionsMenuButton').exists()).toBe(true)
+    expect(document.querySelector('#cardEditorActionsPopover')?.hasAttribute('hidden')).toBe(true)
+    await wrapper.find('#cardEditorActionsMenuButton').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const menu = document.querySelector('#cardEditorActionsPopover')
+    expect(menu).not.toBeNull()
+    expect(menu?.textContent).toContain('Copy')
+    expect(menu?.textContent).toContain('Archive')
+    expect(document.querySelector('#cardEditorDupeLink')).toBeNull()
+    ;(document.querySelector('#cardEditorCopyMarkdown') as HTMLButtonElement).click()
+    expect(onCopy).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
   it('repositions an open teleported popover after captured scroll and resize', async () => {
     const opener = document.createElement('button')
     document.body.append(opener)
@@ -131,6 +155,36 @@ describe('Task 12 accessibility and shortcut parity', () => {
     expect(popover.style.left).toBe('220px')
     expect(popover.style.top).toBe('226px')
 
+    wrapper.unmount()
+  })
+
+  it('waits for a usable opener rectangle instead of showing at the viewport origin', async () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    let ready = false
+    vi.spyOn(opener, 'getBoundingClientRect').mockImplementation(() => ready
+      ? ({ left: 180, top: 100, right: 220, bottom: 120, width: 40, height: 20 } as DOMRect)
+      : ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 } as DOMRect))
+
+    const wrapper = mount(AppPopover, {
+      attachTo: document.body,
+      props: { isOpen: true, opener, onClose: vi.fn(), id: 'delayedGeometryPopover' },
+      slots: { default: '<div>Popover content</div>' },
+    })
+    await wrapper.vm.$nextTick()
+
+    const popover = document.querySelector('#delayedGeometryPopover') as HTMLElement
+    Object.defineProperties(popover, {
+      offsetWidth: { configurable: true, value: 200 },
+      offsetHeight: { configurable: true, value: 100 },
+    })
+    expect(popover.style.visibility).toBe('hidden')
+    ready = true
+    await new Promise((resolve) => setTimeout(resolve, 40))
+
+    expect(popover.style.left).toBe('20px')
+    expect(popover.style.top).toBe('126px')
+    expect(popover.style.visibility).toBe('visible')
     wrapper.unmount()
   })
 

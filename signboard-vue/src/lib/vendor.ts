@@ -1,9 +1,9 @@
-// Loads the same vendored global libraries the legacy renderer uses
+// Loads the vendored global libraries shared by the Electron renderer
 // (static/vendor/*.js) via classic script tags, preserving exact browser
 // global semantics: Sortable, feather, and FDatepicker on window.
 // (Bundling them broke UMD global attachment for several of the libs.)
 // Paths are relative to the built index.html location, matching how the
-// legacy ../index.html references them.
+// from paths relative to the built Vue index.html.
 // Components must access these globals through single wrapper points only
 // (see vue-styleguide.md §6).
 const VENDOR_BASE = '../../static/vendor/'

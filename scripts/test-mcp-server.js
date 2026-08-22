@@ -481,7 +481,7 @@ async function runForTransport(transportMode, fixture) {
   ) {
     throw new Error(`create_board listNames mismatch (${transportMode}): ${JSON.stringify(createBoardOutput)}`);
   }
-  if (createBoardOutput.cardFile !== '000-hello-stock.md') {
+  if (createBoardOutput.cardFile !== 'hello-stock.md') {
     throw new Error(`create_board did not seed starter card (${transportMode}): ${JSON.stringify(createBoardOutput)}`);
   }
   const createdBoardManifest = JSON.parse(await fs.readFile(path.join(createdBoardRoot, '.board.json'), 'utf8'));
@@ -498,7 +498,7 @@ async function runForTransport(transportMode, fixture) {
       arguments: {
         boardRoot: createdBoardRoot,
         listName: 'To-do',
-        cardFile: '000-hello-stock.md',
+        cardFile: 'hello-stock.md',
       },
     },
   });

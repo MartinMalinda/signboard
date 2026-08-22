@@ -153,6 +153,11 @@ async function run() {
     'automation mapping change notes',
     'should preserve ad-hoc filename words that happen to be five characters',
   );
+  assert.match(
+    helpers.buildCardFileName(0, 'Launch plan', new Set()),
+    /^launch-plan-[A-Za-z0-9]{5}\.md$/,
+    'new cards should not receive numeric ordering prefixes',
+  );
 
   const settings = helpers.buildBoardSettingsMarkdown();
   assert(settings.includes('labels:'), 'board settings should include labels');

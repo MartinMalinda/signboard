@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/modals/toggleEditCardModal.js until then.
+// Framework-free card-save helpers used by the canonical Vue renderer.
 
 /**
  * A small latest-value debounce in front of a strictly serialized writer.
@@ -74,4 +74,3 @@ export function createSerializedSaveQueue({ delay = 300, save, onError } = {}) {
     get pending() { return hasPending || timer !== null },
   }
 }
-

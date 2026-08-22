@@ -89,9 +89,24 @@ async function run() {
     await fs.writeFile(plainPath, plainContent, 'utf8');
 
     const plainCard = await readCard(plainPath);
-    assert.strictEqual(plainCard.frontmatter.title, 'plain-note');
+    assert.strictEqual(plainCard.frontmatter.title, '');
+    assert.strictEqual(plainCard.displayTitle, 'Plain note');
     assert.deepStrictEqual(plainCard.frontmatter.labels, []);
     assert.strictEqual(plainCard.body, plainContent);
+
+    const emptyTitlePath = path.join(tmpDir, '003-fix-login-Ab12c.md');
+    await writeCard(emptyTitlePath, {
+      frontmatter: { title: '' },
+      body: 'Body',
+    });
+    const emptyTitleCard = await readCard(emptyTitlePath);
+    assert.strictEqual(emptyTitleCard.frontmatter.title, '');
+    assert.strictEqual(emptyTitleCard.displayTitle, 'Fix login');
+
+    await updateFrontmatter(emptyTitlePath, { due: '2026-06-01' });
+    const afterMetadataUpdate = await readCard(emptyTitlePath);
+    assert.strictEqual(afterMetadataUpdate.frontmatter.title, '');
+    assert.strictEqual(afterMetadataUpdate.displayTitle, 'Fix login');
 
     // 5) start and due should not be written when null/empty
     const noDuePath = path.join(tmpDir, '020-no-due.md');

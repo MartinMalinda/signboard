@@ -1,6 +1,12 @@
 const assert = require('assert');
+const fs = require('fs').promises;
+const os = require('os');
+const path = require('path');
+const cardFrontmatter = require('../lib/cardFrontmatter');
 const {
   normalizeTimestamp,
+  readCardIfPresent,
+  readCardWithTimestamps,
   resolveCardTimestamps,
 } = require('../lib/cardTimestamps');
 
@@ -12,7 +18,7 @@ function createStats(values = {}) {
   };
 }
 
-function run() {
+async function run() {
   assert.strictEqual(
     normalizeTimestamp('2026-03-10T14:30:00.000Z'),
     '2026-03-10T14:30:00.000Z',
@@ -57,7 +63,27 @@ function run() {
   assert.strictEqual(legacyCreated.createdAt, '2026-01-08T12:00:00.000Z');
   assert.strictEqual(legacyCreated.createdAtSource, 'filesystem');
 
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'signboard-card-timestamps-'));
+  const cardPath = path.join(directory, 'card.md');
+  try {
+    await cardFrontmatter.writeCard(cardPath, { frontmatter: { title: 'Present' }, body: 'Body' });
+    const card = await readCardWithTimestamps(cardPath);
+    assert.strictEqual(card.frontmatter.title, 'Present');
+    assert(card.timestamps.updatedAt, 'expected a present card to include filesystem timestamps');
+
+    await fs.unlink(cardPath);
+    assert.deepStrictEqual(await readCardIfPresent(cardPath), {
+      missing: true,
+      requestedPath: cardPath,
+    });
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+
   console.log('Card timestamp tests passed.');
 }
 
-run();
+run().catch((error) => {
+  console.error(error && error.stack ? error.stack : String(error));
+  process.exit(1);
+});

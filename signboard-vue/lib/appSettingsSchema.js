@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with shared/appSettingsSchema.js until then.
+// App-settings schema used by the canonical Vue renderer and main process.
 (function initializeAppSettingsSchema(root, factory) {
   const schema = factory();
   if (typeof window === 'undefined' && typeof module === 'object' && module.exports) {
@@ -502,5 +502,4 @@ export const {
   normalizeSmartCardActionId, normalizeSmartCardActionLabel, normalizeSmartCardActionPrompt,
   normalizeSmartCardActionTarget, normalizeSmartCardActions, normalizeTooltipsEnabled,
 } = appSettingsSchema;
-
 

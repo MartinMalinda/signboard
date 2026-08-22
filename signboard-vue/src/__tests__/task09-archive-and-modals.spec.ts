@@ -228,6 +228,28 @@ describe('Task 09 archive and static modal parity', () => {
     modals.remove()
   })
 
+  it('uses the shared label option layout in the Add Card modal', async () => {
+    const modals = document.createElement('div')
+    modals.id = 'modals'
+    document.body.appendChild(modals)
+    const wrapper = mount(AddCardModal, {
+      attachTo: document.body,
+      props: {
+        isOpen: true,
+        listPath: '/board/002-Doing-stock/',
+        labels: [{ id: 'strategy', name: 'Strategy' }, { id: 'impact', name: 'Impact: high' }],
+        onClose: vi.fn(),
+        onCreated: vi.fn(),
+      },
+    })
+    await wrapper.vm.$nextTick()
+    expect(document.querySelector('#modalAddCard .quick-add-labels')).toBeTruthy()
+    expect(document.querySelectorAll('#modalAddCard .quick-add-label-option')).toHaveLength(2)
+    expect(document.querySelector('#modalAddCard .quick-add-label-option')?.textContent).toContain('Strategy')
+    wrapper.unmount()
+    modals.remove()
+  })
+
   it('restores the opener after a static modal Escape/close lifecycle', async () => {
     const opener = document.createElement('button')
     opener.id = 'modal-opener'

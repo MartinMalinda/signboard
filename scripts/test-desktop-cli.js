@@ -141,7 +141,7 @@ async function main() {
     runDesktopCli(['boards', 'create', createdBoardRoot, '--json'], env).stdout
   );
   assert.strictEqual(createdBoard.boardRoot, createdBoardRoot);
-  assert.strictEqual(createdBoard.cardFile, '000-hello-stock.md');
+  assert.strictEqual(createdBoard.cardFile, 'hello-stock.md');
   const createdBoardSettings = await boardLabels.readBoardSettings(createdBoardRoot, { ensureFile: false });
   assert.strictEqual(createdBoardSettings.v2.enabled, true);
   assert.strictEqual(createdBoardSettings.v2.profileId, 'default-product');
@@ -151,7 +151,7 @@ async function main() {
   );
 
   const starterCard = await cardFrontmatter.readCard(
-    path.join(createdBoardRoot, 'To-do', '000-hello-stock.md')
+    path.join(createdBoardRoot, 'To-do', 'hello-stock.md')
   );
   assert.strictEqual(starterCard.frontmatter.title, '👋 Start Here');
   assert.ok(starterCard.body.includes('Cmd/Ctrl + K'));

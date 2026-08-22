@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/cardTimestamps.js until then.
+// Timestamp helpers used by the canonical Vue renderer.
 const CARD_TIMESTAMP_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   month: 'short',
   day: 'numeric',
@@ -118,5 +118,4 @@ export {
   formatCardTimestampDateTime, formatCardRelativeTimestamp, createCardTimestampCellValue,
   setCardTimestampElement,
 };
-
 

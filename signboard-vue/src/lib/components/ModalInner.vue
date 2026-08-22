@@ -466,7 +466,6 @@ $spacing-y: $space * 3;
   box-sizing: border-box;
   width: 100%;
   height: auto;
-  max-height: 100vh;
   min-width: 0;
   position: relative;
   z-index: 12;

@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/board/tableView.js.
+// Table-view helpers used by the canonical Vue renderer.
 import { cardMatchesFilters } from './cardFilters.js'
 import { getFrontmatterLinkedObjectCount } from './linkedObjects.js'
 import {
@@ -10,14 +10,12 @@ import {
   compareDashboardCards,
   dashboardSectionSortValues,
 } from './dashboardSections.ts'
+import { getCardDisplayTitle } from './cardTitle.js'
 
 export const TABLE_SCORE_COLUMNS = Object.freeze([
   { id: 'priority_index', field: 'priority_index', label: 'Priority' },
   { id: 'risk_reduction_index', field: 'risk_reduction_index', label: 'Risk reduction' },
   { id: 'impact_index', field: 'impact_index', label: 'Impact' },
-  { id: 'autonomy_score', field: 'autonomy_score', label: 'Autonomy' },
-  { id: 'quick_win_index', field: 'quick_win_index', label: 'Quick win' },
-  { id: 'human_leverage_index', field: 'human_leverage_index', label: 'Human leverage' },
 ])
 
 export const TABLE_COLUMNS = Object.freeze([
@@ -55,8 +53,8 @@ function text(value) {
   return String(value || '').trim()
 }
 
-export function normalizeTableTitle(value) {
-  return text(value).replace(/^#\s+/, '') || 'Untitled'
+export function normalizeTableTitle(value, filePath = '') {
+  return getCardDisplayTitle(value, filePath)
 }
 
 export function getTableDisplayDate(entry, field) {
@@ -104,7 +102,7 @@ export function createTableEntries(lists, isCompletedList = () => false, v2Cards
         listPath: text(list?.listPath),
         listDisplayName: text(list?.listName).replace(/^\d{3}-/, '').replace(/-(?:stock|[^-]{5})$/, '') || text(list?.listName),
         isCompletedList: completed,
-        title: normalizeTableTitle(frontmatter.title),
+        title: normalizeTableTitle(frontmatter.title, card?.cardName || card?.cardPath),
         start: text(frontmatter.start),
         due: text(frontmatter.due),
         labels,
@@ -124,9 +122,6 @@ export function createTableEntries(lists, isCompletedList = () => false, v2Cards
         risk_reduction_index: typeof scores.risk_reduction_index === 'number' ? scores.risk_reduction_index : null,
         impact_index: typeof scores.impact_index === 'number' ? scores.impact_index : null,
         impactSortValue: typeof scores.impact_index === 'number' ? scores.impact_index : Number.NEGATIVE_INFINITY,
-        autonomy_score: typeof scores.autonomy_score === 'number' ? scores.autonomy_score : null,
-        quick_win_index: typeof scores.quick_win_index === 'number' ? scores.quick_win_index : null,
-        human_leverage_index: typeof scores.human_leverage_index === 'number' ? scores.human_leverage_index : null,
         dashboardPriorityRank: typeof tieBreakInputs.priority_rank === 'number' ? tieBreakInputs.priority_rank : null,
         dashboardScore: typeof tieBreakInputs.score === 'number' ? tieBreakInputs.score : null,
         dashboardStatusRank: typeof tieBreakInputs.status_rank === 'number' ? tieBreakInputs.status_rank : null,

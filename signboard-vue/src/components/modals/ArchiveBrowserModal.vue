@@ -4,6 +4,7 @@ import Modal from '../../lib/components/Modal.vue'
 import FeatherIcon from '../FeatherIcon.vue'
 import { useArchiveStore } from '../../stores/useArchiveStore'
 import type { ArchiveEntry } from '../../types'
+import { getCardDisplayTitle } from '../../../lib/cardTitle.js'
 
 const archive = useArchiveStore()
 const restoreSearch = ref<HTMLInputElement | null>(null)
@@ -23,7 +24,7 @@ function formatDate(value: string | undefined) {
   const date = new Date(String(value || ''))
   return Number.isNaN(date.getTime()) ? 'Unknown date' : new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
 }
-function title(entry: ArchiveEntry) { return entry.kind === 'list' ? entry.listDisplayName || entry.listDirectoryName || 'Untitled list' : entry.title || 'Untitled' }
+function title(entry: ArchiveEntry) { return entry.kind === 'list' ? entry.listDisplayName || entry.listDirectoryName || 'Untitled list' : entry.title || getCardDisplayTitle('', entry.archivedCardFile || entry.entryPath) }
 function select(entry: ArchiveEntry) { archive.select(entry.entryPath) }
 function resultKeydown(event: KeyboardEvent, index: number) {
   if (event.key === 'ArrowDown' || event.key === 'ArrowRight') { event.preventDefault(); focusResult(index + 1) }

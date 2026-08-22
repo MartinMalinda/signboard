@@ -1662,9 +1662,11 @@ test('creates and opens a list-specific new card with Shift+Enter', async ({ pag
 
   await expect(page.locator('#modalAddCard')).toBeHidden();
   await expect(page.locator('#modalEditCard')).toBeVisible();
-  await expect(page.locator('#cardEditorTitle')).toHaveText('Draft launch checklist');
+  await expect(page.locator('#cardEditorTitle')).toHaveText('');
+  await expect(page.locator('#cardEditorTitle')).toHaveAttribute('data-placeholder', 'Draft launch checklist');
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeFocused();
   await expect(boardLists(page).first().locator('.card').filter({ hasText: 'Draft launch checklist' })).toBeVisible();
+  await expect(boardLists(page).first().locator('.card').first()).toContainText('Draft launch checklist');
 });
 
 test('switches to table view and moves a card through the list column', async ({ page, boardRoot }) => {
@@ -1990,7 +1992,8 @@ test('creates and opens a new card from the keyboard modal with Shift+Enter', as
 
   await expect(page.locator('#modalAddCardToList')).toBeHidden();
   await expect(page.locator('#modalEditCard')).toBeVisible();
-  await expect(page.locator('#cardEditorTitle')).toHaveText('Write beta announcement');
+  await expect(page.locator('#cardEditorTitle')).toHaveText('');
+  await expect(page.locator('#cardEditorTitle')).toHaveAttribute('data-placeholder', 'Write beta announcement');
   await expect(page.locator('#cardEditorOverType .overtype-input')).toBeFocused();
   await expect(boardLists(page).first().locator('.card').filter({ hasText: 'Write beta announcement' })).toBeVisible();
 });

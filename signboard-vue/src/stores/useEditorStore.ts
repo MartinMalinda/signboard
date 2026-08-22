@@ -1,12 +1,14 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { createSerializedSaveQueue } from '../../lib/cardSaveQueue.js'
-import type { CardRead, LinkedObject } from '../types'
+import type { CardRead, LinkedObject, MissingCardRead } from '../types'
 import { useStaticModalStore } from './useStaticModalStore'
 import { normalizeCardLinkedObjects, removeLinkedObject as removeLinkedObjectMetadata } from '../../lib/linkedObjects.js'
 import { applySmartActionPreview, normalizePreview } from '../../lib/smartActions.js'
 import { useLabelsStore } from './useLabelsStore'
 import { useSettingsStore } from './useSettingsStore'
+import { getCardDisplayTitle } from '../../lib/cardTitle.js'
+import { useBoardDataStore } from './useBoardDataStore'
 
 type Frontmatter = Record<string, unknown>
 type EditorOpenOptions = { focusNotes?: boolean; stack?: boolean }
@@ -44,6 +46,23 @@ function makeDuplicatePath(cardPath: string) {
   const suffix = Math.random().toString(36).slice(2, 7)
   const nextName = `999${name.slice(3, -8)}${suffix}.md`
   return `${cardPath.slice(0, -name.length)}${nextName}`
+}
+
+function cardIdentity(value: Frontmatter) {
+  const directId = String(value?.id || '').trim()
+  if (directId) return directId
+  const v2 = value?.signboard_v2
+  return v2 && typeof v2 === 'object' && !Array.isArray(v2)
+    ? String((v2 as Frontmatter).id || '').trim()
+    : ''
+}
+
+function comparableFileName(value: string) {
+  return String(value || '').replace(/\\/g, '/').split('/').pop() || ''
+}
+
+function isMissingCardRead(value: CardRead | MissingCardRead): value is MissingCardRead {
+  return 'missing' in value && value.missing === true
 }
 
 export const useEditorStore = defineStore('editor', () => {
@@ -106,6 +125,7 @@ export const useEditorStore = defineStore('editor', () => {
     saveGeneration.value += 1
     try {
       const card = await window.board.readCard(nextPath)
+      if (isMissingCardRead(card)) return false
       cardPath.value = nextPath
       frontmatter.value = cloneFrontmatter(card.frontmatter)
       title.value = String(card.frontmatter?.title || '')
@@ -198,10 +218,28 @@ export const useEditorStore = defineStore('editor', () => {
     await flush()
   }
 
-  async function refreshFromDiskIfClean() {
+  async function refreshFromDiskIfClean(options: { reconcileMissing?: boolean } = {}) {
     if (!isOpen.value || isDirty.value || saveQueue.pending) return false
-    const path = cardPath.value
-    const card = await window.board.readCard(path)
+    let path = cardPath.value
+    let card = await window.board.readCard(path)
+    if (isMissingCardRead(card)) {
+      if (!options.reconcileMissing) return false
+      const cards = useBoardDataStore().lists.flatMap((list) => list.cards)
+      const identity = cardIdentity(frontmatter.value)
+      const matches = identity
+        ? cards.filter((candidate) => cardIdentity(candidate.frontmatter) === identity)
+        : cards.filter((candidate) => comparableFileName(candidate.cardPath) === comparableFileName(path))
+      if (matches.length !== 1) {
+        await close()
+        return true
+      }
+      const replacement = matches[0]
+      if (!replacement) return false
+      path = replacement.cardPath
+      card = await window.board.readCard(path)
+      if (isMissingCardRead(card)) return false
+      cardPath.value = path
+    }
     const nextKey = stateKey(String(card.frontmatter?.title || ''), String(card.body || ''), card.frontmatter || {})
     if (nextKey === diskKey.value) return false
     title.value = String(card.frontmatter?.title || '')
@@ -231,15 +269,23 @@ export const useEditorStore = defineStore('editor', () => {
     return true
   }
 
+  async function copyMarkdown() {
+    if (!cardPath.value || !window.board.copyCardMarkdown) return false
+    await flush()
+    const result = await window.board.copyCardMarkdown(cardPath.value)
+    return result?.ok !== false
+  }
+
   async function duplicate() {
     if (!cardPath.value) return ''
     await flush()
     const source = await window.board.readCard(cardPath.value)
+    if (isMissingCardRead(source)) return ''
     const nextPath = makeDuplicatePath(cardPath.value)
     const createdAt = new Date().toISOString()
     const nextFrontmatter = await window.board.normalizeFrontmatter({
       ...source.frontmatter,
-      title: `Copy of ${source.frontmatter?.title || 'Untitled'}`,
+      title: `Copy of ${getCardDisplayTitle(source.frontmatter?.title, cardPath.value)}`,
       createdAt,
       activity: [{ type: 'created', at: createdAt }],
     })
@@ -345,8 +391,9 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   return { isOpen, loading, cardPath, title, body, frontmatter, timestamps, focusNotes, isDirty, isSaving, saveError, linkedObjects,
+    displayTitle: computed(() => getCardDisplayTitle(title.value, cardPath.value)),
     stackDepth: computed(() => editorStack.value.length),
     listPathForCard, boardPathForCard, open, openStacked, close, closeAll, flush, setTitle, setBody, setDate, setLabels,
-    refreshFromDiskIfClean, moveToList, archive, duplicate, openWith, queueSave,
+    refreshFromDiskIfClean, moveToList, archive, copyMarkdown, duplicate, openWith, queueSave,
     addLinkedObject, removeLinkedObject, openLinkedObject, recreateLinkedNote, relinkLinkedNote, createLinkedNote, runSmartAction, applySmartAction }
 })

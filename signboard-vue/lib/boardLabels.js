@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with lib/boardLabels.js until then.
+// Board-label and workflow helpers used by the canonical Vue renderer.
 const DEFAULT_LABELS = Object.freeze([
   Object.freeze({ id: 'label-1', name: 'Label 1', colorLight: '#22c55e', colorDark: '#16a34a' }),
   Object.freeze({ id: 'label-2', name: 'Label 2', colorLight: '#3b82f6', colorDark: '#2563eb' }),

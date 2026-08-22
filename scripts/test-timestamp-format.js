@@ -1,8 +1,8 @@
 const assert = require('assert');
 
-const { formatTimestamp } = require('../app/utilities/timestampListItem');
+async function run() {
+  const { formatTimestamp } = await import('../signboard-vue/lib/timestampListItem.js');
 
-function run() {
     const febDate = new Date(2026, 1, 5, 9, 3);
     assert.strictEqual(formatTimestamp(febDate), 'February 5, 09:03');
 
@@ -15,4 +15,7 @@ function run() {
     console.log('Timestamp format tests passed.');
 }
 
-run();
+run().catch((error) => {
+    console.error(error && error.stack ? error.stack : String(error));
+    process.exit(1);
+});

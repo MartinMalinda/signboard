@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { createVNode, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, render as renderVue, watch } from 'vue'
+import type { AppContext } from 'vue'
 import type { Editor } from '@tiptap/core'
 import { Extension, mergeAttributes } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
@@ -29,6 +30,7 @@ import Input from './Input.vue'
 import Modal from './Modal.vue'
 import AppPopover from './AppPopover.vue'
 import FeatherIcon from '../../components/FeatherIcon.vue'
+import CardLinkEmbed from '../../components/editor/CardLinkEmbed.vue'
 import BoldIcon from './editor/Bold.vue'
 import ItalicIcon from './editor/Italic.vue'
 import LinkIcon from './editor/Link.vue'
@@ -38,6 +40,7 @@ import { codeHighlightExtension } from '../codeHighlight'
 
 const BASE64_IMAGE_PATTERN = /!\[[^\]]*\]\(\s*data:image\/[^)]*\)/gi
 const rawUrlPluginKey = new PluginKey('signboardRawUrls')
+const standaloneCardLinkPluginKey = new PluginKey('signboardStandaloneCardLinks')
 
 function sanitizeMarkdown(value: string) {
   return String(value || '').replace(BASE64_IMAGE_PATTERN, '')
@@ -90,6 +93,90 @@ const rawUrlExtension = Extension.create({
   },
 })
 
+function getStandaloneCardLinkHref(node: ProseMirrorNode) {
+  if (node.type.name !== 'paragraph' || !node.inlineContent) return ''
+
+  let href = ''
+  let hasLinkedContent = false
+  let hasGapAfterLink = false
+  let isStandalone = true
+
+  node.forEach((child) => {
+    if (!isStandalone) return
+    if (!child.isText) {
+      isStandalone = false
+      return
+    }
+
+    const text = child.text || ''
+    const link = child.marks.find((mark) => mark.type.name === 'link')
+    const childHref = String(link?.attrs.href || '')
+
+    if (!text.trim()) {
+      if (!link && hasLinkedContent) hasGapAfterLink = true
+      return
+    }
+    if (!link || !isCardLink(childHref) || hasGapAfterLink || (href && href !== childHref)) {
+      isStandalone = false
+      return
+    }
+
+    href = childHref
+    hasLinkedContent = true
+  })
+
+  return isStandalone && hasLinkedContent ? href : ''
+}
+
+function createCardLinkEmbedWidget(appContext: AppContext | undefined, href: string, title: string) {
+  const host = document.createElement('span')
+  host.className = 'card-editor-card-link-embed-widget'
+  host.contentEditable = 'false'
+  const vnode = createVNode(CardLinkEmbed, { href, title })
+  if (appContext) vnode.appContext = appContext
+  renderVue(vnode, host)
+  return host
+}
+
+function createStandaloneCardLinkDecorations(doc: ProseMirrorNode, appContext?: AppContext) {
+  const decorations: Decoration[] = []
+  doc.descendants((node, pos) => {
+    const href = getStandaloneCardLinkHref(node)
+    if (!href) return
+    const title = node.textContent.trim() || 'Related card'
+    decorations.push(Decoration.node(pos, pos + node.nodeSize, {
+      class: 'card-editor-card-link-embed',
+      'data-card-link-embed': href,
+    }))
+    decorations.push(Decoration.widget(pos + node.nodeSize - 1, () => createCardLinkEmbedWidget(appContext, href, title), {
+      key: `${pos}:${href}:${title}`,
+      side: 1,
+      destroy: (host) => renderVue(null, host as Element),
+    }))
+  })
+  return DecorationSet.create(doc, decorations)
+}
+
+function createStandaloneCardLinkExtension(appContext?: AppContext) {
+  return Extension.create({
+    name: 'signboardStandaloneCardLinks',
+    addProseMirrorPlugins() {
+      return [new Plugin({
+        key: standaloneCardLinkPluginKey,
+        state: {
+          init: (_, state) => createStandaloneCardLinkDecorations(state.doc, appContext),
+          apply: (transaction, oldDecorations) => transaction.docChanged
+            ? createStandaloneCardLinkDecorations(transaction.doc, appContext)
+            : oldDecorations.map(transaction.mapping, transaction.doc),
+        },
+        props: {
+          decorations: (state) => standaloneCardLinkPluginKey.getState(state),
+        },
+      })]
+    },
+  })
+}
+
 const CardAwareLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     const href = String(HTMLAttributes.href || '')
@@ -105,6 +192,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   ready: [editor: Editor]
 }>()
+const appContext = getCurrentInstance()?.appContext
 
 const linkModalOpen = ref(false)
 const linkModalUrl = ref('')
@@ -134,6 +222,7 @@ const editor = useEditor({
       bulletListMarker: '-',
     }),
     rawUrlExtension,
+    createStandaloneCardLinkExtension(appContext),
     TaskList,
     TaskItem.configure({ nested: true }),
     Bold,
@@ -670,9 +759,33 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
 :deep(.card-editor-notes-content code) { padding: 0.1em 0.25em; border-radius: 3px; background: color-mix(in srgb, currentColor 10%, transparent); }
 :deep(.card-editor-notes-content pre) { overflow-x: auto; padding: 0.75em; border-radius: 5px; background: color-mix(in srgb, currentColor 10%, transparent); }
 :deep(.card-editor-notes-content pre code) { padding: 0; border-radius: 0; background: transparent; }
-:deep(.card-editor-notes-content ul[data-type='taskList'] li) { display: flex; gap: 0.5em; align-items: flex-start; }
-:deep(.card-editor-notes-content ul[data-type='taskList'] li > label) { flex: none; margin-top: 0.25em; }
-:deep(.card-editor-notes-content ul[data-type='taskList'] input[type='checkbox']) { width: 1.1em; height: 1.1em; }
+:deep(.card-editor-notes-content ul[data-type='taskList'] li) {
+  display: flex;
+  min-width: 0;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+:deep(.card-editor-notes-content ul[data-type='taskList'] li > label) {
+  display: flex;
+  flex: 0 0 1.1em;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  margin-top: 0.25em;
+}
+:deep(.card-editor-notes-content ul[data-type='taskList'] li > div) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+:deep(.card-editor-notes-content ul[data-type='taskList'] input[type='checkbox']) {
+  position: relative;
+  top: 2px;
+  display: block;
+  flex: 0 0 1.1em;
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0;
+}
 :deep(.card-editor-notes-content a) { color: var(--link, #0b5fff); text-decoration: underline; }
 :deep(.card-editor-notes-content a.card-editor-card-link) {
   display: inline-flex;
@@ -696,6 +809,50 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
   flex: 0 0 auto;
   font-size: 0.78em;
   opacity: 0.72;
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed) {
+  position: relative;
+  margin-block: 0.55em;
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed > a.card-editor-card-link) {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: auto;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius, 10px);
+  background: transparent;
+  color: transparent;
+  font-size: 0;
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed > a.card-editor-card-link)::before {
+  content: none;
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed > a.card-editor-card-link)::after {
+  content: none;
+}
+:deep(.card-editor-notes-content .card-editor-card-link-embed-widget) {
+  display: block;
+  pointer-events: none;
+}
+:deep(.card-editor-notes-content .card-editor-card-link-embed-widget > .card-link-embed-card) {
+  display: block;
+}
+:deep(.card-editor-notes-content .card-editor-card-link-embed-widget .card) {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed:hover .card > .card-drag-frame) {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--paynes-gray));
+  box-shadow: 0 6px 18px var(--shadow-card);
+}
+:deep(.card-editor-notes-content p.card-editor-card-link-embed > a.card-editor-card-link:focus-visible) {
+  outline: 3px solid color-mix(in oklab, var(--accent) 42%, var(--bg-card));
+  outline-offset: 2px;
 }
 :deep(.card-editor-body-url-text) { text-decoration: underline dotted; text-decoration-color: var(--link, currentColor); }
 

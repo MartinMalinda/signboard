@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/timestampListItem.js until then.
+// Timestamp helpers used by the canonical Vue renderer.
 const TIMESTAMP_MONTHS = [
     'January',
     'February',
@@ -90,5 +90,4 @@ function insertTimestampListItem(textarea, date = new Date()) {
 }
 
 export { formatTimestamp, insertTimestampListItem };
-
 

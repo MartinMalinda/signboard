@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/dueDateStatus.js until then.
+// Due-date helpers used by the canonical Vue renderer.
 const DUE_DATE_VISUAL_CLASSES = Object.freeze([
   'due-date-today',
   'due-date-tomorrow',
@@ -83,5 +83,4 @@ function setDueDateVisualClass(element, dueDateValue) {
 }
 
 export { parseIsoDateStringToLocalDate, formatLongDueDateLabel, getDueDateVisualClass, setDueDateVisualClass };
-
 

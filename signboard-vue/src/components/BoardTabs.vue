@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useBoardsStore } from '../stores/useBoardsStore'
 import BoardTab from './BoardTab.vue'
 
@@ -7,6 +7,7 @@ const props = defineProps<{ onOpen: () => void; onSwitch: (path: string) => Prom
 const boards = useBoardsStore()
 const tabsWidth = ref(0)
 const tabsElement = ref<HTMLElement | null>(null)
+const visibleWindowStart = ref(0)
 let tabsResizeObserver: ResizeObserver | null = null
 
 const TAB_MAX_WIDTH_PX = 180
@@ -27,18 +28,34 @@ const visibleLimit = computed(() => {
 })
 const visiblePaths = computed(() => {
   if (visibleLimit.value >= boards.openBoardPaths.length) return boards.openBoardPaths
-  const activeIndex = Math.max(0, boards.openBoardPaths.indexOf(boards.activeBoardPath))
-  const priority = [boards.openBoardPaths[activeIndex]]
-  for (let offset = 1; priority.length < visibleLimit.value && offset < boards.openBoardPaths.length; offset += 1) {
-    if (boards.openBoardPaths[activeIndex - offset]) priority.push(boards.openBoardPaths[activeIndex - offset])
-    if (boards.openBoardPaths[activeIndex + offset] && priority.length < visibleLimit.value) priority.push(boards.openBoardPaths[activeIndex + offset])
-  }
-  return priority.filter((path): path is string => Boolean(path))
+  return boards.openBoardPaths.slice(visibleWindowStart.value, visibleWindowStart.value + visibleLimit.value)
 })
 const hiddenCount = computed(() => Math.max(0, boards.openBoardPaths.length - visiblePaths.value.length))
 
+function syncVisibleWindow() {
+  const total = boards.openBoardPaths.length
+  const limit = visibleLimit.value
+  if (!total || limit >= total) {
+    visibleWindowStart.value = 0
+    return
+  }
+
+  const maxStart = Math.max(0, total - limit)
+  const activeIndex = boards.openBoardPaths.indexOf(boards.activeBoardPath)
+  let start = Math.min(visibleWindowStart.value, maxStart)
+  if (activeIndex >= 0 && activeIndex < start) start = activeIndex
+  if (activeIndex >= start + limit) start = activeIndex - limit + 1
+  visibleWindowStart.value = Math.max(0, Math.min(start, maxStart))
+}
+
+watch(
+  () => [boards.activeBoardPath, boards.openBoardPaths.join('\n'), visibleLimit.value],
+  syncVisibleWindow,
+  { immediate: true },
+)
+
 function tabButtons() {
-  return Array.from(document.querySelectorAll<HTMLButtonElement>('#boardTabs .board-tab-label[data-board-path], #boardTabs .board-tab-label'))
+  return Array.from(document.querySelectorAll<HTMLButtonElement>('#boardTabs .board-tab:not(.board-tab-more):not(.board-tab-add) .board-tab-label'))
 }
 function focusIndex(index: number) {
   const buttons = tabButtons()
@@ -46,7 +63,7 @@ function focusIndex(index: number) {
   buttons[(index + buttons.length) % buttons.length]?.focus()
 }
 function focusMove(path: string, direction: number) {
-  const index = boards.openBoardPaths.indexOf(path)
+  const index = visiblePaths.value.indexOf(path)
   focusIndex(index + direction)
 }
 function focusEdge(edge: 'start' | 'end') { focusIndex(edge === 'start' ? 0 : -1) }

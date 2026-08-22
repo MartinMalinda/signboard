@@ -141,17 +141,17 @@ const helpers = (() => {
 
   function cleanCardTitleFromFileName(filePath) {
     const basename = getBaseName(filePath).replace(/\.md$/i, '');
-    return basename
-      .replace(/^\d{3}-(.*)-[A-Za-z0-9]{5}$/, '$1')
+    const legacyName = basename.match(/^\d{3}-(.*)-[A-Za-z0-9]{5}$/);
+    return (legacyName ? legacyName[1] : basename)
       .replace(/-/g, ' ')
       .replace(/\s+/g, ' ')
       .trim() || 'Untitled';
   }
 
   function buildCardFileName(index, title, existingIds = new Set()) {
-    const order = String(Math.max(0, Number(index) || 0)).padStart(3, '0');
+    void index;
     const id = randomId(existingIds);
-    return `${order}-${slugify(title)}-${id}.md`;
+    return `${slugify(title)}-${id}.md`;
   }
 
   function buildBoardSettingsMarkdown() {

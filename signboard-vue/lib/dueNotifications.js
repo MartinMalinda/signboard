@@ -1,7 +1,7 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/dueNotifications.js until then.
 import { isCompletedListByWorkflow, normalizeWorkflowSettings } from './boardLabels.js'
 import { parseTaskListItems } from './taskList.js'
-import { resolveV2StageSemantics } from './v2StageSemantics'
+import { resolveV2StageSemantics } from './v2StageSemantics.js'
+import { getCardDisplayTitle } from './cardTitle.js'
 
 const MAX_TITLE = 80
 const MAX_TASK = 120
@@ -74,7 +74,7 @@ async function collectDueTodayItemsForBoard(boardApi, boardRoot, todayIsoDate) {
     for (const cardName of Array.isArray(cards) ? cards : []) {
       try {
         const card = await boardApi.readCard(`${root}${listName}/${cardName}`)
-        const cardTitle = normalizeDueNotificationText(card?.frontmatter?.title || 'Untitled', MAX_TITLE)
+        const cardTitle = normalizeDueNotificationText(card?.displayTitle || getCardDisplayTitle(card?.frontmatter?.title, cardName), MAX_TITLE)
         if (normalizeTaskDueDateValue(card?.frontmatter?.due) === todayIsoDate) items.push({ kind: 'card', cardTitle, taskText: '' })
         for (const task of parseTaskListItems(card?.body || '')) {
           if (task.isCompleted || normalizeTaskDueDateValue(task.due) !== todayIsoDate) continue

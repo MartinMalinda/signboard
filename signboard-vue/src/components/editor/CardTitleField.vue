@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
-const props = defineProps<{ value: string; onChange: (value: string) => void }>()
+const props = withDefaults(defineProps<{ value: string; placeholder?: string; onChange: (value: string) => void }>(), { placeholder: '' })
 
 const titleElement = ref<HTMLElement | null>(null)
 
@@ -17,5 +17,5 @@ watch(() => props.value, syncTitleElement)
 onMounted(() => syncTitleElement(props.value))
 </script>
 <template>
-  <h2 ref="titleElement" id="cardEditorTitle" contenteditable="true" role="textbox" aria-label="Card title" aria-multiline="false" spellcheck="true" @keydown="preventEnter" @input="props.onChange(($event.target as HTMLElement).textContent || '')"></h2>
+  <h2 ref="titleElement" id="cardEditorTitle" :data-placeholder="props.placeholder" :class="{ 'is-empty': !props.value }" contenteditable="true" role="textbox" aria-label="Card title" :aria-description="props.value ? undefined : 'Optional. When empty, the filename is used.'" aria-multiline="false" spellcheck="true" @keydown="preventEnter" @input="props.onChange(($event.target as HTMLElement).textContent || '')"></h2>
 </template>

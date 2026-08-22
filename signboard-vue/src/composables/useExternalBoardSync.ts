@@ -6,7 +6,7 @@ import { useEditorStore } from '../stores/useEditorStore'
 const SYNC_INTERVAL = 500
 const RENDER_DEBOUNCE = 150
 
-interface SyncOptions { refreshEditor?: () => Promise<void>; isBlocked?: () => boolean }
+interface SyncOptions { refreshEditor?: (reconcileMissing?: boolean) => Promise<void>; isBlocked?: () => boolean }
 
 export function useExternalBoardSync() {
   const boards = useBoardsStore()
@@ -36,11 +36,18 @@ export function useExternalBoardSync() {
   async function refresh() {
     const root = boards.activeBoardPath
     if (!root) { refreshPending = false; return }
-    await options.refreshEditor?.()
-    if (blocked() || renderInFlight) { refreshPending = true; return }
+    if (blocked()) {
+      await options.refreshEditor?.(false)
+      refreshPending = true
+      return
+    }
+    if (renderInFlight) { refreshPending = true; return }
     renderInFlight = true
     refreshPending = false
-    try { await data.reconcileAfterMutation(root) }
+    try {
+      await data.reconcileAfterMutation(root)
+      await options.refreshEditor?.(true)
+    }
     finally { renderInFlight = false }
   }
 

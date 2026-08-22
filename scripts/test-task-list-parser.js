@@ -1,23 +1,11 @@
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
 
-function loadTaskListUtilities() {
-  const context = { console };
-  vm.createContext(context);
-
-  const dueDateSource = fs.readFileSync(path.join(__dirname, '../app/utilities/dueDateStatus.js'), 'utf8');
-  vm.runInContext(dueDateSource, context);
-
-  const taskListSource = fs.readFileSync(path.join(__dirname, '../app/utilities/taskList.js'), 'utf8');
-  vm.runInContext(taskListSource, context);
-
-  return context;
+async function loadTaskListUtilities() {
+  return import('../signboard-vue/lib/taskList.js');
 }
 
-function run() {
-  const context = loadTaskListUtilities();
+async function run() {
+  const context = await loadTaskListUtilities();
   const {
     getTaskListSummary,
     getTaskListDueDates,
@@ -130,4 +118,7 @@ function run() {
   console.log('Task list parser tests passed.');
 }
 
-run();
+run().catch((error) => {
+  console.error(error && error.stack ? error.stack : String(error));
+  process.exit(1);
+});

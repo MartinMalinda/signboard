@@ -1,4 +1,4 @@
-// THIS CAN BE REMOVED WHEN Vue cutover makes this the canonical module; keep in sync with app/utilities/taskList.js until then.
+// Task-list helpers used by the canonical Vue renderer.
 import { parseIsoDateStringToLocalDate } from './dueDateStatus.js';
 
 const TASK_LIST_ITEM_PATTERN = /^(\s*[-*+]\s*\[([\sxX✓✔]*)\]\s*)(.*)$/;
@@ -342,4 +342,3 @@ export {
   setTaskListItemDueDateByLineIndex, setTaskListItemStartDateByLineIndex,
   setTaskListItemCompletionByLineIndex, getLineEndOffsetByLineIndex,
 };
-

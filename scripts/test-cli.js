@@ -284,7 +284,7 @@ async function main() {
     runCli(['boards', 'create', createdBoardRoot, '--json', '--use'], env).stdout
   );
   assert.strictEqual(createdBoard.boardRoot, createdBoardRoot);
-  assert.strictEqual(createdBoard.cardFile, '000-hello-stock.md');
+  assert.strictEqual(createdBoard.cardFile, 'hello-stock.md');
   assert.strictEqual(createdBoard.seededWelcomeCard, true);
   assert.strictEqual(createdBoard.currentBoardUpdated, true);
   const createdBoardSettings = await boardLabels.readBoardSettings(createdBoardRoot, { ensureFile: false });
@@ -296,7 +296,7 @@ async function main() {
   );
 
   const starterCard = await cardFrontmatter.readCard(
-    path.join(createdBoardRoot, 'To-do', '000-hello-stock.md')
+    path.join(createdBoardRoot, 'To-do', 'hello-stock.md')
   );
   assert.strictEqual(starterCard.frontmatter.title, '👋 Start Here');
   assert.ok(starterCard.body.includes('Quick Add'));
@@ -549,6 +549,7 @@ async function main() {
     ], env).stdout
   );
   assert.strictEqual(duplicatedCard.listDisplayName, 'Waiting');
+  assert.doesNotMatch(duplicatedCard.fileName, /^\d{3}-/);
   assert.strictEqual(duplicatedCard.title, 'Lead from template');
   assert.strictEqual(duplicatedCard.start, '2026-03-25');
   assert.strictEqual(duplicatedCard.due, '2026-03-26');
@@ -703,6 +704,7 @@ async function main() {
     ], env).stdout
   );
   assert.strictEqual(createdCard.listDisplayName, 'Waiting');
+  assert.doesNotMatch(createdCard.fileName, /^\d{3}-/);
   assert.strictEqual(createdCard.start, '2026-03-18');
   assert.strictEqual(createdCard.due, '2026-03-20');
   assert.deepStrictEqual(createdCard.labels, ['client']);
