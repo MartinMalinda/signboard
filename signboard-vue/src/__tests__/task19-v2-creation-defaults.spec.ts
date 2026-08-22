@@ -51,7 +51,7 @@ describe('V2 creation defaults', () => {
     priority.value = 'P2'
     priority.dispatchEvent(new Event('change', { bubbles: true }))
     ;(document.querySelector('#btnAddCard') as HTMLButtonElement).click()
-    await vi.waitFor(() => expect(createCard).toHaveBeenCalledWith(expect.stringMatching(/\/board\/To-do\/\d{3}-discover-[A-Za-z0-9]+\.md/), '', { frontmatter: expect.objectContaining({ signboard_v2: expect.objectContaining({ kind: 'discovery', priority_class: 'P2' }) }) }))
+    await vi.waitFor(() => expect(createCard).toHaveBeenCalledWith(expect.stringMatching(/\/board\/To-do\/discover-[A-Za-z0-9]+\.md/), '', { frontmatter: expect.objectContaining({ signboard_v2: expect.objectContaining({ kind: 'discovery', priority_class: 'P2' }) }) }))
     wrapper.unmount()
   })
 
