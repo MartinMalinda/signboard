@@ -74,9 +74,9 @@ complete builds. `npm run build:vue` remains the explicit type-checked build.
 
 - Card lifecycle metadata includes `createdAt`, compact activity entries,
   archive state, and cross-list `statusChangedAt`.
-- The card editor's `...` menu contains Archive and Copy; Copy flushes pending
-  edits and copies the complete Markdown file, including frontmatter, to the
-  clipboard.
+- The card editor's `...` menu contains Archive, Copy, and Copy path; Copy
+  flushes pending edits and copies the complete Markdown file, including
+  frontmatter, to the clipboard, while Copy path copies `/[list-name]/[file-name]`.
 - Card reads, CLI JSON, and MCP responses expose normalized timestamps under
   `timestamps.createdAt` and `timestamps.updatedAt`.
 - Card titles are optional. Empty frontmatter titles remain empty, while UI,

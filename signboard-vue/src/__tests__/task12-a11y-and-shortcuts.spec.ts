@@ -99,9 +99,10 @@ describe('Task 12 accessibility and shortcut parity', () => {
   it('keeps card archive and copy actions behind the editor overflow menu', async () => {
     const onArchive = vi.fn()
     const onCopy = vi.fn()
+    const onCopyPath = vi.fn()
     const wrapper = mount(CardEditorActions, {
       attachTo: document.body,
-      props: { onArchive, onCopy },
+      props: { onArchive, onCopy, onCopyPath },
     })
 
     expect(wrapper.find('#cardEditorActionsMenuButton').exists()).toBe(true)
@@ -112,10 +113,15 @@ describe('Task 12 accessibility and shortcut parity', () => {
     const menu = document.querySelector('#cardEditorActionsPopover')
     expect(menu).not.toBeNull()
     expect(menu?.textContent).toContain('Copy')
+    expect(menu?.textContent).toContain('Copy path')
     expect(menu?.textContent).toContain('Archive')
     expect(document.querySelector('#cardEditorDupeLink')).toBeNull()
     ;(document.querySelector('#cardEditorCopyMarkdown') as HTMLButtonElement).click()
     expect(onCopy).toHaveBeenCalledTimes(1)
+    await wrapper.find('#cardEditorActionsMenuButton').trigger('click')
+    await wrapper.vm.$nextTick()
+    ;(document.querySelector('#cardEditorCopyPath') as HTMLButtonElement).click()
+    expect(onCopyPath).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 

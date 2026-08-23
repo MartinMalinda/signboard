@@ -107,7 +107,8 @@ In the card editor you can:
 - Add or remove labels
 - Move the card to another list
 - Move it to the next list
-- Use the `...` menu to copy the complete Markdown file to your clipboard
+- Use the `...` menu to copy the complete Markdown file or the card's
+  `/[list-name]/[file-name]` path to your clipboard
 - Share it
 - Open it in Obsidian or the default Markdown app
 - Open raw web URLs from the card body
@@ -135,7 +136,7 @@ The arrow action and card-move keyboard shortcuts in the editor place moved card
 
 ### Copy or duplicate a card
 
-Use the card editor's `...` menu and choose `Copy` to put the complete Markdown file, including frontmatter, into the clipboard. Use the Kanban card context menu when you want a new card with the same content and metadata. You can use this to make it quick and easy to create new cards from templates. That's what I do!
+Use the card editor's `...` menu and choose `Copy` to put the complete Markdown file, including frontmatter, into the clipboard. Choose `Copy path` to copy the board-relative card path in the form `/[list-name]/[file-name]`. Use the Kanban card context menu when you want a new card with the same content and metadata. You can use this to make it quick and easy to create new cards from templates. That's what I do!
 
 The CLI can also duplicate cards and create cards from templates with `cards duplicate` and `cards create --from-card`, including dry-run previews for automation.
 

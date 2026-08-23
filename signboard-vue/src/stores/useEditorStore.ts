@@ -276,6 +276,17 @@ export const useEditorStore = defineStore('editor', () => {
     return result?.ok !== false
   }
 
+  async function copyPath() {
+    if (!cardPath.value || !window.electronAPI.copyTextToClipboard) return false
+    const normalizedPath = cardPath.value.replace(/\\/g, '/')
+    const fileName = normalizedPath.split('/').pop() || ''
+    const listPath = listPathForCard(normalizedPath)
+    const listName = listPath.split('/').filter(Boolean).pop() || ''
+    if (!fileName || !listName) return false
+    await window.electronAPI.copyTextToClipboard(`/${listName}/${fileName}`)
+    return true
+  }
+
   async function duplicate() {
     if (!cardPath.value) return ''
     await flush()
@@ -394,6 +405,6 @@ export const useEditorStore = defineStore('editor', () => {
     displayTitle: computed(() => getCardDisplayTitle(title.value, cardPath.value)),
     stackDepth: computed(() => editorStack.value.length),
     listPathForCard, boardPathForCard, open, openStacked, close, closeAll, flush, setTitle, setBody, setDate, setLabels,
-    refreshFromDiskIfClean, moveToList, archive, copyMarkdown, duplicate, openWith, queueSave,
+    refreshFromDiskIfClean, moveToList, archive, copyMarkdown, copyPath, duplicate, openWith, queueSave,
     addLinkedObject, removeLinkedObject, openLinkedObject, recreateLinkedNote, relinkLinkedNote, createLinkedNote, runSmartAction, applySmartAction }
 })

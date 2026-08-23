@@ -21,7 +21,7 @@ beforeEach(() => {
     listLists: vi.fn(async () => ['001-Doing-stock', '002-Done-stock']),
     listCards: vi.fn(async (listPath) => String(listPath).includes('Done') ? ['000-completed.md'] : ['000-today.md']),
   } as unknown as typeof window.board
-  window.electronAPI = { readAppSettings: vi.fn(async () => normalizeAppSettings({})), notifyDueCards: vi.fn(async () => ({ ok: true })) } as typeof window.electronAPI
+  window.electronAPI = { readAppSettings: vi.fn(async () => normalizeAppSettings({})), notifyDueCards: vi.fn(async () => ({ ok: true })), copyTextToClipboard: vi.fn(async () => undefined) } as typeof window.electronAPI
   window.chooser = { pickDirectory: async () => null }
 })
 
@@ -118,6 +118,15 @@ describe('Task 11 app extras', () => {
     expect(await editor.copyMarkdown()).toBe(true)
     expect(window.board.writeCard).toHaveBeenCalled()
     expect(window.board.copyCardMarkdown).toHaveBeenCalledWith('/boards/demo/001-Doing-stock/000-card.md')
+    await editor.close()
+  })
+
+  it('copies the card path relative to the board', async () => {
+    const editor = useEditorStore()
+    await editor.open('/boards/demo/001-Doing-stock/000-card.md')
+
+    expect(await editor.copyPath()).toBe(true)
+    expect(window.electronAPI.copyTextToClipboard).toHaveBeenCalledWith('/001-Doing-stock/000-card.md')
     await editor.close()
   })
 

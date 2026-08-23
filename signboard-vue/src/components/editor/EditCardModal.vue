@@ -52,6 +52,10 @@ async function copyMarkdown() {
   if (await editor.copyMarkdown()) status.value = 'Copied Markdown file.'
 }
 
+async function copyPath() {
+  if (await editor.copyPath()) status.value = 'Copied card path.'
+}
+
 async function moveAdjacent(direction: -1 | 1) {
   const currentIndex = listPaths.value.findIndex((path) => editor.cardPath.startsWith(`${path}/`))
   const target = listPaths.value[currentIndex + direction]
@@ -85,7 +89,7 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
       <CardTitleField :value="editor.title" :placeholder="editor.displayTitle" :on-change="editor.setTitle" />
       <div class="cardEditorHeaderActions">
         <button v-if="editor.stackDepth" id="cardEditorBack" type="button" title="Back to previous card" aria-label="Back to previous card" @click="close"><FeatherIcon name="arrow-left" /></button>
-        <CardEditorActions :on-archive="archive" :on-copy="copyMarkdown" />
+        <CardEditorActions :on-archive="archive" :on-copy="copyMarkdown" :on-copy-path="copyPath" />
         <button id="cardEditorClose" type="button" title="Close" aria-label="Close card editor" aria-keyshortcuts="Escape" @click="close"><FeatherIcon name="x" /></button>
       </div>
     </div>

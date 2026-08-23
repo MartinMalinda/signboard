@@ -16,7 +16,7 @@ If you are an agent or tool that looks for `AGENTS.md`, use `CODEX.md` as the ca
 - Keep modal focus handling, live status announcements, reduced-motion behavior, forced-colors behavior, and keyboard-only focus styling in sync with `signboard-vue/src/composables/useAccessibility.ts` and `static/styles.css`.
 - Mark body-level popovers that must remain interactive while a modal is active with `data-sb-modal-layer`, so the modal background inert handler does not disable them.
 - Keep right-click text editing context menu behavior in `main.js` in sync with editable renderer fields, while Kanban card right-clicks use the Vue card action menu for card-level actions such as duplicate and archive.
-- The card editor keeps Archive and Copy under its `...` menu; Copy flushes pending edits and copies the complete Markdown file, including frontmatter, to the clipboard.
+- The card editor keeps Archive, Copy, and Copy path under its `...` menu; Copy flushes pending edits and copies the complete Markdown file, including frontmatter, to the clipboard, while Copy path copies `/[list-name]/[file-name]`.
 - Keep native app menu actions and the Playwright native-menu regression aligned when changing menu behavior.
 - Defer DOM/layout mutations after macOS native menu or `<select>` popup interactions with `waitForNativeMenuTrackingToSettle()` before replacing, disabling, rerendering, or moving controls.
 - Keep card drag/drop clone and placeholder behavior in sync with the canonical Vue `useSortable` composable and `static/styles.css`; the setup keeps a small pointer-movement tolerance so clicks do not become accidental drags.
