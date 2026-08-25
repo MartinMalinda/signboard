@@ -1,6 +1,10 @@
 # Signboard
 
-Signboard is a local-first desktop kanban app that stores your lists as directories and cards as Markdown files on disk. New list directories use the sanitized list name directly; older numbered/randomized list names remain compatible.
+Signboard is a local-first project management desktop app. Kanban is the main interface for moving work through workflow stages. Lists are directories and cards are Markdown files on disk. New list directories use the sanitized list name directly; older numbered or randomized list names remain compatible.
+
+Signboard's product model is V2. A card represents one coherent outcome. Its list provides the workflow stage, while the namespaced `signboard_v2` metadata captures only the structured information useful for project management: card kind, relationships, priority, value, and delivery risk. The Markdown body remains the source of truth for the outcome, context, boundaries, acceptance details, evidence, decisions, progress, and next step.
+
+Read the [V2 operating framework](./skills/signboard-board-management/references/v2-framework.md) for the working rules and the [V2 project-management specification](./tasks/V2-project-management.md) for the full contract.
 
 Signboard is free for personal use. If you are using Signboard for your work, it would be appreciated if you make the commercial-use sponsorship payment to support future development. See the app's "Sponsor" button.
 
@@ -11,29 +15,22 @@ Signboard is free for personal use. If you are using Signboard for your work, it
 
 ---
 
-## ✨ Highlights
-- 📂 Cards saved as Markdown files
-- ↕️ Stable card and list filenames with ordering persisted in per-directory `.board.json` manifests, with board settings in the root manifest
-- 💎 Full Obsidian support
-- 🖌️ Color scheme per board (several to choose from!)
-- 🌙 Light and dark mode variants for all color schemes
-- 🏷 Custom labels per board
-- 🗓 Compact calendar controls for card start/due dates, with task-level date markers supported in Markdown
-- 📋 Bottom view dock for Kanban and Table, including card age columns, sorting, list filtering, and bulk actions in Table
-- 📆 Optional local External Published Calendar feed for calendar app subscriptions
-- 🔮 Obsidian-friendly properties, Bases generation, linked objects, linked-object counts, and `signboard://` card links
-- ✅ Completed-list workflow settings that preserve due-date history
-- ✅ Progress counters on cards
-- 🔎 Live search
-- 🗄️ Linked files and URLs on cards
-- ✨ Optional local Ollama Smart Card Actions for titles, summaries, task lists, auto-labeling, smart paste, due dates, linked objects, one-off quick prompts, read-only card questions, and drag-reorderable custom actions
-- 🧲 Drag-and-drop card movement
-- ⚡ Unlimited open boards with stable overflow tabs and a quick switcher; the last active board is prioritized once at startup, then tabs stay in place while switching
-- 🧬 Board duplication from Settings with fresh copied-card IDs
-- ⌨️ Keyboard shortcuts
-- ♿ Keyboard, screen reader, reduced-motion, and forced-colors improvements
-- 🤖 MCP server
-- 💻 CLI
+## Core capabilities
+
+- Kanban-first workflow with draggable cards and lists. A card's list is its stage or status; V2 does not store a competing status field.
+- V2 card kinds: `task`, `discovery`, `epic`, and `incident`.
+- Relationships for parent work, real sequencing dependencies, and current blockers.
+- Priority classes from P0 to P3, plus derived Priority and Impact rankings based on compact value inputs, effort, confidence, urgency, and maintenance impact.
+- Separate delivery-risk scoring for the risk introduced by making a change.
+- Markdown bodies for the human project record. Structured metadata stays small and namespaced under `signboard_v2`.
+- A secondary Table view for scanning, sorting, filtering, and bulk actions, plus V2 dashboard lenses for Priority, Impact, Low-hanging fruit, and Blocked. Kanban remains the primary workspace.
+- Board labels, card start and due dates, task-level date markers, progress counters, and linked objects.
+- Local-first storage with stable ordering in `.board.json` manifests and no hosted service required.
+- Optional Obsidian integration, including links, local file attachments, and managed Bases for boards inside a vault.
+- Built-in CLI and MCP interfaces for inspecting and updating local boards.
+- Light and dark themes, board color schemes, keyboard navigation, and screen-reader support.
+
+V2 is a reviewable ranking aid for project work. It does not add an agent queue, autonomy score, or unattended execution policy. Agents and people still follow the task, repository, and review rules that apply to the work.
 
 ---
 
@@ -54,14 +51,31 @@ For standard releases, Signboard intentionally promotes a smaller public downloa
 The Vue renderer is the only desktop renderer. Packaged builds include the Vue
 `dist` output, shared styles, and vendored renderer libraries.
 
+### Install from source with `npm link`
+
+To run the current source checkout and make the `signboard` command available on your PATH:
+
+```bash
+git clone https://github.com/cdevroe/signboard.git
+cd signboard
+npm install
+npm run build:vue
+npm link
+signboard run
+```
+
+Use `npm start` from the checkout when you do not need the linked command. `npm link` is useful when you want to run the CLI commands directly while developing or testing a local checkout.
+
 ## Documentation
 
 - [Documentation hub](./docs/README.md)
 - [Using Signboard](./docs/using-signboard.md)
+- [V2 operating framework](./skills/signboard-board-management/references/v2-framework.md)
+- [V2 project-management specification](./tasks/V2-project-management.md)
 - [Signboard CLI](./docs/signboard-cli.md)
 - [MCP Server](./MCP_README.md)
 
-### Keyboard Shortcuts
+### Keyboard shortcuts
 
 On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 
@@ -81,7 +95,7 @@ On macOS, use `Cmd`. On Windows and Linux, use `Ctrl`.
 - `Cmd/Ctrl + F`: open the quick switcher from the board search control
 - `Esc`: close open modals
 
-The header's `Search cards` control opens the quick switcher and transfers focus to its search field. Type to search open boards and cards in the current board; `Enter` opens the selected card or switches to the selected board.
+The header search control opens the quick switcher and transfers focus to its search field. Type to search open boards and cards in the current board; `Enter` opens the selected card or switches to the selected board.
 
 Board tabs, list actions, label/filter popovers, and Settings sections support arrow-key navigation. `Home` and `End` jump to the edges, `Esc` closes popovers, and `Delete` / `Backspace` closes a focused board tab.
 
@@ -98,13 +112,13 @@ On Kanban cards, right-click the card surface to open its action menu and choose
 
 Raw `http://`, `https://`, and `www.` URLs typed in the card body are visually marked in the editor. Use the inline open-link control or Cmd/Ctrl-click the URL to open it in your default browser without changing the card's Markdown.
 
-Links to other Signboard cards stay compact inside sentences. When a card link is the only content in a paragraph or list item, the editor reuses the Kanban card presentation—including available preview, labels, and metadata—without changing the stored Markdown.
+Links to other Signboard cards stay compact inside sentences. When a card link is the only content in a paragraph or list item, the editor reuses the Kanban card presentation, including available preview, labels, and metadata, without changing the stored Markdown.
 
 Fenced Markdown code blocks with `ts` or `json` language labels receive syntax highlighting in the Vue card editor without changing the stored Markdown.
 
 Cards, list actions, and dialogs are keyboard-operable, with screen-reader status announcements for common actions. Focus indicators appear for keyboard navigation without adding persistent outlines to the card editor for pointer users.
 
-## 🤖 MCP Server
+## MCP server
 
 Signboard includes a built-in MCP server so agents can interact with local boards.
 
@@ -113,7 +127,7 @@ Signboard includes a built-in MCP server so agents can interact with local board
 - MCP uses `signboard_list_boards` plus both explicit allowed roots and Signboard's desktop trusted/open board state for board lookup.
 - Optional agent skill: `skills/signboard-mcp/SKILL.md`
 
-## 💻 CLI
+## CLI
 
 Signboard includes a terminal CLI for direct board management without going through MCP.
 
@@ -188,7 +202,7 @@ Import options:
 - `signboard import obsidian --source <path> [--source <path> ...] [--board <path>] [--json]`
 - `signboard import tasksmd --source <path> [--board <path>] [--json]`
 
-## Obsidian Integration
+## Optional Obsidian integration
 
 Signboard boards can live inside an Obsidian vault. A good layout is `Vault/Project/Signboard/<Board Name>/`; avoid making a board a nested Obsidian vault with its own `.obsidian` folder. You can move an existing board into a vault with `Settings > General > Move Board`.
 
@@ -211,7 +225,7 @@ Example task checklist syntax:
 - [ x ] Share notes
 ```
 
-## 🔄 Automatic Updates
+## Automatic updates
 
 - The Signboard app can check for updates automatically.
 - You can manually check any time from `Check for Updates...`:
@@ -220,7 +234,7 @@ Example task checklist syntax:
 
 ---
 
-## 🛠 Development
+## Development
 
 ```bash
 git clone https://github.com/cdevroe/signboard.git
@@ -264,7 +278,7 @@ Playwright Electron tests do not explicitly bring the Signboard window to the fo
 
 ---
 
-## 📦 Distribution Builds
+## Distribution builds
 
 ### macOS
 
@@ -327,7 +341,7 @@ Notes:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions in all forms are welcome!  
 
@@ -341,7 +355,7 @@ Contributions in all forms are welcome!
 
 ---
 
-## 💖 Sponsor the Project
+## Sponsor the project
 
 Signboard now includes an in-app sponsorship modal with two options:
 
@@ -350,7 +364,7 @@ Signboard now includes an in-app sponsorship modal with two options:
 
 ---
 
-## 📜 License
+## License
 
 The source code in this repository is licensed under the [MIT](./LICENSE) license.
 
