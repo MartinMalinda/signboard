@@ -1,5 +1,7 @@
 # Signboard
 
+Signboard is a fork of [cdevroe/signboard](https://github.com/cdevroe/signboard).
+
 Signboard is a local-first project management desktop app. Kanban is the main interface for moving work through workflow stages. Lists are directories and cards are Markdown files on disk. New list directories use the sanitized list name directly; older numbered or randomized list names remain compatible.
 
 Signboard's product model is V2. A card represents one coherent outcome. Its list provides the workflow stage, while the namespaced `signboard_v2` metadata captures only the structured information useful for project management: card kind, relationships, priority, value, and delivery risk. The Markdown body remains the source of truth for the outcome, context, boundaries, acceptance details, evidence, decisions, progress, and next step.
@@ -375,15 +377,3 @@ Important clarification:
 - The MIT license allows personal and commercial use of the source code.
 - The in-app `$49` commercial-use payment is currently a sponsorship request and honor-system purchase model for packaged app users.
 - The optional personal-use tip is also a sponsorship mechanism, not a separate software license.
-
-# Third-Party Notices
-
-My thanks to [John Gruber](https://daringfireball.net/) for creating [Markdown](https://daringfireball.net/projects/markdown/) and to [Steph Ango](https://stephango.com/), CEO of [Obsidian](https://obsidian.md/), for his [File over app philosophy](https://stephango.com/file-over-app).
-
-Signboard includes static versions of the following open source libraries:
-
-- [Turndown](https://github.com/mixmark-io/turndown) – [MIT License](https://github.com/mixmark-io/turndown/blob/master/LICENSE)
-- [OverType](https://github.com/panphora/overtype) - [MIT License](https://github.com/panphora/overtype/blob/main/LICENSE)
-- [SortableJS](https://github.com/SortableJS/Sortable) – [MIT License](https://github.com/SortableJS/Sortable/blob/master/LICENSE)
-- [Feather Icons](https://github.com/feathericons/feather) – [MIT License](https://github.com/feathericons/feather/blob/master/LICENSE)
-- [fDatepicker](https://github.com/liedekef/fdatepicker) – [MIT License](https://github.com/liedekef/fdatepicker/blob/master/LICENSE.md)
