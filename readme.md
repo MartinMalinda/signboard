@@ -1,6 +1,6 @@
 # Signboard
 
-Signboard is a fork of [cdevroe/signboard](https://github.com/cdevroe/signboard).
+Signboard is a community fork maintained at [MartinMalinda/signboard](https://github.com/MartinMalinda/signboard).
 
 Signboard is a local-first project management desktop app. Kanban is the main interface for moving work through workflow stages. Lists are directories and cards are Markdown files on disk. New list directories use the sanitized list name directly; older numbered or randomized list names remain compatible.
 
@@ -11,9 +11,8 @@ Read the [V2 operating framework](./skills/signboard-board-management/references
 Signboard is free for personal use. If you are using Signboard for your work, it would be appreciated if you make the commercial-use sponsorship payment to support future development. See the app's "Sponsor" button.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/cdevroe/signboard)](../../issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/cdevroe/signboard)](../../pulls)
-[![Donate](https://img.shields.io/badge/Donate-388307)](https://cdevroe.com/donate)
+[![GitHub issues](https://img.shields.io/github/issues/MartinMalinda/signboard)](../../issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/MartinMalinda/signboard)](../../pulls)
 
 ---
 
@@ -38,27 +37,10 @@ V2 is a reviewable ranking aid for project work. It does not add an agent queue,
 
 ## Installation
 
-1. Go to the [Releases page](../../releases).
-2. On the latest release, use the curated download links in the release body:
-   - `Download for macOS (Universal)`
-   - `Download for Windows`
-   - Linux packages grouped by package type with explicit `x64` and `ARM64` labels
-
-For standard releases, Signboard intentionally promotes a smaller public download set:
-
-- macOS: universal build
-- Windows: single installer
-- Linux: separate `x64` and `ARM64` packages
-
-The Vue renderer is the only desktop renderer. Packaged builds include the Vue
-`dist` output, shared styles, and vendored renderer libraries.
-
-### Install from source with `npm link`
-
-To run the current source checkout and make the `signboard` command available on your PATH:
+Install the current source checkout and make the `signboard` command available on your PATH with `npm link`:
 
 ```bash
-git clone https://github.com/cdevroe/signboard.git
+git clone https://github.com/MartinMalinda/signboard.git
 cd signboard
 npm install
 npm run build:vue
@@ -66,7 +48,7 @@ npm link
 signboard run
 ```
 
-Use `npm start` from the checkout when you do not need the linked command. `npm link` is useful when you want to run the CLI commands directly while developing or testing a local checkout.
+`signboard run` opens the desktop app. After linking, use the same command to inspect or update local boards through the CLI. Use `npm start` from the checkout when you do not need the linked command.
 
 ## Documentation
 
@@ -239,7 +221,7 @@ Example task checklist syntax:
 ## Development
 
 ```bash
-git clone https://github.com/cdevroe/signboard.git
+git clone https://github.com/MartinMalinda/signboard.git
 cd signboard
 npm install
 npm start
@@ -280,12 +262,12 @@ Playwright Electron tests do not explicitly bring the Signboard window to the fo
 
 ---
 
-## Distribution builds
+## Packaging builds
 
 ### macOS
 
 ```bash
-# Default public macOS release build
+# macOS package
 npm run dist:mac
 
 # Optional: specific macOS architectures for troubleshooting
@@ -300,10 +282,10 @@ npm run dist:mac:all
 ### Windows (NSIS installer)
 
 ```bash
-# Default public Windows release build
+# Windows package
 npm run dist:win
 
-# Alias for the default Windows release build
+# Alias for the Windows package
 npm run dist:win:all
 
 # Optional: specific Windows architectures for troubleshooting
@@ -330,14 +312,13 @@ npm run dist:linux:rpm:all
 ### Build everything
 
 ```bash
-# Public release matrix: macOS universal, Windows installer, Linux x64 + ARM64
+# Package all supported public targets locally
 npm run dist:all
 ```
 
 Notes:
 - `--publish never` is used for local builds so these commands package artifacts without attempting to publish releases.
-- Standard public downloads are: macOS universal, one Windows installer, and Linux `AppImage`/`deb` builds for `x64` and `ARM64`.
-- The GitHub release body should be treated as the curated download surface. Link the public download set there instead of expecting users to interpret the raw asset list.
+- There is no hosted release channel for this fork. Build packages locally when you need them.
 - Copy `.env-sample` to `.env` and fill in your credentials before running signing/notarization builds.
 - macOS signing/notarization uses environment variables from `.env` (`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`).
 
