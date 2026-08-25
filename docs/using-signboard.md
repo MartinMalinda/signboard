@@ -31,6 +31,8 @@ Boards can live inside an Obsidian vault. Use a normal folder such as `Vault/Sig
 
 Because the board is just files and folders, you can back it up, sync it, inspect it in your editor, and use it from the CLI or MCP server.
 
+For automation, the CLI can return compact card records with `cards --summary --json` (or `--no-body`); legacy cards use their filename as the JSON `id` when no five-character filename ID exists.
+
 ## Create or Open a Board
 
 When Signboard opens without a board selected, click `Create your first board` and choose an empty directory.
@@ -241,7 +243,7 @@ Table is an active-board view for scanning and bulk-managing cards in board/list
 Use the bottom view dock to switch to Table. Click a card title or row to open the normal card editor. Use the row's list dropdown to move a card to another list; moved cards land at the top of the destination list.
 
 Table columns are ordered `Card`, `List`, `Tasks`, `Labels`, `Links`, `Depends on`, `Blocked By`, then the V2 score columns when available. Card and V2 score headers support PrimeVue sorting; the dashboard's `Dashboard priority` preset uses the same tie-break order as the Dashboard and can be cleared back to board order. Filter to one list, all completed lists, or all lists. Label and dashboard section filters apply before the table sort.
-The Dashboard's Priority queue may show explainable `High Risk`, `High Damage`, and `Wide Impact` markers. These are informational signals; risk-prevention value contributes to Priority ordering and the separate Risk reduction score. The Impact view sorts unfinished work by positive opportunity and discovery value, with effort weighted lightly; risk-prevention value is intentionally excluded from that positive-value view.
+The Dashboard's Priority queue may show explainable `High Risk`, `High Damage`, and `Wide Impact` markers. These are informational signals; risk-prevention value contributes to Priority ordering and the separate Risk reduction score. The Impact view sorts unfinished work by positive opportunity, with effort weighted lightly; risk-prevention value is intentionally excluded from that positive-value view.
 In expanded card Work details, Priority and Impact are shown as tie-aware percentiles among scored cards on the active board. Risk reduction retains its meaningful absolute 0–145 scale. Hovering a score reveals its raw index and theoretical range.
 Impact is a broad dashboard view, not a label repeated on every Kanban or Dashboard card; derived chips are reserved for more specific states such as Blocked and Quick win.
 

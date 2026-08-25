@@ -55,8 +55,19 @@ const styleObject = computed(() => {
   } as Record<string, string>;
 
   if (props.positioning === "fixed") {
+    if (props.size === "large") {
+      return {
+        position: "fixed" as const,
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: props.zIndex || undefined,
+        ...originVars,
+      };
+    }
     return {
       position: "fixed" as const,
+      zIndex: props.zIndex || undefined,
       ...originVars,
     };
   }

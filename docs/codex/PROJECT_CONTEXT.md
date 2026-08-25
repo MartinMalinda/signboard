@@ -79,9 +79,12 @@ complete builds. `npm run build:vue` remains the explicit type-checked build.
   frontmatter, to the clipboard, while Copy path copies `/[list-name]/[file-name]`.
 - Card reads, CLI JSON, and MCP responses expose normalized timestamps under
   `timestamps.createdAt` and `timestamps.updatedAt`.
-- Card titles are optional. Empty frontmatter titles remain empty, while UI,
+- Card titles are optional in desktop and MCP flows. Empty frontmatter titles remain empty, while UI,
   CLI, and MCP display a cleaned-up stable filename as `displayTitle`; explicit
-  title input creates an override, and title edits never rename files.
+  title input creates an override, and title edits never rename files. Direct CLI
+  `cards create` requires a non-empty `--title` so it cannot create generic
+  `card-<id>.md` filenames; template-based `cards create --from-card` may derive
+  its title from the source.
 - Start/due metadata comes from card frontmatter and incomplete checklist
   markers `(start: ...)`, `(scheduled: ...)`, and `(due: ...)`.
 - Completed checklist items and completed workflow lists are non-actionable by
@@ -106,7 +109,7 @@ complete builds. `npm run build:vue` remains the explicit type-checked build.
 - Smart Actions are opt-in, use app-level Ollama settings, and resolve
   suggested labels only against existing board labels.
 - V2 uses a trimmed card contract: kind, priority, parent/dependency relationships,
-  the optional boolean `blocked_on_decision`, effort, opportunity, risk, discovery, modifiers, and delivery-risk scores. Card
+  the optional boolean `blocked_on_decision`, effort, opportunity, risk, modifiers, and delivery-risk scores. Card
   narrative stays in the Markdown body, categorization stays in labels, and status
   is derived from the mapped list. Projections include evaluator-owned ranges for
   Priority, Impact, and Risk reduction so editor summaries do not duplicate formula
@@ -138,7 +141,7 @@ complete builds. `npm run build:vue` remains the explicit type-checked build.
 - App settings schema: `shared/appSettingsSchema.js` for main-process use and
   `signboard-vue/lib/appSettingsSchema.js` for Vue use.
 - Filesystem durability: `lib/atomicFile.js`.
-- CLI: `bin/signboard.js`, `lib/cliApp.js`, and `lib/cliBoard.js`.
+- CLI: `bin/signboard.js`, `lib/cliApp.js`, `lib/cliBoard.js`, and Git-aware project discovery in `lib/boardDiscovery.js` (`boards discover`, with `boards --list` as the known-board listing alias). Absolute card paths infer their board root; cross-list moves refresh mirrored frontmatter metadata and keep the root list manifest unchanged.
 - MCP: `lib/mcpServer.js`.
 - Obsidian integration: `lib/obsidianIntegration.js` and `obsidian-plugin/`.
 

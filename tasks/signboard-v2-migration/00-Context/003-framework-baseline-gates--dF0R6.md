@@ -9,10 +9,6 @@ activity:
   - type: created
     at: 2026-08-03T12:54:56.565Z
 area: framework
-discovery_value:
-  uncertainty_reduction: 4
-  decision_importance: 4
-  cost_of_wrong_choice: 4
 estimate:
   effort_points: 2
   implementation_complexity: 1
@@ -52,10 +48,6 @@ signboard_v2:
   blocked_by: []
   estimate:
     effort_points: 2
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 4
-    cost_of_wrong_choice: 4
   modifiers:
     confidence: 5
     urgency: 2
@@ -67,7 +59,7 @@ signboard_v2:
 - The Markdown body is the source of truth for narrative project information.
 - Stage/status comes from the card's list directory.
 - Parent, dependency, and blocker relationships remain structured and distinct.
-- Opportunity, risk prevented, and discovery value are the supported value dimensions.
+- Opportunity and risk prevented are the supported value dimensions.
 - Delivery risk remains separate from the risk being addressed.
 - Scores are reviewable ranking instruments, not objective truth.
 

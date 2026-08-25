@@ -39,7 +39,7 @@ packaged launches both load `signboard-vue/dist/index.html`.
 - Keyboard result/menu navigation for Archive search, current-board card search in the quick board switcher, board tabs, list actions, label/filter popovers, and Settings sections; the header board search control opens the quick switcher and transfers focus to it
 - Keyboard shortcuts for Quick Add card creation across open boards, creating lists, switching and closing open boards, cycling colors, moving open cards, archiving, and opening Archive
 - Stable board tabs that prioritize the last active board once on startup and stay in place as you switch during the session
-- CLI setup, board discovery, board creation, command reference, filters, age sorting, timestamp JSON output, card duplication/template workflows, dry-run previews, archive workflows, settings, and imports
+- CLI setup, known-board listing and project discovery, board creation, command reference, compact card JSON projections, structured JSON errors, filters, age sorting, timestamp JSON output, card duplication/template workflows, dry-run previews, archive workflows, settings, and imports
 - MCP trusted/open board discovery, trusted-root behavior, and board-name lookup
 
 ## File-First Model

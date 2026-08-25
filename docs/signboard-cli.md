@@ -102,11 +102,23 @@ signboard boards create /Path/To/EmptyBoard --no-welcome
 
 Notes:
 
-- `boards list --json` reports the current CLI board plus desktop-open and desktop-trusted boards when Signboard has synced that state.
+- `boards list --json` reports the desktop `activeBoardRoot` and CLI `currentBoardRoot` separately, plus desktop-open and desktop-trusted boards. The shorter `activeBoard` and `currentBoard` keys remain compatibility aliases.
 - New boards get `To-do`, `Doing`, `Done`, and the internal `XXX-Archive` folder.
 - By default, Signboard seeds `hello-stock.md` in the To do list with the same starter guidance used by MCP-created boards.
 - Add `--use` to make the new board the active CLI board for later commands.
 - Add `--no-welcome` to create only the default list folders.
+
+### Discover boards in a project
+
+Use discovery when you have a repository or workspace and do not yet know where its Signboard boards live:
+
+```bash
+signboard boards discover .
+signboard boards discover . --max-depth 8 --json
+signboard boards discover . --include-ignored --include-nested
+```
+
+Discovery is read-only by default. It searches to depth 8 (maximum 16), skips hidden/build/dependency directories and symlinks, and honors Git ignore rules while still traversing ignored paths that contain tracked files. It reports each candidate's relative and absolute path, list/card counts, V2 status, confidence, and any malformed or unreadable candidates. Use `--use` only when exactly one discovered board should become the CLI-selected board; in an interactive terminal, multiple candidates can be selected explicitly.
 
 ### `lists`
 
@@ -158,8 +170,9 @@ Useful filters:
 - `--sort list|due|title|updated|updated-oldest|updated-newest|created-oldest|created-newest`
 - `--limit <n>`
 - `--include-archive`
+- `--no-body` (or `--summary`) omits Markdown bodies from JSON output
 
-`updated` is kept as a compatibility alias for `updated-newest`. JSON card output includes `timestamps.createdAt` and `timestamps.updatedAt`; `createdAt` prefers Signboard card metadata and falls back to filesystem timestamps for older cards.
+`updated` is kept as a compatibility alias for `updated-newest`. JSON card output includes `timestamps.createdAt` and `timestamps.updatedAt`; `createdAt` prefers Signboard card metadata and falls back to filesystem timestamps for older cards. The top-level JSON `id` uses the five-character filename ID when available and otherwise falls back to `fileName` for legacy cards. Commands given `--json` emit one structured error object on stderr and exit nonzero when they fail.
 
 #### Read one card
 
@@ -169,7 +182,7 @@ signboard cards read --list Doing --card "Ship release notes"
 signboard cards read --card 003-ship-release-notes-ab123.md
 ```
 
-`cards read` always returns JSON so it is safe for scripts and agents.
+`cards read` always returns JSON so it is safe for scripts and agents. Add `--no-body` or `--summary` when the Markdown body is not needed.
 
 #### Create a card
 
@@ -183,7 +196,7 @@ signboard cards create --from-card ab123 --list "Leads" --title "New lead" --rem
 Create options:
 
 - `--list <list-ref>` required
-- `--title <title>` optional; when omitted, the card keeps an empty title and uses its filename as the display title
+- `--title <title>` required for direct card creation; it seeds a descriptive stable filename and the initial title metadata
 - `--body <text>`
 - `--body-file <path>`
 - `--from-card <card-ref>` optional source card/template to copy
@@ -195,7 +208,7 @@ Create options:
 - `--clear-labels` with `--from-card`
 - `--dry-run`
 
-Using a body file means you can make your commands much shorter and import previous content faster, potentially.
+Using a body file means you can make your commands much shorter and import previous content faster, potentially. A body file populates the card body; it does not replace the required `--title` used to create the filename.
 
 Example with a body file:
 
@@ -239,7 +252,7 @@ Edit options:
 - `--remove-label <ref>` repeatable
 - `--clear-labels`
 
-Card filenames are stable references. The title is optional metadata: an empty title displays a cleaned-up filename, while a supplied title is an explicit display override. Use `--title ""` when editing a card to clear the override.
+Card filenames are stable references. Existing cards, desktop-created cards, and MCP-created cards may have optional title metadata: an empty title displays a cleaned-up filename, while a supplied title is an explicit display override. Direct CLI card creation requires a non-empty `--title` so the filename is descriptive. Use `--title ""` when editing a card to clear the override.
 - `--move-to <list-ref>`
 - `--dry-run`
 
@@ -310,6 +323,7 @@ If `wait` matches exactly one list, the command succeeds. If it matches multiple
 Cards can be matched by:
 
 - filename
+- absolute card path (which also infers the board root)
 - 5-character card id
 - title
 - unique partial match of any of those

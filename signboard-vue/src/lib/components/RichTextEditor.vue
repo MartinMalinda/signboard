@@ -565,7 +565,7 @@ defineExpose({ setExternalBody, focus, getEditor: () => editor.value, getMarkdow
   align-items: center;
   gap: 4px;
   min-height: 35px;
-  padding: 2px 0;
+  padding: 2px 0 10px;
   border-bottom: 1px solid var(--border, currentColor);
 }
 

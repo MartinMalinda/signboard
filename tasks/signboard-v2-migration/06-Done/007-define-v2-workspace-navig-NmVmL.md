@@ -20,10 +20,6 @@ delivery:
 depends_on:
   - 'V2 UI contract: dashboard, Kanban signals, and editor details'
   - Decide whether Planner remains a V2 surface or is retired
-discovery_value:
-  uncertainty_reduction: 5
-  decision_importance: 4
-  cost_of_wrong_choice: 3
 engineering_health:
   maintenance_reduction: 3
   complexity_reduction: 3
@@ -81,10 +77,6 @@ signboard_v2:
     complexity_reduction: 3
     reliability_testability: 2
     recurring_time_saved: 3
-  discovery_value:
-    uncertainty_reduction: 5
-    decision_importance: 4
-    cost_of_wrong_choice: 3
   modifiers:
     confidence: 4
     strategic_fit: 4

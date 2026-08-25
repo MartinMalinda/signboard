@@ -49,7 +49,6 @@ risk_prevented:
   likelihood: 4
   harm: 4
   blast_radius: 5
-  mitigation_effectiveness: 4
   credible_tail: true
   horizon: 12m
 status_summary: 'Decision accepted: hybrid read-old/write-new compatibility with no implicit rewrite or backfill.'
@@ -71,7 +70,6 @@ signboard_v2:
     likelihood: 4
     harm: 4
     blast_radius: 5
-    mitigation_effectiveness: 4
     credible_tail: true
     horizon: 12m
   engineering_health:

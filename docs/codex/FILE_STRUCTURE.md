@@ -58,7 +58,7 @@ This map focuses on source and operational files. Large generated/vendor folders
 - `lib/obsidianIntegration.js` - Obsidian vault, Base, linked-note, and URI/deep-link helpers.
 - `lib/importers/` - Trello, Obsidian, and Tasks.md importers.
 - `lib/mcpServer.js` - Headless MCP stdio server.
-- `lib/cliApp.js` / `lib/cliBoard.js` - CLI command handling and board/card filesystem operations.
+- `lib/cliApp.js` / `lib/cliBoard.js` - CLI command handling and board/card filesystem operations; `lib/boardDiscovery.js` also implements known-board listing and Git-aware project discovery.
 - `lib/cliInstall.js` - User-level CLI shim and shell-profile installation.
 
 ## Scripts (`scripts/`)

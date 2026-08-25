@@ -12,6 +12,8 @@ const normalized = normalizeV2CardMetadata({
   depends_on: ['  One ', '', 'One'],
   blocked_by: ['Decision', 'Decision'],
   blocked_on_decision: true,
+  risk_prevented: { likelihood: 3, harm: 4, blast_radius: 2, mitigation_effectiveness: 5 },
+  discovery_value: { uncertainty_reduction: 5, decision_importance: 4, cost_of_wrong_choice: 3 },
   engineering_health: { maintenance_reduction: 4 },
   execution: { ceiling: 'autonomous_merge', background_selection: true },
   eligibility: { readiness: true },
@@ -25,6 +27,7 @@ assert.deepStrictEqual(normalized, {
   depends_on: ['One'],
   blocked_by: ['Decision'],
   blocked_on_decision: true,
+  risk_prevented: { likelihood: 3, harm: 4, blast_radius: 2 },
   modifiers: { confidence: 4 },
 });
 
@@ -39,7 +42,7 @@ assert.deepStrictEqual(normalizeV2CardMetadata({ kind: 'task', priority_class: '
 const card = normalizeFrontmatter({
   title: 'Example',
   labels: ['label-1'],
-  signboard_v2: { kind: 'discovery', work_type: 'ux', priority_class: 'P0' },
+  signboard_v2: { kind: 'discovery', work_type: 'ux', priority_class: 'P0', discovery_value: { uncertainty_reduction: 5 } },
 });
 assert.deepStrictEqual(card.signboard_v2, { contract_version: 1, kind: 'discovery', priority_class: 'P0' });
 assert.deepStrictEqual(normalizeFrontmatter({ title: 'Legacy' }).signboard_v2, undefined);

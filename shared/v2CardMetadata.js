@@ -11,15 +11,13 @@ const V2_TOP_LEVEL_FIELDS = [
   'estimate',
   'opportunity',
   'risk_prevented',
-  'discovery_value',
   'modifiers',
   'delivery',
 ];
 const V2_GROUP_FIELDS = {
   estimate: ['effort_points'],
   opportunity: ['reach', 'benefit', 'frequency'],
-  risk_prevented: ['likelihood', 'harm', 'blast_radius', 'mitigation_effectiveness'],
-  discovery_value: ['uncertainty_reduction', 'decision_importance', 'cost_of_wrong_choice'],
+  risk_prevented: ['likelihood', 'harm', 'blast_radius'],
   modifiers: ['confidence', 'urgency', 'maintenance_delta'],
   delivery: ['regression_likelihood', 'change_blast_radius', 'reversibility'],
 };
@@ -74,7 +72,7 @@ function normalizeV2CardMetadata(value) {
     if (Object.keys(estimate).length) next.estimate = estimate;
     else delete next.estimate;
   }
-  for (const groupName of ['opportunity', 'risk_prevented', 'discovery_value', 'modifiers', 'delivery']) {
+  for (const groupName of ['opportunity', 'risk_prevented', 'modifiers', 'delivery']) {
     if (!isObject(next[groupName])) continue;
     const allowed = V2_GROUP_FIELDS[groupName];
     next[groupName] = Object.fromEntries(Object.entries(next[groupName]).filter(([field]) => allowed.includes(field)));

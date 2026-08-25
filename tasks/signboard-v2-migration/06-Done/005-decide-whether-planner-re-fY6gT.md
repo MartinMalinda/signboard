@@ -20,10 +20,6 @@ delivery:
 depends_on:
   - Define per-board project profile and dashboard contract
   - Create the first V2 dashboard surface beside Kanban and Table
-discovery_value:
-  uncertainty_reduction: 5
-  decision_importance: 4
-  cost_of_wrong_choice: 3
 enablement:
   downstream_value: 4
   downstream_breadth: 3
@@ -105,10 +101,6 @@ signboard_v2:
     downstream_value: 4
     downstream_breadth: 3
     critical_path: 3
-  discovery_value:
-    uncertainty_reduction: 5
-    decision_importance: 4
-    cost_of_wrong_choice: 3
   modifiers:
     confidence: 4
     strategic_fit: 4

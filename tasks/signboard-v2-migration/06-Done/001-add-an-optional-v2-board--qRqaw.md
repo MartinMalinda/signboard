@@ -66,10 +66,6 @@ signboard_v2:
     reach: 3
     benefit: 4
     frequency: 2
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 4
-    cost_of_wrong_choice: 3
   modifiers:
     confidence: 3
     urgency: 3

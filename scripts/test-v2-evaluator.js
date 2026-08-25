@@ -8,8 +8,7 @@ function completeCard(overrides = {}) {
     status: 'ready',
     priority_class: 'P2',
     opportunity: { reach: 3, benefit: 3, frequency: 3 },
-    risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1, mitigation_effectiveness: 1 },
-    discovery_value: { uncertainty_reduction: 2, decision_importance: 2, cost_of_wrong_choice: 2 },
+    risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1 },
     modifiers: { confidence: 5, urgency: 3, maintenance_delta: 1 },
     estimate: { effort_points: 2 },
     delivery: { regression_likelihood: 1, change_blast_radius: 1, reversibility: 5 },
@@ -22,6 +21,8 @@ assert.strictEqual(complete.score_version, 2);
 assert(complete.scores.priority_index > 0);
 assert(complete.scores.risk_reduction_index > 0);
 assert(complete.scores.impact_index > 0);
+assert(!Object.hasOwn(complete.scores, 'discovery'));
+assert.strictEqual(complete.scores.risk_reduction, 0.8);
 assert.strictEqual(complete.score_ranges.impact_index.max, 100);
 assert.strictEqual(complete.score_ranges.risk_reduction_index.max, 145);
 assert.strictEqual(complete.explanations.impact_index.strategic_multiplier, undefined);
@@ -53,12 +54,12 @@ assert(malformed.gates.reason_codes.includes('METADATA_GATE_FAILED'));
 const riskHigh = evaluate(completeCard({
   id: 'risk-high',
   priority_class: 'P0',
-  risk_prevented: { likelihood: 5, harm: 5, blast_radius: 5, mitigation_effectiveness: 5 },
+  risk_prevented: { likelihood: 5, harm: 5, blast_radius: 5 },
 }));
 const riskLow = evaluate(completeCard({
   id: 'risk-low',
   priority_class: 'P0',
-  risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1, mitigation_effectiveness: 1 },
+  risk_prevented: { likelihood: 1, harm: 1, blast_radius: 1 },
 }));
 assert(compareSectionItems(riskHigh, complete, 'priority') < 0);
 assert(riskHigh.scores.risk_reduction_index > riskLow.scores.risk_reduction_index);

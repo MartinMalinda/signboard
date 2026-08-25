@@ -115,7 +115,6 @@ risk_prevented:
   likelihood: 3
   harm: 4
   blast_radius: 4
-  mitigation_effectiveness: 4
 signboard_v2:
   contract_version: 1
   kind: task
@@ -134,7 +133,6 @@ signboard_v2:
     likelihood: 3
     harm: 4
     blast_radius: 4
-    mitigation_effectiveness: 4
   engineering_health:
     maintenance_reduction: 3
     complexity_reduction: 2

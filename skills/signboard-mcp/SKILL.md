@@ -81,8 +81,7 @@ V2 card metadata is additive under `signboard_v2` with `contract_version: 1`. Th
 - `parent`, `depends_on`, `blocked_by`, and optional boolean `blocked_on_decision`.
 - `estimate.effort_points`.
 - `opportunity.{reach,benefit,frequency}`.
-- `risk_prevented.{likelihood,harm,blast_radius,mitigation_effectiveness}`.
-- `discovery_value.{uncertainty_reduction,decision_importance,cost_of_wrong_choice}`.
+- `risk_prevented.{likelihood,harm,blast_radius}`.
 - `modifiers.{confidence,urgency,maintenance_delta}`.
 - `delivery.{regression_likelihood,change_blast_radius,reversibility}`.
 

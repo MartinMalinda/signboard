@@ -19,10 +19,6 @@ delivery:
 depends_on:
   - 'V2 UI contract: dashboard, Kanban signals, and editor details'
   - Define per-board project profile and dashboard contract
-discovery_value:
-  uncertainty_reduction: 4
-  decision_importance: 5
-  cost_of_wrong_choice: 4
 estimate:
   effort_points: 3
   implementation_complexity: 2
@@ -74,10 +70,6 @@ signboard_v2:
     reach: 4
     benefit: 4
     frequency: 5
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 5
-    cost_of_wrong_choice: 4
   modifiers:
     confidence: 3
     urgency: 3

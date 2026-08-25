@@ -91,6 +91,8 @@ async function createFixtureBoard() {
       createdAt: '2026-01-10T12:00:00.000Z',
       due: daysFromTodayIso(3),
       labels: ['urgent', 'template'],
+      signboard_id: 'G1PAT',
+      signboard_uri: 'signboard://open-card?id=G1PAT',
     },
     body: [
       '## Source',
@@ -119,6 +121,11 @@ async function createFixtureBoard() {
       createdAt: '2026-02-01T12:00:00.000Z',
     },
     body: 'Review notes',
+  });
+
+  await cardFrontmatter.writeCard(path.join(todoList, 'legacy-note.md'), {
+    frontmatter: { title: 'Legacy note' },
+    body: 'A legacy card without a filename ID.',
   });
 
   await cardFrontmatter.writeCard(path.join(doingList, '002-open-overdue-task-gh012.md'), {
@@ -342,6 +349,8 @@ async function main() {
   const boardsList = JSON.parse(runCli(['boards', 'list', '--json'], env).stdout);
   assert.strictEqual(boardsList.activeBoard, createdBoardRoot);
   assert.strictEqual(boardsList.currentBoard, fixture.boardRoot);
+  assert.strictEqual(boardsList.activeBoardRoot, createdBoardRoot);
+  assert.strictEqual(boardsList.currentBoardRoot, fixture.boardRoot);
   const activeBoard = boardsList.boards.find((board) => board.boardRoot === createdBoardRoot);
   assert.ok(activeBoard);
   assert.strictEqual(activeBoard.isActive, true);
@@ -353,6 +362,26 @@ async function main() {
   assert.ok(cliCurrentBoard);
   assert.strictEqual(cliCurrentBoard.isCurrent, true);
   assert.ok(cliCurrentBoard.sources.includes('cli-current'));
+
+  const shortBoardsList = JSON.parse(runCli(['boards', '--list', '--json'], env).stdout);
+  assert.strictEqual(shortBoardsList.boardCount, boardsList.boardCount);
+
+  const discoveredBoards = JSON.parse(
+    runCli(['boards', 'discover', fixture.root, '--max-depth', '2', '--json'], env).stdout
+  );
+  assert.strictEqual(discoveredBoards.maxDepth, 2);
+  assert.strictEqual(discoveredBoards.git, false);
+  assert.ok(discoveredBoards.boards.some((board) => board.absolutePath === fixture.boardRoot));
+  assert.ok(discoveredBoards.boards.some((board) => board.absolutePath === createdBoardRoot));
+  assert.ok(discoveredBoards.boards.every((board) => board.cardCount >= 0));
+
+  const invalidDiscoveryDepth = runCliExpectFail(
+    ['boards', 'discover', fixture.root, '--max-depth', '17', '--json'],
+    env,
+  );
+  const invalidDiscoveryPayload = JSON.parse(invalidDiscoveryDepth.stderr);
+  assert.strictEqual(invalidDiscoveryPayload.error.code, 'CLI_ERROR');
+  assert.ok(invalidDiscoveryPayload.error.message.includes('--max-depth'));
 
   const boardsDefaultList = JSON.parse(runCli(['boards', '--json'], env).stdout);
   assert.strictEqual(boardsDefaultList.boardCount, boardsList.boardCount);
@@ -394,6 +423,25 @@ async function main() {
   assert.ok(dueCards.some((card) => card.title === 'Launch plan'));
   assert.ok(dueCards.some((card) => card.title === 'Client follow up'));
   assert.ok(dueCards.every((card) => card.timestamps && card.timestamps.createdAt && card.timestamps.updatedAt));
+
+  const compactCards = JSON.parse(
+    runCli(['cards', '--search', 'legacy', '--summary', '--json'], env).stdout
+  );
+  assert.strictEqual(compactCards.length, 1);
+  assert.strictEqual(compactCards[0].id, 'legacy-note.md');
+  assert.strictEqual(compactCards[0].fileName, 'legacy-note.md');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(compactCards[0], 'body'), false);
+  assert.ok(compactCards[0].taskSummary);
+
+  const invalidDueJson = runCliExpectFail(['cards', '--due', 'not-a-filter', '--json'], env);
+  const invalidDuePayload = JSON.parse(invalidDueJson.stderr);
+  assert.strictEqual(invalidDuePayload.error.code, 'CLI_ERROR');
+  assert.ok(invalidDuePayload.error.message.includes('Unsupported due filter'));
+
+  const missingCardJson = runCliExpectFail(['cards', 'read', '--card', 'does-not-exist', '--json'], env);
+  const missingCardPayload = JSON.parse(missingCardJson.stderr);
+  assert.strictEqual(missingCardPayload.error.code, 'CLI_ERROR');
+  assert.ok(missingCardPayload.error.message.includes('Could not find card'));
 
   const createdOldestCards = JSON.parse(
     runCli([
@@ -525,6 +573,11 @@ async function main() {
   assert.ok(!duplicatePreview.labels.includes('template'));
   assert.ok(duplicatePreview.timestamps.createdAt);
   assert.strictEqual(duplicatePreview.timestamps.updatedAt, '');
+  assert.notStrictEqual(duplicatePreview.frontmatter.signboard_id, 'G1PAT');
+  assert.strictEqual(
+    duplicatePreview.frontmatter.signboard_uri,
+    `signboard://open-card?id=${duplicatePreview.id}`,
+  );
 
   const waitingAfterDuplicatePreview = JSON.parse(runCli(['cards', 'Waiting', '--json'], env).stdout);
   assert.strictEqual(waitingAfterDuplicatePreview.length, 0);
@@ -558,6 +611,12 @@ async function main() {
   assert.strictEqual(duplicatedCard.taskSummary.total, 1);
   assert.ok(duplicatedCard.timestamps.createdAt);
   assert.ok(duplicatedCard.timestamps.updatedAt);
+  const writtenDuplicate = await cardFrontmatter.readCard(duplicatedCard.filePath);
+  assert.notStrictEqual(writtenDuplicate.frontmatter.signboard_id, 'G1PAT');
+  assert.strictEqual(
+    writtenDuplicate.frontmatter.signboard_uri,
+    `signboard://open-card?id=${duplicatedCard.id}`,
+  );
 
   const preparedBodyPath = path.join(fixture.root, 'prepared.md');
   const replacementNotesPath = path.join(fixture.root, 'replacement-notes.md');
@@ -683,6 +742,19 @@ async function main() {
     ], env).stdout
   );
   assert.deepStrictEqual(clearedLabels.labels, []);
+
+  const missingCreateTitle = runCliExpectFail([
+    'cards',
+    'create',
+    '--list',
+    'Waiting',
+    '--body',
+    'This should not create a generic card filename.',
+    '--json',
+  ], env);
+  const missingCreateTitlePayload = JSON.parse(missingCreateTitle.stderr);
+  assert.strictEqual(missingCreateTitlePayload.error.code, 'CLI_ERROR');
+  assert.ok(missingCreateTitlePayload.error.message.includes('--title is required'));
 
   const createdCard = JSON.parse(
     runCli([
@@ -919,6 +991,51 @@ async function main() {
   assert.strictEqual(tasksMdCards.length, 1);
   assert.strictEqual(tasksMdCards[0].due, '2026-03-26');
   assert.ok(tasksMdCards[0].labelNames.includes('CLI'));
+
+  const absoluteCardPath = path.join(
+    fixture.boardRoot,
+    '000-To do-stock',
+    '001-launch-plan-ab123.md',
+  );
+  const inferenceEnv = {
+    ...env,
+    SIGNBOARD_CLI_CONFIG_DIR: await fs.mkdtemp(path.join(os.tmpdir(), 'signboard-cli-inference-')),
+  };
+  const inferredMovePreview = JSON.parse(
+    runCli([
+      'cards',
+      'edit',
+      '--card',
+      absoluteCardPath,
+      '--move-to',
+      'Waiting',
+      '--dry-run',
+      '--json',
+    ], inferenceEnv).stdout
+  );
+  assert.strictEqual(inferredMovePreview.sourceFilePath, absoluteCardPath);
+  assert.strictEqual(inferredMovePreview.listDisplayName, 'Waiting');
+
+  const rootManifestPath = path.join(fixture.boardRoot, '.board.json');
+  const rootManifestBeforeMove = await fs.readFile(rootManifestPath, 'utf8');
+  const inferredMove = JSON.parse(
+    runCli([
+      'cards',
+      'edit',
+      '--card',
+      absoluteCardPath,
+      '--move-to',
+      'Waiting',
+      '--json',
+    ], inferenceEnv).stdout
+  );
+  assert.strictEqual(inferredMove.listDisplayName, 'Waiting');
+  assert.ok(inferredMove.labelNames.includes('Urgent'));
+  const movedFrontmatter = (await cardFrontmatter.readCard(inferredMove.filePath)).frontmatter;
+  assert.strictEqual(movedFrontmatter.signboard_list, 'Waiting');
+  assert.strictEqual(movedFrontmatter.status, 'Waiting');
+  assert.strictEqual(movedFrontmatter.signboard_uri, 'signboard://open-card?id=G1PAT');
+  assert.strictEqual(await fs.readFile(rootManifestPath, 'utf8'), rootManifestBeforeMove);
 
   console.log('CLI tests passed.');
 }

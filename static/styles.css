@@ -135,7 +135,7 @@ html, body { margin: 0; height: 100%; }
   /* Card sizing */
   --card-spacing: 8px;
   --workspace-view-dock-height: 58px;
-  --workspace-view-dock-bottom: 26px;
+  --workspace-view-dock-bottom: 0px;
 }
 
 :root[data-theme="dark"] {
@@ -410,7 +410,7 @@ body.sponsor-pill-dismissed .sponsor-signboard-pill {
 .workspace-view-dock {
   position: fixed;
   left: 50%;
-  bottom: max(var(--workspace-view-dock-bottom), env(safe-area-inset-bottom));
+  bottom: 0;
   z-index: 47;
   display: inline-flex;
   align-items: center;
@@ -419,21 +419,21 @@ body.sponsor-pill-dismissed .sponsor-signboard-pill {
   min-height: var(--workspace-view-dock-height);
   padding: 1.6667px 6px;
   border: 1px solid color-mix(in oklab, var(--border) 86%, var(--text));
-  border-radius: 999px;
+  border-radius: 24px 24px 0 0;
   background: color-mix(in oklab, var(--bg-card) 92%, transparent);
   box-shadow:
     0 18px 42px color-mix(in oklab, var(--text) 16%, transparent),
     0 1px 1px color-mix(in oklab, var(--text) 10%, transparent);
   backdrop-filter: saturate(1.15) blur(14px);
   opacity: .72;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(calc(100% - 20px));
   transition: opacity .16s ease, transform .16s ease, background .16s ease;
 }
 
 .workspace-view-dock:hover,
-.workspace-view-dock:focus-within {
+.workspace-view-dock:has(:focus-visible) {
   opacity: 1;
-  transform: translateX(-50%) translateY(-1px);
+  transform: translateX(-50%) translateY(0);
 }
 
 body.board-empty .workspace-view-dock {
@@ -2797,6 +2797,15 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   gap: 5px;
 }
 
+/* Keep the list-specific Add Card modal compact when boards have many labels. */
+#modalAddCard .quick-add-label-options {
+  max-height: min(320px, 36vh);
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 #modalAddCard .quick-add-label-option,
 #modalAddCardToList .quick-add-label-option {
   display: flex;
@@ -2814,6 +2823,16 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   letter-spacing: 0;
   text-transform: none;
   transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+#modalAddCard .quick-add-label-options {
+  gap: 2px;
+}
+
+#modalAddCard .quick-add-label-option {
+  min-height: 30px;
+  padding: 4px 7px;
+  border-radius: 7px;
 }
 
 #modalAddCard .quick-add-label-option:hover,
@@ -3979,10 +3998,6 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
   overflow: visible;
 }
 
-#modalEditCard .card-editor-modal-content > .v2-editor-work-details {
-  flex: 0 0 auto;
-}
-
 #modalEditCard .card-editor-modal-content > .card-editor-notes-implementation {
   flex: 1 1 auto;
   min-height: 0;
@@ -3990,6 +4005,46 @@ button:focus-visible { outline: 3px solid color-mix(in oklab, var(--accent) 45%,
 
 #modalEditCard .card-editor-modal-content > .cardEditorTimestampMetadata {
   flex: 0 0 auto;
+}
+
+#cardEditorV2DetailsModal {
+  width: min(880px, calc(100vw - 28px));
+}
+
+#cardEditorV2DetailsModal .v2-editor-details-overlay {
+  min-width: 0;
+}
+
+#cardEditorV2DetailsModal .v2-editor-details-overlay-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 20px 0;
+}
+
+#cardEditorV2DetailsModal .v2-editor-details-overlay-header button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+#cardEditorV2DetailsModal .v2-editor-details-overlay-header button:hover,
+#cardEditorV2DetailsModal .v2-editor-details-overlay-header button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-card));
+  color: var(--text);
+}
+
+#cardEditorV2DetailsModal .v2-editor-work-panel {
+  padding: 4px 20px 20px;
 }
 
 #modalEditCard .card-editor-notes-implementation {
@@ -6420,7 +6475,7 @@ select:disabled {
   :root {
     --list-min: 260px;
     --workspace-view-dock-height: 52px;
-    --workspace-view-dock-bottom: 14px;
+    --workspace-view-dock-bottom: 0px;
   }
   body > header { position: static; }
   .headerTopRow {

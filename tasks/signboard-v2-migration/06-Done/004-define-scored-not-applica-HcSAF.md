@@ -31,7 +31,7 @@ signboard_v2:
   objective: Prevent blank, not-applicable, and zero scoring states from being conflated.
   scope: Audit value-group inputs and work-type validation; define explicit applicability states and anchored 1-5 controls while keeping minimally shaped and legacy cards saveable.
   acceptance_criteria:
-    - Opportunity, risk prevented, engineering health, enablement, and discovery value states are specified.
+    - Opportunity, risk prevented, engineering health, and enablement states are specified.
     - Security/privacy/correctness and other work-type validation expectations are explicit.
     - No generic midpoint values are invented for blank fields.
     - The evaluator, editor, and fixture changes needed for a bounded follow-up are listed.

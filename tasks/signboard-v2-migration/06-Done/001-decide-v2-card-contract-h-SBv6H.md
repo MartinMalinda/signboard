@@ -13,10 +13,6 @@ area: card-contract
 depends_on:
   - 'Current architecture baseline: file-backed boards, snapshots, and views'
   - 'Framework baseline: gates, value dimensions, and execution policy'
-discovery_value:
-  uncertainty_reduction: 5
-  decision_importance: 5
-  cost_of_wrong_choice: 5
 enablement:
   downstream_value: 5
   downstream_breadth: 5
@@ -60,10 +56,6 @@ signboard_v2:
   blocked_by: []
   estimate:
     effort_points: 3
-  discovery_value:
-    uncertainty_reduction: 5
-    decision_importance: 5
-    cost_of_wrong_choice: 5
   modifiers:
     confidence: 3
     urgency: 3

@@ -12,10 +12,6 @@ activity:
 area: board-profile
 depends_on:
   - 'Decide V2 card contract: hardcoded attributes versus generic fields'
-discovery_value:
-  uncertainty_reduction: 5
-  decision_importance: 5
-  cost_of_wrong_choice: 4
 enablement:
   downstream_value: 5
   downstream_breadth: 4
@@ -59,10 +55,6 @@ signboard_v2:
   blocked_by: []
   estimate:
     effort_points: 3
-  discovery_value:
-    uncertainty_reduction: 5
-    decision_importance: 5
-    cost_of_wrong_choice: 4
   modifiers:
     confidence: 3
     urgency: 3

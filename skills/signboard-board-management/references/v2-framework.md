@@ -71,11 +71,6 @@ signboard_v2:
     likelihood: 2
     harm: 4
     blast_radius: 3
-    mitigation_effectiveness: 4
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 5
-    cost_of_wrong_choice: 3
   modifiers:
     confidence: 3
     urgency: 4
@@ -116,31 +111,21 @@ Expected Risk =
 100 × (Likelihood / 5) × (Harm / 5) × (Blast Radius / 5)
 
 Risk Reduction Score =
-Expected Risk × (Mitigation Effectiveness / 5)
+Expected Risk
 ```
 
 There is no catastrophic-tail input or hidden tail floor. Put the supporting scenario and time horizon in the body.
 
-### Discovery value
-
-```text
-Discovery Score = 20 × (
-    0.40 × Uncertainty Reduction
-  + 0.35 × Decision Importance
-  + 0.25 × Cost of Wrong Choice
-)
-```
-
 ### Core value and indexes
 
 ```text
-Core Value = max(Opportunity Score, Risk Reduction Score, Discovery Score)
+Core Value = max(Opportunity Score, Risk Reduction Score)
 
 Priority Index =
 (Core Value × Confidence × Urgency × Maintenance Modifier)
 ÷ Effort Points ^ 0.60
 
-Positive Impact = max(Opportunity Score, Discovery Score)
+Positive Impact = Opportunity Score
 
 Impact Index =
 (Positive Impact × Confidence)

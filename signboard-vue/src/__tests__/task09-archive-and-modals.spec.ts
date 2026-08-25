@@ -214,6 +214,34 @@ describe('Task 09 archive and static modal parity', () => {
     wrapper.unmount()
   })
 
+  it('closes stacked modals from the topmost layer first', async () => {
+    const outerClose = vi.fn()
+    const innerClose = vi.fn()
+    const outer = mount(Modal, {
+      attachTo: document.body,
+      props: { id: 'modalOuter', isOpen: true, onClose: outerClose },
+      slots: { default: '<button>Outer</button>' },
+    })
+    const inner = mount(Modal, {
+      attachTo: document.body,
+      props: { id: 'modalInner', isOpen: true, onClose: innerClose },
+      slots: { default: '<button>Inner</button>' },
+    })
+    await flushPromises()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(innerClose).toHaveBeenCalledOnce()
+    expect(outerClose).not.toHaveBeenCalled()
+
+    await inner.setProps({ isOpen: false })
+    await flushPromises()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(outerClose).toHaveBeenCalledOnce()
+
+    inner.unmount()
+    outer.unmount()
+  })
+
   it('uses the Kanban display name in the Add Card heading', async () => {
     const modals = document.createElement('div')
     modals.id = 'modals'
@@ -246,6 +274,7 @@ describe('Task 09 archive and static modal parity', () => {
     expect(document.querySelector('#modalAddCard .quick-add-labels')).toBeTruthy()
     expect(document.querySelectorAll('#modalAddCard .quick-add-label-option')).toHaveLength(2)
     expect(document.querySelector('#modalAddCard .quick-add-label-option')?.textContent).toContain('Strategy')
+    expect(document.querySelector('#modalAddCard')?.classList.contains('overflow')).toBe(true)
     wrapper.unmount()
     modals.remove()
   })

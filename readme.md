@@ -122,6 +122,8 @@ Signboard includes a terminal CLI for direct board management without going thro
 - In the desktop app on macOS/Linux: `Help` -> `Install Signboard CLI`
 - From a source checkout linked with `npm link`: `signboard run` opens the desktop app
 - Use `signboard boards list --json` to list known boards before choosing one
+- Use `signboard boards discover . --json` to find board folders under a project; discovery never changes the selected board unless you add `--use`
+- Pass an absolute card path to `--card` to infer its board automatically; `--board` remains available for IDs, titles, and bare filenames
 - Use `signboard use /Path/to/Board` once to remember the active board for later commands
 - Use `signboard boards create /Path/to/NewBoard --use` to create and select a new board from the terminal
 - The installed `signboard` wrapper runs the bundled CLI in Electron's Node mode, avoiding desktop app startup for terminal commands.
@@ -137,6 +139,7 @@ signboard use /Path/to/Board
 signboard boards create /Path/to/NewBoard --use
 
 # Lists
+signboard boards discover . --json
 signboard lists
 signboard lists create "Waiting"
 signboard lists rename "Waiting" "Blocked"
@@ -174,7 +177,10 @@ Interesting card listing filters:
 - `--label-mode any|all`
 - `--search <query>`
 - `--sort list|due|title|updated|updated-oldest|updated-newest|created-oldest|created-newest`
+- `--no-body` or `--summary` to omit Markdown bodies from card JSON output
 - `--json` for scripting output
+
+JSON failures are emitted as a single structured error object on stderr. In `boards list --json`, `activeBoardRoot` is the desktop-open active board and `currentBoardRoot` is the CLI-selected board; the shorter keys are retained as aliases.
 
 Import options:
 

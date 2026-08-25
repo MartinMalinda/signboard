@@ -62,12 +62,6 @@ signboard_v2:
     likelihood: 2
     harm: 4
     blast_radius: 3
-    mitigation_effectiveness: 4
-
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 5
-    cost_of_wrong_choice: 3
 
   modifiers:
     confidence: 3
@@ -156,32 +150,20 @@ Expected Risk =
 100 × (Likelihood / 5) × (Harm / 5) × (Blast Radius / 5)
 
 Risk Reduction Score =
-Expected Risk × (Mitigation Effectiveness / 5)
+Expected Risk
 ```
 
-Do not add a catastrophic-tail field or a hidden tail floor. If a severe scenario matters, describe the evidence and time horizon in the body and score the four supported dimensions.
+Do not add a catastrophic-tail field or a hidden tail floor. If a severe scenario matters, describe the evidence and time horizon in the body and score the three supported dimensions.
 
-### 7.3 Discovery value
-
-Use when a decision or experiment can reduce uncertainty before implementation.
+### 7.3 Core value and modifiers
 
 ```text
-Discovery Score = 20 × (
-    0.40 × Uncertainty Reduction
-  + 0.35 × Decision Importance
-  + 0.25 × Cost of Wrong Choice
-)
-```
-
-### 7.4 Core value and modifiers
-
-```text
-Dominant Value = max(Opportunity Score, Risk Reduction Score, Discovery Score)
+Dominant Value = max(Opportunity Score, Risk Reduction Score)
 Secondary Value = sum(the other value scores)
 Core Value = min(100, Dominant Value + min(20, 0.15 × Secondary Value))
 ```
 
-When more than one value group is present, the evaluator keeps a small capped contribution from the non-dominant groups so a card with meaningful secondary value is not treated as identical to a card with only one value source. The dominant group still controls the result. For the positive Impact view, only Opportunity and Discovery are considered; Risk reduction is excluded from positive impact.
+When more than one value group is present, the evaluator keeps a small capped contribution from the non-dominant groups so a card with meaningful secondary value is not treated as identical to a card with only one value source. The dominant group still controls the result. The positive Impact view uses Opportunity only; Risk reduction is excluded from positive impact.
 
 Apply the supported modifiers:
 
@@ -206,7 +188,7 @@ Priority Index =
 The positive-value view excludes risk-prevention value:
 
 ```text
-Positive Impact = max(Opportunity Score, Discovery Score)
+Positive Impact = Opportunity Score
 
 Impact Index =
 (Positive Impact × Confidence)
@@ -251,7 +233,7 @@ Suggested review levels are a presentation convention, not stored card fields:
 V2 may project cards into several lenses. A card can appear in more than one section.
 
 1. **Priority** — non-terminal executable cards that pass the metadata/readiness gates, ordered by priority class and Priority Index.
-2. **Impact** — unfinished work ordered by positive opportunity/discovery value; risk-prevention value remains in Priority and Risk reduction rather than this view.
+2. **Impact** — unfinished work ordered by positive opportunity value; risk-prevention value remains in Priority and Risk reduction rather than this view.
 3. **Low-hanging fruit** — useful, low-effort cards with acceptable delivery risk and adequate confidence.
 4. **Blocked** — non-terminal executable cards whose mapped stage is blocked.
 

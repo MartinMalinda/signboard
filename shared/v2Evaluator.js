@@ -7,8 +7,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createV2Evaluator() {
   const SCORE_FIELDS = Object.freeze({
     opportunity: ['reach', 'benefit', 'frequency'],
-    risk_prevented: ['likelihood', 'harm', 'blast_radius', 'mitigation_effectiveness'],
-    discovery_value: ['uncertainty_reduction', 'decision_importance', 'cost_of_wrong_choice'],
+    risk_prevented: ['likelihood', 'harm', 'blast_radius'],
   });
   const STATUS_VALUES = new Set(['inbox', 'shaping', 'ready', 'active', 'review', 'blocked', 'done', 'dropped']);
   const PRIORITY_VALUES = new Set(['P0', 'P1', 'P2', 'P3']);
@@ -106,7 +105,6 @@
       priority_class: priority,
       opportunity: normalizeGroup(source, 'opportunity', missingFields, defaultsApplied, warnings),
       risk_prevented: normalizeGroup(source, 'risk_prevented', missingFields, defaultsApplied, warnings),
-      discovery_value: normalizeGroup(source, 'discovery_value', missingFields, defaultsApplied, warnings),
       modifiers: {
         confidence: normalizeModifier(source, 'confidence', 1, missingFields, defaultsApplied, warnings),
         urgency: normalizeModifier(source, 'urgency', 1, missingFields, defaultsApplied, warnings),
@@ -130,15 +128,10 @@
   }
 
   function riskReductionScore(card) {
-    const { likelihood, harm, blast_radius: blastRadius, mitigation_effectiveness: mitigation } = card.risk_prevented;
-    if (!likelihood || !harm || !blastRadius || !mitigation) return 0;
+    const { likelihood, harm, blast_radius: blastRadius } = card.risk_prevented;
+    if (!likelihood || !harm || !blastRadius) return 0;
     const expectedRisk = 100 * (likelihood / 5) * (harm / 5) * (blastRadius / 5);
-    return expectedRisk * (mitigation / 5);
-  }
-
-  function discoveryScore(card) {
-    const values = card.discovery_value;
-    return 20 * (0.40 * values.uncertainty_reduction + 0.35 * values.decision_importance + 0.25 * values.cost_of_wrong_choice);
+    return expectedRisk;
   }
 
   function coreValue(scores) {
@@ -148,7 +141,7 @@
   }
 
   function positiveImpactScore(values) {
-    return coreValue([values.opportunity, values.discovery]);
+    return values.opportunity;
   }
 
   function deliveryRisk(card) {
@@ -261,7 +254,6 @@
     const values = {
       opportunity: opportunityScore(card),
       risk_reduction: riskReductionScore(card),
-      discovery: discoveryScore(card),
     };
     values.core_value = coreValue(Object.values(values));
     values.delivery_risk = deliveryRisk(card);

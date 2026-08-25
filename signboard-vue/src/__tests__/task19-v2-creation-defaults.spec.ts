@@ -75,7 +75,7 @@ describe('V2 creation defaults', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }))
     await vi.waitFor(() => expect(createCard).toHaveBeenCalled())
     expect(() => structuredClone(createCard.mock.calls[0]?.[2])).not.toThrow()
-    expect(createCard.mock.calls[0]?.[2]?.frontmatter).toEqual(expect.objectContaining({ signboard_v2: expect.objectContaining({ kind: 'discovery', priority_class: 'P1' }) }))
+    expect(createCard.mock.calls[0]?.[2]?.frontmatter).toEqual(expect.objectContaining({ labels: ['product'], signboard_v2: expect.objectContaining({ kind: 'discovery', priority_class: 'P1' }) }))
     wrapper.unmount()
   })
 })

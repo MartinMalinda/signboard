@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { getListDisplayName } from '../../../lib/listNaming.js'
 import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import { useEditorStore } from '../../stores/useEditorStore'
@@ -11,12 +11,10 @@ import { getCardDisplayTitle } from '../../../lib/cardTitle.js'
 const props = defineProps<{ listPaths: string[]; onMove: (path: string) => Promise<boolean> }>()
 const editor = useEditorStore()
 const data = useBoardDataStore()
-const detailsOpen = ref(false)
 
 const ADVANCED_GROUPS = [
   { group: 'opportunity', label: 'Opportunity', icon: 'target', description: 'Positive user, customer, operator, or business benefit created by the work.' },
   { group: 'risk_prevented', label: 'Risk addressed', icon: 'shield', description: 'Existing risk and how effectively the proposed work addresses it, covering security, privacy, correctness, data integrity, reliability, compliance, operations, and destructive technical debt.' },
-  { group: 'discovery_value', label: 'Discovery value', icon: 'search', description: 'Value of reducing uncertainty before making an important decision.' },
   { group: 'delivery', label: 'Change risk', icon: 'truck', description: 'Bad conditions the proposed change may create after delivery, measured through regression likelihood, change blast radius, and reversibility.' },
   { group: 'modifiers', label: 'Modifiers', icon: 'sliders', description: 'General factors applied to the core value: evidence confidence, cost of delay, and ongoing maintenance burden.' },
 ] as const
@@ -27,10 +25,6 @@ const ADVANCED_FIELDS = [
   { group: 'risk_prevented', field: 'likelihood', label: 'Risk likelihood', min: 0, max: 5, description: 'Likelihood of the risk over a stated horizon, normally the next 12 months; 1 is rare and 5 is observed, active, recurring, or expected.' },
   { group: 'risk_prevented', field: 'harm', label: 'Risk harm', min: 0, max: 5, description: 'Severity of harm to an affected unit; 1 is negligible and 5 is catastrophic, unrecoverable, security-critical, or regulatory harm.' },
   { group: 'risk_prevented', field: 'blast_radius', label: 'Risk blast radius', min: 0, max: 5, description: 'Scope if the risk occurs; 1 is local or isolated and 5 is system-wide, cross-customer, externally propagating, or irreversible.' },
-  { group: 'risk_prevented', field: 'mitigation_effectiveness', label: 'Mitigation effectiveness', min: 0, max: 5, description: 'Expected reduction in the identified risk; 1 is about 20% and 5 is nearly complete mitigation.' },
-  { group: 'discovery_value', field: 'uncertainty_reduction', label: 'Uncertainty reduction', min: 0, max: 5, description: 'How much uncertainty this work is expected to remove; 1 is little and 5 is a major reduction in uncertainty.' },
-  { group: 'discovery_value', field: 'decision_importance', label: 'Decision importance', min: 0, max: 5, description: 'Importance of the decision enabled by the discovery; 1 is minor and 5 changes a critical direction.' },
-  { group: 'discovery_value', field: 'cost_of_wrong_choice', label: 'Cost of wrong choice', min: 0, max: 5, description: 'Cost of making the wrong decision without this discovery; 1 is low and 5 is severe or difficult to reverse.' },
   { group: 'delivery', field: 'regression_likelihood', label: 'Regression likelihood', min: 0, max: 5, description: 'Likelihood that an incorrect implementation or deployment causes regressions; 1 is highly local and understood and 5 is highly coupled, novel, or poorly understood.' },
   { group: 'delivery', field: 'change_blast_radius', label: 'Change blast radius', min: 0, max: 5, description: 'Scope of harm from a bad implementation, separate from the problem being fixed; 1 is local or test-only and 5 is system-wide, cross-customer, or potentially destructive.' },
   { group: 'delivery', field: 'reversibility', label: 'Reversibility', min: 0, max: 5, description: 'Ease of rolling back the change; 1 is effectively irreversible and 5 is a trivial revert, feature flag, or isolated deployment.' },
@@ -40,21 +34,14 @@ const ADVANCED_FIELDS = [
 ]
 const STANDARD_SCORE_OPTIONS = [1, 2, 3, 4, 5]
 const MAINTENANCE_SCORE_OPTIONS = [-2, -1, 0, 1, 2]
-const V2_TOP_LEVEL_FIELDS = ['contract_version', 'id', 'kind', 'priority_class', 'parent', 'depends_on', 'blocked_by', 'blocked_on_decision', 'estimate', 'opportunity', 'risk_prevented', 'discovery_value', 'modifiers', 'delivery']
+const V2_TOP_LEVEL_FIELDS = ['contract_version', 'id', 'kind', 'priority_class', 'parent', 'depends_on', 'blocked_by', 'blocked_on_decision', 'estimate', 'opportunity', 'risk_prevented', 'modifiers', 'delivery']
 const V2_GROUP_FIELDS: Record<string, string[]> = {
   estimate: ['effort_points'],
   opportunity: ['reach', 'benefit', 'frequency'],
-  risk_prevented: ['likelihood', 'harm', 'blast_radius', 'mitigation_effectiveness'],
-  discovery_value: ['uncertainty_reduction', 'decision_importance', 'cost_of_wrong_choice'],
+  risk_prevented: ['likelihood', 'harm', 'blast_radius'],
   modifiers: ['confidence', 'urgency', 'maintenance_delta'],
   delivery: ['regression_likelihood', 'change_blast_radius', 'reversibility'],
 }
-const RANKING_SCORE_DEFINITIONS = [
-  { key: 'priority_index', label: 'Priority', description: 'Relative ranking score used by the Priority section.', display: 'percentile' },
-  { key: 'impact_index', label: 'Impact', description: 'Positive impact adjusted for confidence and effort.', display: 'percentile' },
-  { key: 'risk_reduction_index', displayKey: 'risk_reduction', label: 'Risk reduction', description: 'Absolute amount of existing risk addressed by the work.', display: 'absolute' },
-] as const
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
@@ -80,16 +67,11 @@ function trimV2Metadata(value: unknown) {
   return next
 }
 
-const profileDefaults = computed(() => data.snapshot?.v2?.profile?.cardDefaults || {})
 const v2Metadata = computed(() => isObject(editor.frontmatter.signboard_v2) ? editor.frontmatter.signboard_v2 : {})
-const kind = computed(() => String(v2Metadata.value.kind || profileDefaults.value.kind || 'task'))
-const priority = computed(() => String(v2Metadata.value.priority_class || profileDefaults.value.priorityClass || 'P2').toUpperCase())
 const effort = computed(() => {
   const estimate = isObject(v2Metadata.value.estimate) ? v2Metadata.value.estimate : {}
   return typeof estimate.effort_points === 'number' ? String(estimate.effort_points) : ''
 })
-const currentListPath = computed(() => props.listPaths.find((path) => editor.cardPath.startsWith(`${path}/`)) || '')
-const currentListName = computed(() => currentListPath.value ? getListDisplayName(currentListPath.value.split('/').pop() || '') : 'Unknown stage')
 const dependencies = computed(() => Array.isArray(v2Metadata.value.depends_on) ? v2Metadata.value.depends_on.map(String) : [])
 const blockedBy = computed(() => Array.isArray(v2Metadata.value.blocked_by) ? v2Metadata.value.blocked_by.map(String) : [])
 const blockedOnDecision = computed(() => v2Metadata.value.blocked_on_decision === true)
@@ -107,107 +89,6 @@ const relatedTaskOptions = computed(() => {
   }
   return options
 })
-const projection = computed(() => data.snapshot?.v2?.cards.find((card) => card.cardPath === editor.cardPath))
-function projectedScore(key: string) {
-  const value = projection.value?.scores?.[key]
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
-}
-
-function projectedScoreRange(key: string) {
-  const range = projection.value?.score_ranges?.[key]
-  return range && Number.isFinite(range.min) && Number.isFinite(range.max) && range.max > range.min ? range : null
-}
-
-function formatProjectedScore(value: number | null) {
-  return value === null ? '—' : value.toFixed(1)
-}
-
-function formatScorePercentage(value: number | null) {
-  return value === null ? '—' : `${value.toFixed(1)}%`
-}
-
-function scoreTone(value: number | null) {
-  if (value === null || (value > 25 && value < 75)) return 'is-neutral'
-  return value <= 25 ? 'is-negative' : 'is-positive'
-}
-
-function scoreTintOpacity(value: number | null) {
-  if (value === null || (value > 25 && value < 75)) return '0.04'
-  const distanceFromQuartile = value <= 25 ? (25 - value) / 25 : (value - 75) / 25
-  return (0.01 + 0.09 * Math.min(1, distanceFromQuartile)).toFixed(3)
-}
-
-function formatPercentile(value: number | null) {
-  if (value === null) return '—'
-  const rounded = Math.round(value)
-  const lastTwoDigits = rounded % 100
-  const suffix = lastTwoDigits >= 11 && lastTwoDigits <= 13
-    ? 'th'
-    : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[rounded % 10] || 'th'
-  return `${rounded}${suffix}`
-}
-
-function formatPercentilePercentage(value: number | null) {
-  return value === null ? '—' : `${Math.round(value)}%`
-}
-
-function boardPercentile(key: string, value: number | null) {
-  if (value === null) return { percentile: null, populationSize: 0 }
-  const population = (data.snapshot?.v2?.cards || [])
-    .map((card) => card.scores?.[key])
-    .filter((score): score is number => typeof score === 'number' && Number.isFinite(score))
-  if (population.length <= 1) return { percentile: 50, populationSize: population.length }
-  const lowerCount = population.filter((score) => score < value).length
-  const equalCount = population.filter((score) => score === value).length
-  const percentile = ((lowerCount + Math.max(0, equalCount - 1) / 2) / (population.length - 1)) * 100
-  return { percentile: Math.max(0, Math.min(100, percentile)), populationSize: population.length }
-}
-
-function rankingScoreTitle(score: {
-  description: string
-  display: 'percentile' | 'absolute'
-  displayValue: number | null
-  value: number | null
-  range: { min: number; max: number } | null
-  theoreticalPercent: number | null
-  percentile: number | null
-  populationSize: number
-}) {
-  if (score.value === null || score.displayValue === null) return score.description
-  const comparison = score.display === 'absolute'
-    ? `${formatScorePercentage(score.displayValue)} on its absolute 0–100 scale.`
-    : score.populationSize === 1
-      ? 'This is the only scored card on the board.'
-      : `${formatPercentile(score.percentile)} percentile among ${score.populationSize} scored cards on this board.`
-  const range = score.range === null
-    ? `Raw index ${formatProjectedScore(score.value)}.`
-    : `Raw index ${formatProjectedScore(score.value)} on a ${formatProjectedScore(score.range.min)}–${formatProjectedScore(score.range.max)} range (${formatScorePercentage(score.theoreticalPercent)} of the theoretical range).`
-  return `${score.description} ${comparison} ${range}`
-}
-
-function rankingScoreDisplay(score: { display: 'percentile' | 'absolute'; displayValue: number | null }) {
-  return score.display === 'percentile' ? formatPercentilePercentage(score.displayValue) : formatScorePercentage(score.displayValue)
-}
-
-const rankingScores = computed(() => RANKING_SCORE_DEFINITIONS.map((definition) => {
-  const value = projectedScore(definition.key)
-  const range = projectedScoreRange(definition.key)
-  const { percentile, populationSize } = boardPercentile(definition.key, value)
-  const absoluteValue = 'displayKey' in definition ? projectedScore(definition.displayKey) : null
-  return {
-    ...definition,
-    value,
-    range,
-    percentile,
-    populationSize,
-    displayValue: definition.display === 'percentile' ? percentile : absoluteValue,
-    theoreticalPercent: value === null || range === null ? null : Math.max(0, Math.min(100, ((value - range.min) / (range.max - range.min)) * 100)),
-  }
-}))
-function label(value: string) {
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase())
-}
-
 function updateV2(nextPartial: Record<string, unknown>) {
   const next = { ...trimV2Metadata(v2Metadata.value), contract_version: 1, ...nextPartial }
   editor.frontmatter = { ...editor.frontmatter, signboard_v2: next }
@@ -251,7 +132,6 @@ function scoreOptionTone(field: { field: string }, value: number) {
   const threeBandTone = (low: string, mid: string, high: string) => value <= 2 ? low : value === 3 ? mid : high
   if (['reach', 'benefit', 'frequency'].includes(field.field)) return threeBandTone('score-option-tone-neutral', 'score-option-tone-success-soft', 'score-option-tone-success-strong')
   if (['likelihood', 'harm', 'blast_radius'].includes(field.field)) return threeBandTone('score-option-tone-neutral', 'score-option-tone-amber-soft', 'score-option-tone-amber-strong')
-  if (field.field === 'mitigation_effectiveness') return threeBandTone('score-option-tone-danger-soft', 'score-option-tone-neutral', 'score-option-tone-success-strong')
   if (['regression_likelihood', 'change_blast_radius'].includes(field.field)) return threeBandTone('score-option-tone-success-strong', 'score-option-tone-neutral', 'score-option-tone-danger-strong')
   if (field.field === 'reversibility') return value === 1 ? 'score-option-tone-danger-strong' : value === 2 ? 'score-option-tone-danger-soft' : value === 3 ? 'score-option-tone-neutral' : value === 4 ? 'score-option-tone-success-soft' : 'score-option-tone-success-strong'
   if (field.field === 'confidence') return threeBandTone('score-option-tone-neutral', 'score-option-tone-info-soft', 'score-option-tone-info-strong')
@@ -270,12 +150,7 @@ function updateAdvancedValue(group: string, field: string, value: number) {
 </script>
 
 <template>
-  <section class="v2-editor-work-details" aria-labelledby="cardEditorWorkDetailsTitle">
-    <button id="cardEditorWorkDetailsSummary" class="v2-editor-work-summary" type="button" :aria-expanded="detailsOpen" aria-controls="cardEditorWorkDetailsPanel" @click="detailsOpen = !detailsOpen">
-      <span class="v2-editor-work-summary-copy"><span class="v2-editor-eyebrow">V2 work</span><strong id="cardEditorWorkDetailsTitle">{{ label(kind) }} · {{ priority }}<template v-if="effort"> · {{ effort }} pts</template></strong></span>
-      <span class="v2-editor-work-summary-stage">{{ currentListName }} <FeatherIcon :name="detailsOpen ? 'chevron-up' : 'chevron-down'" :size="15" /></span>
-    </button>
-    <div v-if="detailsOpen" id="cardEditorWorkDetailsPanel" class="v2-editor-work-panel">
+  <div id="cardEditorWorkDetailsPanel" class="v2-editor-work-panel">
       <div class="v2-editor-relationship-grid">
         <div class="v2-editor-estimate-field">
           <span class="v2-editor-estimate-label">Effort points</span>
@@ -300,31 +175,12 @@ function updateAdvancedValue(group: string, field: string, value: number) {
             </div>
           </div>
         </fieldset>
-        <fieldset class="v2-editor-score-group v2-editor-score-group-computed v2-editor-computed">
-          <legend><span class="v2-editor-score-group-heading"><FeatherIcon name="activity" :size="19" /><span>Scoring</span></span></legend>
-          <div class="v2-editor-computed-body">
-            <section class="v2-editor-computed-section" aria-label="Ranking scores">
-              <div class="v2-editor-ranking-grid">
-                <div v-for="score in rankingScores" :key="score.key" class="v2-editor-ranking-score" :class="scoreTone(score.displayValue)" :style="{ '--score-tint-opacity': scoreTintOpacity(score.displayValue) }" :title="rankingScoreTitle(score)" :aria-label="`${score.label}: ${score.displayValue === null ? 'not available' : rankingScoreDisplay(score)}`">
-                  <span>{{ score.label }}</span>
-                  <strong>{{ rankingScoreDisplay(score) }}</strong>
-                </div>
-              </div>
-            </section>
-          </div>
-        </fieldset>
       </div>
-    </div>
-  </section>
+  </div>
 </template>
 
 <style scoped>
-.v2-editor-work-details { margin: 0 0 14px; border: 1px solid var(--border, #e6e8ec); border-radius: 8px; background: var(--surface, #fff); }
-.v2-editor-work-summary { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.v2-editor-work-summary-copy { display: grid; gap: 2px; min-width: 0; }
-.v2-editor-eyebrow { color: var(--muted, #6b7280); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
-.v2-editor-work-summary-stage { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; color: var(--muted, #6b7280); font-size: 12px; }
-.v2-editor-work-panel { display: grid; gap: 12px; padding: 0 12px 12px; }
+.v2-editor-work-panel { display: grid; gap: 12px; padding: 16px; }
 .v2-editor-relationship-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #e6e8ec); }
 .v2-editor-relationship-grid :deep(.v2-related-task-select) { min-width: 0; }
 .v2-editor-decision-field { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; color: var(--muted, #6b7280); font-size: 11px; }
@@ -376,18 +232,7 @@ function updateAdvancedValue(group: string, field: string, value: number) {
 .v2-editor-score-option:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--primary, #0b5fff); outline-offset: -2px; }
 .v2-editor-advanced-grid input:not([type="checkbox"]), .v2-editor-wide-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; height: 32px; padding: 5px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); color: var(--text, #111827); font: inherit; font-size: 13px; line-height: 1.2; }
 .v2-editor-wide-field textarea { resize: vertical; }
-.v2-editor-score-group-computed .v2-editor-score-group-heading { color: #2563eb; }
-.v2-editor-score-group-computed .v2-editor-score-group-heading > .feather-icon { color: #2563eb; }
-.v2-editor-score-group-computed { grid-column: span 2; }
-.v2-editor-computed-body { display: grid; gap: 8px; padding: 10px 0 6px; }
-.v2-editor-computed-section { display: grid; gap: 8px; }
-.v2-editor-ranking-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.v2-editor-ranking-score { --score-tint-rgb: 100 116 139; display: grid; min-width: 0; gap: 3px; padding: 9px 10px; border: 1px solid color-mix(in srgb, rgb(var(--score-tint-rgb)) 18%, var(--border, #e6e8ec)); border-radius: 8px; background: rgb(var(--score-tint-rgb) / var(--score-tint-opacity, .04)); }
-.v2-editor-ranking-score.is-negative { --score-tint-rgb: 220 38 38; }
-.v2-editor-ranking-score.is-positive { --score-tint-rgb: 21 128 61; }
-.v2-editor-ranking-score > span { overflow: hidden; color: var(--muted, #6b7280); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.v2-editor-ranking-score > strong { color: var(--text, #111827); font-size: 17px; font-variant-numeric: tabular-nums; }
-@media (max-width: 900px) { .v2-editor-advanced-grid, .v2-editor-ranking-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .v2-editor-score-group-computed { grid-column: span 1; } }
+@media (max-width: 900px) { .v2-editor-advanced-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .v2-editor-relationship-grid { grid-template-columns: 1fr; } }
-@media (max-width: 580px) { .v2-editor-advanced-grid, .v2-editor-ranking-grid { grid-template-columns: 1fr; } .v2-editor-score-field { grid-template-columns: 1fr; gap: 8px; } .v2-editor-score-options { width: 100%; } .v2-editor-score-option { flex: 1 1 0; } }
+@media (max-width: 580px) { .v2-editor-advanced-grid { grid-template-columns: 1fr; } .v2-editor-score-field { grid-template-columns: 1fr; gap: 8px; } .v2-editor-score-options { width: 100%; } .v2-editor-score-option { flex: 1 1 0; } }
 </style>

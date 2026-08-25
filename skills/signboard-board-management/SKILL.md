@@ -12,12 +12,17 @@ Use this skill when a Signboard board is stored in or alongside the current proj
 1. Prefer an explicitly supplied absolute board path.
 2. Otherwise search only the relevant project area for directories containing list-like subdirectories and/or a root `.board.json`. Do not assume the project root is the board root.
 3. Confirm the candidate by inspecting its immediate children. A normal board has list directories such as `To-do`, `Doing`, `Done`, or legacy names such as `000-To-do-stock`, plus `XXX-Archive` when archive support is in use.
-4. If the Signboard CLI is installed, prefer machine-readable discovery:
+4. If the Signboard CLI is installed, distinguish between known-board listing and local project discovery:
 
    ```bash
-   signboard boards list --json
+   signboard boards --list --json
+   signboard boards discover . --json
    signboard --board "/absolute/path/to/Board" lists --json
    ```
+
+   `boards --list` (also written `boards list`) reports boards Signboard already knows about. `boards discover [root]` scans the local project for board-looking directories without changing the active board. Discovery defaults to a Git-aware scan with a maximum depth of 8, honors Git ignore rules, skips hidden/dependency/build/cache directories and symlinks, and reports malformed or ambiguous candidates. Use `--max-depth` when needed, `--include-ignored` for intentional searches through ignored content, and `--include-nested` when nested boards should also be reported. Use `--use` only when explicitly asked to select a discovered board.
+
+   Discovery is read-only by default. In automation, use `--json`; if `--use` would require choosing among multiple candidates, provide an explicit path or handle the nonzero ambiguity error rather than relying on interactive selection.
 
    If Signboard MCP is available, use its board discovery/read tools first and follow the separate `signboard-mcp` skill when present.
 
@@ -144,11 +149,6 @@ signboard_v2:
     likelihood: 2
     harm: 4
     blast_radius: 3
-    mitigation_effectiveness: 4
-  discovery_value:
-    uncertainty_reduction: 4
-    decision_importance: 5
-    cost_of_wrong_choice: 3
   modifiers:
     confidence: 3
     urgency: 4
@@ -178,16 +178,25 @@ For V2 writes, prefer the V2-aware create/settings arguments exposed by the CLI 
 Useful CLI patterns:
 
 ```bash
-signboard boards list --json
+signboard boards --list --json
+signboard boards discover . --max-depth 8 --json
 signboard --board "/absolute/path/to/Board" lists --json
-signboard --board "/absolute/path/to/Board" cards --json
+signboard --board "/absolute/path/to/Board" cards --summary --json
+signboard --board "/absolute/path/to/Board" cards --no-body --json
 signboard --board "/absolute/path/to/Board" cards read --card ab123
 signboard --board "/absolute/path/to/Board" cards edit --card ab123 --add-label launch --dry-run --json
-signboard --board "/absolute/path/to/Board" cards edit --card ab123 --move-to Doing
+signboard cards edit --card "/absolute/path/to/Board/To-do/example-card.md" --move-to Doing --dry-run --json
+signboard cards edit --card "/absolute/path/to/Board/To-do/example-card.md" --move-to Doing --json
 signboard --board "/absolute/path/to/Board" cards duplicate --card ab123 --list Doing --dry-run --json
 ```
 
-Use exact list/card references where possible. CLI references can resolve a directory name, display name, filename, card ID, title, or unique partial match; read first if a reference might be ambiguous.
+Use an absolute card path when possible: card commands can infer the board from an absolute `--card` path, so `--board` is unnecessary. The same inference applies to absolute `--from-card` paths. For IDs, titles, bare filenames, or partial references, provide `--board` because the reference may be ambiguous.
+
+Use `--summary` or `--no-body` for card-list/read JSON when the Markdown bodies are not needed. Legacy cards may have no usable frontmatter ID; JSON normalizes the top-level `id` to the filename fallback so automation can retain a stable reference.
+
+Use `--json` consistently for automation. On failure, the CLI writes a structured error object to stderr and exits nonzero; do not parse human-readable error text. Validate both the exit status and the JSON error shape.
+
+For cross-list moves, always preview with `--dry-run --json` before applying the move. The real move should update the mirrored `status`, `signboard_list`, and `signboard_uri` frontmatter fields, preserve the card's existing identity, update activity/manifests, and avoid unrelated root `.board.json` changes. Re-read the moved card and board snapshot after the move if another process may be editing the board.
 
 ## Direct filesystem editing rules
 
@@ -204,6 +213,7 @@ When writing:
 - For list `.board.json`, merge existing manifest metadata and change only `order`.
 - If adding a card directly, choose a collision-safe filename, write valid frontmatter/body, then add that exact filename to the target list manifest at the requested position.
 - If moving a card between lists, move the file and update both source and target manifests transactionally. Preserve its filename and frontmatter.
+- If moving a card between lists, also keep mirrored legacy metadata (`status`, `signboard_list`, and `signboard_uri`) consistent with the target list when those fields are present or managed by the board. Do not rewrite unrelated root-manifest data.
 - If reordering, update only the `order` array. Do not rename every card/list to manufacture order prefixes.
 - Validate JSON and YAML after writing, then re-read the affected card/list/board to verify the resulting order and metadata.
 

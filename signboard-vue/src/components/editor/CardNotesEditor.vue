@@ -6,10 +6,11 @@ import RichTextEditor from '../../lib/components/RichTextEditor.vue'
 import CardLabelPopover from '../board/CardLabelPopover.vue'
 import FeatherIcon from '../FeatherIcon.vue'
 import V2WorkControls from './V2WorkControls.vue'
+import V2ScoreSummary from './V2ScoreSummary.vue'
 
 const editorStore = useEditorStore()
 const labelsStore = useLabelsStore()
-const props = defineProps<{ onOpenCard?: (path: string, options?: { focusNotes?: boolean; stack?: boolean }) => void | Promise<void>; v2Enabled?: boolean; listPaths?: string[]; onMove?: (path: string) => Promise<boolean> }>()
+const props = defineProps<{ onOpenCard?: (path: string, options?: { focusNotes?: boolean; stack?: boolean }) => void | Promise<void>; onOpenV2Details?: () => void; v2Enabled?: boolean; listPaths?: string[]; onMove?: (path: string) => Promise<boolean> }>()
 const labelsOpen = ref(false)
 const labelOpener = ref<HTMLElement | null>(null)
 const selectedLabelIds = computed(() => Array.isArray(editorStore.frontmatter.labels) ? editorStore.frontmatter.labels.map(String) : [])
@@ -58,6 +59,7 @@ defineExpose({ setExternalBody, focus })
               <FeatherIcon name="chevron-down" />
             </button>
           </div>
+          <V2ScoreSummary v-if="props.v2Enabled" :on-open-details="props.onOpenV2Details" />
           <CardLabelPopover :is-open="labelsOpen" :opener="labelOpener" :card-path="editorStore.cardPath" :board-root="editorStore.boardPathForCard(editorStore.cardPath)" :labels="labelsStore.labels" :selected-ids="selectedLabelIds" :on-close="closeLabels" :on-save="saveLabels" />
         </div>
       </template>

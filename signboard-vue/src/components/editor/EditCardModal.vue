@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useBoardDataStore } from '../../stores/useBoardDataStore'
 import Modal from '../../lib/components/Modal.vue'
@@ -15,6 +15,7 @@ const boardData = useBoardDataStore()
 const v2Enabled = computed(() => boardData.snapshot?.v2?.profile?.enabled === true)
 const listPaths = ref<string[]>([])
 const status = ref('')
+const v2DetailsOpen = ref(false)
 const notes = ref<InstanceType<typeof CardNotesEditor> | null>(null)
 let externalSyncTimer: number | null = null
 
@@ -33,6 +34,8 @@ async function close() {
   if (editor.isOpen) await loadEditorExtras()
 }
 async function closeAll() { await editor.closeAll() }
+function openV2Details() { v2DetailsOpen.value = true }
+function closeV2Details() { v2DetailsOpen.value = false }
 
 async function refreshFromExternalChange(reconcileMissing = true) {
   const changed = await editor.refreshFromDiskIfClean({ reconcileMissing })
@@ -81,6 +84,8 @@ onMounted(() => {
   }, 1000)
 })
 onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(externalSyncTimer) })
+watch(() => editor.isOpen, (isOpen) => { if (!isOpen) v2DetailsOpen.value = false })
+watch(() => editor.cardPath, () => { v2DetailsOpen.value = false })
 </script>
 
 <template>
@@ -94,13 +99,20 @@ onBeforeUnmount(() => { if (externalSyncTimer !== null) window.clearInterval(ext
       </div>
     </div>
     <div class="card-editor-modal-content" @dragover.prevent @drop.prevent="void handleDrop($event)">
-      <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" />
-      <CardNotesEditor ref="notes" :on-open-card="openCard" :v2-enabled="v2Enabled" :list-paths="listPaths" :on-move="move" />
+      <CardNotesEditor ref="notes" :on-open-card="openCard" :on-open-v2-details="openV2Details" :v2-enabled="v2Enabled" :list-paths="listPaths" :on-move="move" />
       <CardTimestamps :timestamps="editor.timestamps" />
       <input id="cardEditorCardPath" type="hidden" :value="editor.cardPath" />
       <input id="cardEditorCardMetadata" type="hidden" :value="JSON.stringify(editor.frontmatter)" />
       <input id="cardEditorCardDueDate" type="hidden" :value="editor.frontmatter.due || ''" />
       <p v-if="status || editor.saveError" class="card-editor-status" role="status">{{ status || 'Unable to save card.' }}</p>
+    </div>
+  </Modal>
+  <Modal id="cardEditorV2DetailsModal" :is-open="v2DetailsOpen" :on-close="closeV2Details" positioning="fixed" size="large" :overflow="true" :z-index="1100" :show-chrome="false" aria-label="Detailed V2 work fields" initial-focus="#cardEditorV2DetailsClose">
+    <div class="v2-editor-details-overlay">
+      <div class="v2-editor-details-overlay-header">
+        <button id="cardEditorV2DetailsClose" type="button" title="Close detailed V2 work fields" aria-label="Close detailed V2 work fields" @click="closeV2Details"><FeatherIcon name="x" /></button>
+      </div>
+      <V2WorkDetails v-if="v2Enabled" :list-paths="listPaths" :on-move="move" />
     </div>
   </Modal>
 </template>

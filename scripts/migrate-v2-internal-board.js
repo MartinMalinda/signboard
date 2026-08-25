@@ -15,7 +15,6 @@ const V2_FIELDS = [
   'estimate',
   'opportunity',
   'risk_prevented',
-  'discovery_value',
   'modifiers',
   'delivery',
 ];

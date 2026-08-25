@@ -14,10 +14,6 @@ area: scoring
 depends_on:
   - 'Decide V2 card contract: hardcoded attributes versus generic fields'
   - Define per-board project profile and dashboard contract
-discovery_value:
-  uncertainty_reduction: 5
-  decision_importance: 4
-  cost_of_wrong_choice: 4
 enablement:
   downstream_value: 5
   downstream_breadth: 5
@@ -60,10 +56,6 @@ signboard_v2:
   blocked_by: []
   estimate:
     effort_points: 3
-  discovery_value:
-    uncertainty_reduction: 5
-    decision_importance: 4
-    cost_of_wrong_choice: 4
   modifiers:
     confidence: 3
     urgency: 3
@@ -73,11 +65,11 @@ signboard_v2:
 
 The evaluator accepts normalized domain data and returns versioned value, priority, delivery-risk, and dashboard projections. It has no filesystem, Electron, or Vue dependency. Priority class is applied before ordinary ranking; relationships and list-derived stage provide context for dashboard membership. Missing value fields remain visible and conservative. Blocked work may be scored but belongs in the Blocked view.
 
-Support the reference formulas for opportunity, risk reduction, discovery, core value, priority, impact, and delivery risk in version 1. Do not silently add fields or formula inputs that are not in the trimmed contract.
+Support the reference formulas for opportunity, risk reduction, core value, priority, impact, and delivery risk in version 1. Do not silently add fields or formula inputs that are not in the trimmed contract.
 
 # First supported outputs
 
-- Opportunity, risk-reduction, and discovery scores.
+- Opportunity and risk-reduction scores.
 - Core value, Priority Index, Positive Impact, and Impact Index.
 - Delivery risk.
 - Critical, Next best work, Low-hanging fruit, and Blocked section membership.

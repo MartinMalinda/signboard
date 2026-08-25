@@ -10,12 +10,11 @@ const data = useBoardDataStore()
 
 const KIND_OPTIONS = ['task', 'discovery', 'epic', 'incident']
 const PRIORITY_OPTIONS = ['', 'P0', 'P1', 'P2', 'P3']
-const V2_TOP_LEVEL_FIELDS = ['contract_version', 'id', 'kind', 'priority_class', 'parent', 'depends_on', 'blocked_by', 'blocked_on_decision', 'estimate', 'opportunity', 'risk_prevented', 'discovery_value', 'modifiers', 'delivery']
+const V2_TOP_LEVEL_FIELDS = ['contract_version', 'id', 'kind', 'priority_class', 'parent', 'depends_on', 'blocked_by', 'blocked_on_decision', 'estimate', 'opportunity', 'risk_prevented', 'modifiers', 'delivery']
 const V2_GROUP_FIELDS: Record<string, string[]> = {
   estimate: ['effort_points'],
   opportunity: ['reach', 'benefit', 'frequency'],
-  risk_prevented: ['likelihood', 'harm', 'blast_radius', 'mitigation_effectiveness'],
-  discovery_value: ['uncertainty_reduction', 'decision_importance', 'cost_of_wrong_choice'],
+  risk_prevented: ['likelihood', 'harm', 'blast_radius'],
   modifiers: ['confidence', 'urgency', 'maintenance_delta'],
   delivery: ['regression_likelihood', 'change_blast_radius', 'reversibility'],
 }

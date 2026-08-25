@@ -56,7 +56,7 @@ The distinctions should ideally be:
 
 Core value
     Raw combined opportunity / risk reduction / engineering health /
-    enablement / discovery value.
+    enablement.
 
 Expected strategic impact
     Core value × confidence × strategic fit.
@@ -280,7 +280,6 @@ Security, privacy, correctness, data integrity → normally require Risk Prevent
 Product and UX → normally require Opportunity.
 Engineering health and technical debt → normally require Engineering Health.
 Enablement → normally require linked downstream cards.
-Discovery → normally require Discovery Value.
 
 The work type should suggest the relevant groups, not auto-populate generic midpoint values.
 

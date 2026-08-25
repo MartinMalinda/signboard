@@ -144,16 +144,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
 </template>
 
 <style scoped>
-.v2-related-task-select { display: grid; position: relative; gap: 4px; color: var(--muted, #6b7280); font-size: 11px; }
+.v2-related-task-select { display: grid; position: relative; min-width: 0; max-width: 100%; gap: 4px; color: var(--muted, #6b7280); font-size: 11px; }
 .v2-related-task-label { color: var(--muted, #6b7280); }
-.v2-related-task-control { display: flex; flex-wrap: wrap; align-items: center; box-sizing: border-box; gap: 5px; min-height: 32px; padding: 4px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); }
+.v2-related-task-control { display: flex; flex-wrap: wrap; align-items: center; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; gap: 5px; min-height: 32px; padding: 4px 6px; border: 1px solid var(--border, #e6e8ec); border-radius: 5px; background: var(--surface, #fff); }
 .v2-related-task-control.is-open { border-color: var(--primary, #0b5fff); box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary, #0b5fff) 16%, transparent); }
-.v2-related-task-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.v2-related-task-chip { display: inline-flex; align-items: center; gap: 3px; max-width: 100%; padding: 3px 4px 3px 7px; border: 1px solid color-mix(in oklab, var(--primary, #0b5fff) 28%, var(--border, #e6e8ec)); border-radius: 999px; background: color-mix(in oklab, var(--primary, #0b5fff) 8%, var(--surface, #fff)); color: var(--text, #111827); }
-.v2-related-task-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-related-task-chips { display: flex; flex-wrap: wrap; min-width: 0; max-width: 100%; gap: 4px; }
+.v2-related-task-chip { display: inline-flex; min-width: 0; max-width: 100%; align-items: center; gap: 3px; padding: 3px 4px 3px 7px; border: 1px solid color-mix(in oklab, var(--primary, #0b5fff) 28%, var(--border, #e6e8ec)); border-radius: 999px; background: color-mix(in oklab, var(--primary, #0b5fff) 8%, var(--surface, #fff)); color: var(--text, #111827); }
+.v2-related-task-chip-label { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v2-related-task-chip button { display: inline-flex; align-items: center; justify-content: center; padding: 1px; border: 0; border-radius: 50%; background: transparent; color: var(--muted, #6b7280); cursor: pointer; }
 .v2-related-task-chip button:hover, .v2-related-task-chip button:focus-visible { background: color-mix(in oklab, var(--primary, #0b5fff) 16%, transparent); color: var(--text, #111827); }
-.v2-related-task-input { flex: 1 1 150px; min-width: 120px; min-height: 20px; height: 20px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text, #111827); font: inherit; font-size: 13px; line-height: 20px; }
+.v2-related-task-input { flex: 1 1 150px; min-width: 0; max-width: 100%; min-height: 20px; height: 20px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text, #111827); font: inherit; font-size: 13px; line-height: 20px; }
 .v2-related-task-input::-webkit-search-cancel-button { display: none; }
 .v2-related-task-options { position: absolute; z-index: 10; top: 100%; right: 0; left: 0; max-height: 220px; overflow-y: auto; padding: 4px; border: 1px solid var(--border, #e6e8ec); border-radius: 6px; background: var(--surface, #fff); box-shadow: 0 8px 24px rgb(15 23 42 / 14%); }
 .v2-related-task-option { display: grid; width: 100%; gap: 2px; padding: 7px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--text, #111827); text-align: left; cursor: pointer; }
